@@ -154,6 +154,6 @@ export const people = [
   {
     name: "Arjhine Ty",
     role: "Founding Member",
-    href: "https://www.linkedin.com/in/arrochi/",
+    href: "https://www.linkedin.com/in/arjhinety/",
   },
 ];

@@ -12,7 +12,8 @@ export const ggufLinks = {
   "results": "https://github.com/arjhinety/OpenGrad/tree/study-001/results/quantization/gguf",
   "errata": "https://github.com/arjhinety/OpenGrad/blob/study-001/reports/ERRATA.md",
   "study": "https://opengrad.arjhinety.com/studies/001#quantization",
-  "model": "https://huggingface.co/arrochi112/OpenGrad-Qwen3.5-2B-M1-DPO-CanonicalV2-Final-v2"
+  "model": "https://huggingface.co/arjhinety/OpenGrad-Qwen3.5-2B-M1-DPO-CanonicalV2-Final-v2",
+  "files": "https://huggingface.co/arjhinety/OpenGrad-Qwen3.5-2B-M1-DPO-CanonicalV2-Final-v2-GGUF"
 };
 
 export const ggufConditions = {

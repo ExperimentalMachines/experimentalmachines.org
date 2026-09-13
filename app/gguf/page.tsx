@@ -52,7 +52,8 @@ export default function Gguf() {
               <A href={sibling.url}>{sibling.name}</A>. It was converted to BF16 GGUF and quantized {quant.length} ways with llama.cpp and one importance matrix, then
               benchmarked on one {ggufConditions.gpu} with every layer on the GPU. Every number is generated from the{" "}
               <A href={ggufLinks.results}>committed results</A>. What quantization did to the model&apos;s decisions is covered in full on the{" "}
-              <A href={ggufLinks.study}>OpenGrad study page</A>.
+              <A href={ggufLinks.study}>OpenGrad study page</A>. All {ggufRows.length} files are on{" "}
+              <A href={ggufLinks.files}>Hugging Face</A>.
             </p>
           </div>
         </section>
