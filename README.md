@@ -12,7 +12,7 @@ npm run dev
 
 ## Edit content
 
-Copy and the per-class result tables live in `lib/content.ts`. The hero figures read `lib/measurements.ts` and `lib/latency.ts`; the `/asic` page reads `lib/neuron.ts`. Every value is copied from a published benchmark report.
+Copy and the per-class result tables live in `lib/content.ts`. The hero figures read `lib/measurements.ts` and `lib/latency.ts`; the `/asic` page reads `lib/neuron.ts`. Every value is copied from a published benchmark report. The `/gguf` page reads `lib/gguf.ts`, which `scripts/build-gguf-data.mjs` generates from OpenGrad at the `study-001` tag (`OPENGRAD=../OpenGrad node scripts/build-gguf-data.mjs`).
 
 ## Deploy
 

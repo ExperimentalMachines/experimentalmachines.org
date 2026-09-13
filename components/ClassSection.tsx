@@ -1,3 +1,4 @@
+import Link from "next/link";
 import type { HardwareClass } from "@/lib/content";
 
 export default function ClassSection({
@@ -31,14 +32,20 @@ export default function ClassSection({
             {cls.rows.map((r) => (
               <tr key={r.repo} className="border-b border-rule align-top">
                 <td className="py-3 pr-4">
-                  <a
-                    href={r.href}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="font-medium text-blue hover:text-blue-deep"
-                  >
-                    {r.repo}
-                  </a>
+                  {r.href.startsWith("/") ? (
+                    <Link href={r.href} className="font-medium text-blue hover:text-blue-deep">
+                      {r.repo}
+                    </Link>
+                  ) : (
+                    <a
+                      href={r.href}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="font-medium text-blue hover:text-blue-deep"
+                    >
+                      {r.repo}
+                    </a>
+                  )}
                   <div className="mt-1 text-ink-soft sm:hidden">{r.measured}</div>
                 </td>
                 <td className="hidden py-3 pr-4 text-ink-soft sm:table-cell">

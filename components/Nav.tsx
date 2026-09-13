@@ -6,6 +6,7 @@ const links = [
   { href: "/#laptop", label: "Laptop" },
   { href: "/#phone", label: "Phone" },
   { href: "/asic", label: "ASIC" },
+  { href: "/gguf", label: "GGUF" },
   { href: "/#contact", label: "Contact" },
 ];
 

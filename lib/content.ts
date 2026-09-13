@@ -1,3 +1,7 @@
+import { ggufRecommended, ggufRows } from "@/lib/gguf";
+
+const ggufPick = ggufRows.find((r) => r.format === ggufRecommended)!;
+
 export const site = {
   name: "Experimental Machines",
   wordmark: ["Experimental", "Machines"] as const,
@@ -38,6 +42,12 @@ export const classes: HardwareClass[] = [
         href: "https://github.com/alpharomercoma/MI300X-vs-H200",
         measured: "One GPU each, serving and training, three shapes, eight concurrency points",
         result: "MI300X 1.14x on 70B FP8; H200 1.40x on 8B serving and 1.32 to 1.40x on training",
+      },
+      {
+        repo: "gguf-a100",
+        href: "/gguf",
+        measured: `A 2B model as BF16 GGUF and ${ggufRows.length - 1} llama.cpp quantizations on one A100: size, bits per weight, throughput`,
+        result: `${ggufRecommended}: ${ggufPick.gib.toFixed(2)} GiB, ${Math.round(ggufPick.tg)} tok/s`,
       },
       {
         repo: "qwen3.8-27b-mi300x",
