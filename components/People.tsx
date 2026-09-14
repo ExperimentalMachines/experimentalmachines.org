@@ -25,14 +25,24 @@ export default function People() {
                 <span className="font-medium">{p.name}</span>
                 <span className="text-ink-soft"> {p.role}</span>
               </span>
-              <a
-                href={p.href}
-                target="_blank"
-                rel="noreferrer"
-                className="text-blue hover:text-blue-deep"
-              >
-                LinkedIn
-              </a>
+              <span className="flex shrink-0 gap-4">
+                {p.email && (
+                  <a
+                    href={`mailto:${p.email}`}
+                    className="text-blue hover:text-blue-deep"
+                  >
+                    Email
+                  </a>
+                )}
+                <a
+                  href={p.href}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-blue hover:text-blue-deep"
+                >
+                  LinkedIn
+                </a>
+              </span>
             </li>
           ))}
         </ul>

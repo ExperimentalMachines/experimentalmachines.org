@@ -1,14 +1,23 @@
 import type { Metadata } from "next";
+import EngineComparisonFigure from "@/components/gguf/EngineComparisonFigure";
 import ThroughputFigure from "@/components/gguf/ThroughputFigure";
 import Footer from "@/components/Footer";
 import Nav from "@/components/Nav";
 import { sibling } from "@/lib/content";
 import { ggufConditions, ggufLinks, ggufRecommended, ggufRows } from "@/lib/gguf";
+import {
+  ggufBf16Conditions,
+  ggufBf16Decisions,
+  ggufBf16Links,
+  ggufBf16QuantFlips,
+  ggufBf16Rerun,
+  ggufBf16Sweep,
+} from "@/lib/gguf-bf16";
 
 export const metadata: Metadata = {
   title: "GGUF on one A100",
   description:
-    "A 2B tool-calling model as BF16 GGUF and nine llama.cpp quantizations, benchmarked on one NVIDIA A100: size, bits per weight, generation and prompt throughput.",
+    "A 2B tool-calling model as BF16 GGUF and nine llama.cpp quantizations, benchmarked on one NVIDIA A100: size, bits per weight, generation and prompt throughput, against the same weights served by vLLM.",
 };
 
 function Section({ id, title, lede, children }: { id: string; title: string; lede?: string; children: React.ReactNode }) {
@@ -36,6 +45,7 @@ const pct = (x: number) => `${Math.round(x * 100)}%`;
 const signed = (x: number) => `${x >= 0 ? "+" : "−"}${Math.abs(Math.round(x * 100))}%`;
 const genGain = quant.map((r) => r.tg / bf16.tg - 1);
 const ppShare = quant.map((r) => r.pp / bf16.pp);
+const q6Flips = ggufBf16QuantFlips.find((r) => r.rung === ggufRecommended)!.flips;
 
 export default function Gguf() {
   return (
@@ -113,6 +123,63 @@ export default function Gguf() {
           </p>
         </Section>
 
+        <Section
+          id="engines"
+          title="The BF16 GGUF against a serving engine"
+          lede={`These files are the deployment format. The same weights also ran as the plain BF16 checkpoint behind vLLM on an ${ggufBf16Conditions.vllm.gpu}, batching up to ${ggufBf16Conditions.vllm.maxNumSeqs} concurrent requests. This is not a like-for-like comparison: the sections above are llama.cpp on an ${ggufBf16Conditions.llamacpp.gpu}, and the engine, the GPU and the kernels all differ. Read it as one engine against another, not as ${ggufBf16Conditions.llamacpp.gpuShort} against ${ggufBf16Conditions.vllm.gpuShort}.`}
+        >
+          <EngineComparisonFigure />
+          <p className="mt-4 max-w-2xl text-sm leading-6 text-ink-soft">
+            Top: vLLM output throughput as concurrency rises on a mixed request shape. The dashed line is this page&apos;s BF16 GGUF on the A100 at a single
+            stream, {ggufBf16Conditions.llamacpp.tg} tokens per second, drawn at one request. Bottom: decisions changed out of{" "}
+            {ggufBf16Conditions.examples.toLocaleString("en-US")} confirmatory prompts, each counted against the llama.cpp BF16 GGUF.
+          </p>
+          <div className="mt-8 overflow-x-auto" tabIndex={0} role="region" aria-label="vLLM serving sweep, scrolls sideways on small screens">
+            <table className="w-full min-w-[40rem] border-collapse text-sm">
+              <thead className="text-left text-ink-soft">
+                <tr className="border-b border-rule">
+                  <th className="py-2 pr-4 text-right font-normal">Concurrent</th>
+                  <th className="py-2 pr-4 font-normal">Shape</th>
+                  <th className="py-2 pr-4 text-right font-normal">Requests/s</th>
+                  <th className="py-2 pr-4 text-right font-normal">Output tok/s</th>
+                  <th className="py-2 text-right font-normal">Total tok/s</th>
+                </tr>
+              </thead>
+              <tbody className="tabular-nums">
+                {ggufBf16Sweep.map((r) => (
+                  <tr key={`${r.concurrency}-${r.shape}`} className="border-b border-rule">
+                    <td className="py-2.5 pr-4 text-right">{r.concurrency}</td>
+                    <td className="py-2.5 pr-4">{r.shape}</td>
+                    <td className="py-2.5 pr-4 text-right">{r.requestsPerSecond.toFixed(1)}</td>
+                    <td className="py-2.5 pr-4 text-right">{r.outputTps.toFixed(1)}</td>
+                    <td className="py-2.5 text-right">{Math.round(r.totalTps).toLocaleString("en-US")}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <p className="mt-4 max-w-2xl text-sm leading-6 text-ink-soft">
+            Requests per second peak at {ggufBf16Sweep.reduce((a, b) => (b.requestsPerSecond > a.requestsPerSecond ? b : a)).concurrency} concurrent and dip
+            slightly at {Math.max(...ggufBf16Sweep.map((r) => r.concurrency))}, while total tokens per second keeps climbing — the later gain is prompt tokens,
+            not decode. One request of each shape was also run separately: {ggufBf16Sweep.filter((r) => r.concurrency === 1).map((r) => `${r.shape} ${r.outputTps.toFixed(0)}`).join(", ")} output
+            tokens per second. Cold start, loading the checkpoint into vLLM, was {ggufBf16Conditions.vllm.coldStartSeconds} seconds.
+          </p>
+          <div className="mt-8 max-w-3xl border-t border-rule pt-6">
+            <h3 className="wide text-xl font-bold tracking-tight">What the engine changed</h3>
+            <p className="mt-3 text-sm leading-6 text-ink-soft">
+              Changing the engine, the GPU and the kernels together moved {ggufBf16Decisions.flips} of {ggufBf16Decisions.examples.toLocaleString("en-US")}{" "}
+              decisions — {pct(ggufBf16Decisions.agreement)} agreement, and {pct(ggufBf16Decisions.exactOutputAgreement)} on exact output. Of those flips,{" "}
+              {ggufBf16Decisions.flipsTokenizerDivergent} fall on the six prompts already known to tokenize differently between the two engines, leaving{" "}
+              {ggufBf16Decisions.flipsEngineNumerics} attributable to engine numerics. For scale, the {ggufRecommended} quantization this page recommends
+              changed {q6Flips}. Moving between inference engines cost about as much per-example disagreement as the quantization OpenGrad spent a phase
+              gating, which is why the comparison is reported here rather than folded into the ladder. The vLLM rerun reproduced the frozen reference within{" "}
+              {ggufBf16Rerun.maxAbsDelta} call F1 at a parse-valid rate of {pct(ggufBf16Rerun.parseValidRate)}, so both engines were scored against a confirmed
+              reference. Method and the per-example flips are in the{" "}
+              <A href={ggufBf16Links.report}>H200 run report</A> and the <A href={ggufBf16Links.agreement}>agreement record</A>.
+            </p>
+          </div>
+        </Section>
+
         <Section id="conditions" title="Conditions">
           <table className="w-full max-w-4xl border-collapse text-sm">
             <tbody>
@@ -124,6 +191,15 @@ export default function Gguf() {
                 ["KV cache", ggufConditions.kvCache],
                 ["Repetitions", `${ggufConditions.repetitions} per test`],
                 ["Run date", ggufConditions.runDate],
+                ["Engine, vLLM run", ggufBf16Conditions.vllm.engine],
+                ["Hardware, vLLM run", `One ${ggufBf16Conditions.vllm.gpu}, ${ggufBf16Conditions.vllm.gpuMemoryGib} GiB, on Modal`],
+                [
+                  "Batching, vLLM run",
+                  `${ggufBf16Conditions.vllm.maxModelLen}-token context, up to ${ggufBf16Conditions.vllm.maxNumSeqs} sequences${
+                    ggufBf16Conditions.vllm.prefixCaching ? "" : ", prefix caching off"
+                  }, ${ggufBf16Conditions.vllm.dtype}`,
+                ],
+                ["Run date, vLLM run", ggufBf16Conditions.vllm.runDate],
               ].map((d) => (
                 <tr key={d[0]} className="border-b border-rule align-top">
                   <td className="py-2.5 pr-6 text-ink-soft">{d[0]}</td>
@@ -133,8 +209,9 @@ export default function Gguf() {
             </tbody>
           </table>
           <p className="mt-6 max-w-2xl text-sm leading-6 text-ink-soft">
-            Single-stream llama-bench runs from an empty context, on one datacenter GPU. Concurrent serving, laptop, phone and CPU throughput were not measured for
-            these files; on a phone, where memory bandwidth is the limit, the ranking can differ.
+            The throughput rows are single-stream llama-bench runs from an empty context. The vLLM run is a separate batching sweep on different hardware, so
+            the two are not comparable row for row. Laptop, phone and CPU throughput were not measured for these files; on a phone, where memory bandwidth is
+            the limit, the ranking can differ.
           </p>
         </Section>
       </main>

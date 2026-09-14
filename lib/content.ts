@@ -145,7 +145,14 @@ export const classes: HardwareClass[] = [
   },
 ];
 
-export const people = [
+export type Person = {
+  name: string;
+  role: string;
+  href: string;
+  email?: string;
+};
+
+export const people: Person[] = [
   {
     name: "Alpha Romer Coma",
     role: "Founder",
@@ -153,7 +160,8 @@ export const people = [
   },
   {
     name: "Arjhine Ty",
-    role: "Founding Member",
+    role: "Co-Founder",
     href: "https://www.linkedin.com/in/arjhinety/",
+    email: "arjhine@experimentalmachines.org",
   },
 ];
