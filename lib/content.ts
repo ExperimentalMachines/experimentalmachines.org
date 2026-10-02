@@ -141,6 +141,12 @@ export const classes: HardwareClass[] = [
         measured: "Hugging Face open weights on Android, native Kotlin and llama.cpp, no account",
         result: "on the Play Store",
       },
+      {
+        repo: "execuserve",
+        href: "/execuserve",
+        measured: "ExecuTorch models served from Android over the OpenAI and Anthropic APIs, in the background",
+        result: "16/16 OpenAI SDK checks on device",
+      },
     ],
   },
 ];
