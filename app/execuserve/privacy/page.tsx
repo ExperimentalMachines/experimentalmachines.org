@@ -13,9 +13,9 @@ export const metadata: Metadata = {
 
 const effective = "3 October 2026";
 
-function Part({ title, children }: { title: string; children: React.ReactNode }) {
+function Part({ title, id, children }: { title: string; id?: string; children: React.ReactNode }) {
   return (
-    <section className="mt-12">
+    <section id={id} className="mt-12 scroll-mt-24">
       <h2 className="wide text-2xl font-bold tracking-tight">{title}</h2>
       <div className="mt-4 space-y-4 leading-7 text-ink-soft">{children}</div>
     </section>
@@ -99,6 +99,36 @@ export default function Privacy() {
               </Item>
             </ul>
             <p>We do not sell, rent or share data, because we do not collect it.</p>
+          </Part>
+
+          <Part title="Deleting your data" id="delete">
+            <p>
+              Everything ExecuServe keeps is on your phone, so you delete it there; there is nothing for us to delete, because we hold nothing. In the
+              app:
+            </p>
+            <ul className="list-disc space-y-3 pl-5">
+              <Item lead="Run history:">
+                Activity → <strong>Clear</strong>. It is also removed on its own after 30 days or 10,000 requests.
+              </Item>
+              <Item lead="Models:">
+                Library → <strong>Delete</strong> on each model, which removes its files.
+              </Item>
+              <Item lead="API keys:">
+                Settings → API keys → <strong>Revoke</strong>.
+              </Item>
+              <Item lead="Chat conversations">
+                in the app are only in memory: <strong>New chat</strong>, or closing the app, removes them. The browser chat&apos;s are gone when you
+                reload or close the tab.
+              </Item>
+            </ul>
+            <p>
+              To delete everything at once (models, settings, keys and history), uninstall ExecuServe, or clear its storage in Android&apos;s Settings →
+              Apps → ExecuServe → Storage. A run history you exported, or a report you shared, is wherever you sent it.
+            </p>
+            <p>
+              Hugging Face keeps its own records of model downloads (your IP address and the app&apos;s name); we cannot delete those. Ask Hugging Face,
+              under its privacy policy.
+            </p>
           </Part>
 
           <Part title="Model replies">
