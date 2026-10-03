@@ -11,7 +11,7 @@ export const metadata: Metadata = {
   description: "What ExecuServe keeps on your phone, what leaves it and when. No account, no analytics, no server of ours.",
 };
 
-const effective = "2 October 2026";
+const effective = "3 October 2026";
 
 function Part({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -34,7 +34,6 @@ const permissions: [string, string][] = [
   ["Foreground service, wake lock", "Keeping the server answering while the screen is off"],
   ["Notifications", "The ongoing notification that shows the server is running"],
   ["Start at boot", "Restarting the server after a reboot, if you turned that on"],
-  ["Battery optimisation exemption", "Asked from Settings, so Android does not stop the server in the background"],
   ["Hide overlays", "Stops other apps covering the confirmation when another app asks to start the server"],
 ];
 
