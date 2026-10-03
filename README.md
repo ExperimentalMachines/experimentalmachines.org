@@ -25,6 +25,12 @@ Both are committed, because CI builds without an OpenGrad checkout.
 
 The `/execuserve` page and its privacy policy read `lib/execuserve.ts` and `app/execuserve/privacy/page.tsx`. The privacy page is the URL given to Google Play and mirrors `docs/privacy-policy.md` in the [ExecuServe repository](https://github.com/ExperimentalMachines/execuserve); change both together.
 
+The `/executorch` page sets what execupack has published on Hugging Face against what ExecuTorch 1.4.0 can export. `lib/execupack.ts` is the hand-written family × accelerator table, each claim traced to a file at ExecuTorch's v1.4.0 tag. `lib/execupack-published.ts` is generated from the Hugging Face API and committed; re-run it after new exports land:
+
+```bash
+node scripts/build-execupack-data.mjs
+```
+
 ## Deploy
 
 Pushes to `main` build the static export and deploy it to GitHub Pages (`.github/workflows/pages.yml`); `public/CNAME` holds the `experimentalmachines.org` domain.

@@ -7,6 +7,7 @@ const links = [
   { href: "/#phone", label: "Phone" },
   { href: "/asic", label: "ASIC" },
   { href: "/gguf", label: "GGUF" },
+  { href: "/executorch", label: "ExecuTorch" },
   { href: "/execuserve", label: "ExecuServe" },
   { href: "/#contact", label: "Contact" },
 ];
