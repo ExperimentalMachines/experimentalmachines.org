@@ -3,12 +3,15 @@ import Footer from "@/components/Footer";
 import Nav from "@/components/Nav";
 import {
   type BackendKey,
+  type ChipStatus,
   type Family,
   backends,
+  chipBackends,
   excluded,
   execupackLinks,
   executorchVersion,
   families,
+  runtimeNotes,
   sources,
 } from "@/lib/execupack";
 import { type PublishedBuild, type PublishedRepo, publishedAsOf, publishedRepos } from "@/lib/execupack-published";
@@ -104,6 +107,19 @@ function Badge({ state }: { state: Cell["state"] }) {
   return <span className={`inline-block rounded-sm px-1.5 py-0.5 text-xs font-medium ${style}`}>{label}</span>;
 }
 
+const chipLabels: Record<ChipStatus, [string, string]> = {
+  targeted: ["execupack targets it", "bg-blue text-white"],
+  exportable: ["can export", "border border-dashed border-ink text-ink"],
+  sdk: ["needs a newer SDK", "border border-rule text-ink-soft"],
+  scripts: ["delegate only", "border border-rule text-ink-soft"],
+  "no-llm": ["no LLM path", "text-ink-soft"],
+};
+
+function ChipBadge({ status }: { status: ChipStatus }) {
+  const [label, style] = chipLabels[status];
+  return <span className={`inline-block rounded-sm px-1.5 py-0.5 text-xs font-medium ${style}`}>{label}</span>;
+}
+
 function BuildCell({ builds }: { builds: PublishedBuild[] }) {
   return (
     <div className="space-y-1">
@@ -195,7 +211,7 @@ export default function ExecuTorchExports() {
           <p className="mt-4 max-w-2xl text-sm leading-6 text-ink-soft">
             XNNPACK and Vulkan files run on any phone; NPU files are compiled for one chip and load only on it, so a published QNN or MediaTek cell covers the
             chips listed in the next table, not every Snapdragon or Dimensity. Vulkan uses the same <code>export_llm</code> recipe as XNNPACK with the GPU
-            delegate; ExecuTorch accepts it for every model class it lists, but no Vulkan file has been checked on a device yet. Qualcomm&apos;s scripts
+            delegate, and ExecuTorch accepts it for every model class it lists. {runtimeNotes.vulkanDevice} {runtimeNotes.vulkanAar} Qualcomm&apos;s scripts
             export a fixed list of checkpoints, each with its own quantization recipe, so a fine-tune of a listed model is not covered.
           </p>
         </Section>
@@ -260,6 +276,52 @@ export default function ExecuTorchExports() {
             Every repo also carries the tokenizer at its root and a <code>config.json</code> per backend folder that the app reads. The file list is
             generated from the Hugging Face API; the newest change it saw was on {publishedAsOf}.
           </p>
+        </Section>
+
+        <Section
+          id="chips"
+          title="Chips ExecuTorch can export to"
+          lede={`XNNPACK and Vulkan files run on any Android phone. NPU files are compiled for one chip and load only on that chip, so every chip is its own export. These are the chips each NPU delegate in ExecuTorch ${executorchVersion} can compile for.`}
+        >
+          <div className="space-y-12">
+            {chipBackends.map((b) => (
+              <div key={b.key}>
+                <h3 className="wide text-xl font-bold tracking-tight">{b.name}</h3>
+                <p className="mt-2 max-w-3xl text-sm leading-6 text-ink-soft">
+                  {b.summary} Source: <A href={etFile(b.source)}><code>{b.source}</code></A>.
+                </p>
+                <div className="mt-4 overflow-x-auto" tabIndex={0} role="region" aria-label={`${b.name} chips, scrolls sideways on small screens`}>
+                  <table className="w-full min-w-[40rem] border-collapse text-sm">
+                    <thead className="text-left text-ink-soft">
+                      <tr className="border-b border-rule">
+                        <th className="py-2 pr-4 font-normal">Chip</th>
+                        <th className="py-2 pr-4 font-normal">Product</th>
+                        <th className="py-2 pr-4 font-normal">Architecture</th>
+                        <th className="py-2 font-normal">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {[...b.chips]
+                        .sort((x, y) => Number(x.kind !== "phone") - Number(y.kind !== "phone"))
+                        .map((c) => (
+                          <tr key={c.id} className={`border-b border-rule align-top ${c.kind === "phone" ? "" : "text-ink-soft"}`}>
+                            <td className="py-2.5 pr-4 font-medium">
+                              <code>{c.id}</code>
+                            </td>
+                            <td className="py-2.5 pr-4">{c.name}</td>
+                            <td className="py-2.5 pr-4">{c.arch ?? "—"}</td>
+                            <td className="py-2.5">
+                              <ChipBadge status={c.status} />
+                              {c.note && <span className="mt-1 block text-xs leading-5 text-ink-soft">{c.note}</span>}
+                            </td>
+                          </tr>
+                        ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            ))}
+          </div>
         </Section>
 
         <Section id="sources" title="Sources">

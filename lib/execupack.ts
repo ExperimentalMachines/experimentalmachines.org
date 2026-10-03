@@ -86,7 +86,7 @@ export const families: Family[] = [
       xnnpack: { kind: "upstream" },
       vulkan: { kind: "upstream" },
       qnn: { kind: "checkpoints", ids: ["meta-llama/Llama-3.2-1B-Instruct", "meta-llama/Llama-3.2-3B-Instruct"] },
-      mtk: { kind: "upstream", note: "model_type llama; the script reads rope_scaling['type'], Llama 3.2 configs say rope_type" },
+      mtk: { kind: "upstream", note: "model_type llama, but MediaTek's Llama model has no llama3 RoPE scaling, which every Llama 3.2 config uses" },
       exynos,
     },
   },
@@ -99,7 +99,7 @@ export const families: Family[] = [
       xnnpack: { kind: "upstream" },
       vulkan: { kind: "upstream" },
       qnn: { kind: "checkpoints", ids: ["HuggingFaceTB/SmolLM2-135M-Instruct"] },
-      mtk: { kind: "upstream", note: "model_type llama" },
+      mtk: { kind: "upstream", note: "model_type llama; the scripts would pick Llama's SentencePiece tokenizer for SmolLM2's BPE one" },
       exynos,
     },
   },
@@ -238,3 +238,71 @@ export const sources: { file: string; what: string }[] = [
   { file: "examples/mediatek/aot_utils/llm_utils/utils.py", what: "resolve_model_classes: the config model_types MediaTek's scripts build" },
   { file: "backends/samsung", what: "the Exynos delegate; examples/samsung has CNN examples only" },
 ];
+
+// Chips each NPU backend can compile for in ExecuTorch 1.4.0. NPU programs are compiled
+// for one chip and load only on it; XNNPACK and Vulkan files run on any Android phone.
+export type ChipStatus = "targeted" | "exportable" | "sdk" | "scripts" | "no-llm";
+
+export type Chip = { id: string; name: string; kind: "phone" | "other"; arch?: string; status: ChipStatus; note?: string };
+
+export const chipBackends: { key: "qnn" | "mtk" | "exynos"; name: string; source: string; summary: string; chips: Chip[] }[] = [
+  {
+    key: "qnn",
+    name: "Qualcomm QNN",
+    source: "backends/qualcomm/serialization/qc_schema.py",
+    summary:
+      "QcomChipset lists 20 chips. execupack compiles with QAIRT 2.37, the SDK the executorch 1.4.0 wheel downloads, which reaches HTP V79; the V81 chips need QAIRT 2.42 or newer.",
+    chips: [
+      { id: "SM8750", name: "Snapdragon 8 Elite", kind: "phone", arch: "V79", status: "targeted", note: "execupack's QNN chip (qnn.socs)" },
+      { id: "SM8650", name: "Snapdragon 8 Gen 3", kind: "phone", arch: "V75", status: "exportable" },
+      { id: "SM8550", name: "Snapdragon 8 Gen 2", kind: "phone", arch: "V73", status: "exportable" },
+      { id: "SM8475", name: "Snapdragon 8+ Gen 1", kind: "phone", arch: "V69", status: "exportable", note: "no block 4-bit (LPBQ) or 16-bit matmul input below V73" },
+      { id: "SM8450", name: "Snapdragon 8 Gen 1", kind: "phone", arch: "V69", status: "exportable", note: "no block 4-bit (LPBQ) or 16-bit matmul input below V73" },
+      { id: "SM8350", name: "Snapdragon 888", kind: "phone", arch: "V68", status: "exportable", note: "V68: the registry's default LLM recipes need 8-bit fallbacks" },
+      { id: "SM8850", name: "Snapdragon 8 Elite Gen 5", kind: "phone", arch: "V81", status: "sdk" },
+      { id: "SM8845", name: "Snapdragon 8 Gen 5", kind: "phone", arch: "V81", status: "sdk" },
+      { id: "QCM6490", name: "IoT", kind: "other", arch: "V68", status: "exportable" },
+      { id: "SA8295", name: "Automotive", kind: "other", arch: "V68", status: "exportable" },
+      { id: "SA8255", name: "Automotive", kind: "other", arch: "V73", status: "exportable" },
+      { id: "QCS9100", name: "Automotive / industrial", kind: "other", arch: "V73", status: "exportable" },
+      { id: "SSG2115P", name: "XR / glasses", kind: "other", arch: "V73", status: "exportable" },
+      { id: "SSG2125P", name: "XR / glasses", kind: "other", arch: "V73", status: "exportable" },
+      { id: "SXR1230P", name: "XR", kind: "other", arch: "V73", status: "exportable" },
+      { id: "SXR2230P", name: "XR (Meta Quest 3)", kind: "other", arch: "V69", status: "exportable" },
+      { id: "SXR2330P", name: "XR", kind: "other", arch: "V79", status: "exportable" },
+      { id: "SA8797", name: "Automotive", kind: "other", arch: "V81", status: "sdk" },
+      { id: "SAR2230P", name: "XR", kind: "other", arch: "V81", status: "sdk" },
+      { id: "SW6100", name: "Wearable", kind: "other", arch: "V81", status: "sdk" },
+    ],
+  },
+  {
+    key: "mtk",
+    name: "MediaTek NeuroPilot",
+    source: "backends/mediatek/preprocess.py",
+    summary:
+      "The delegate accepts three platforms, but the LLM export scripts in examples/mediatek offer only DX3 and DX4 (--platform), so Dimensity 9500 has a delegate and no LLM path without patching them.",
+    chips: [
+      { id: "MT6991", name: "Dimensity 9400", kind: "phone", arch: "DX4", status: "targeted", note: "execupack's MediaTek chip (mtk.socs)" },
+      { id: "MT6989", name: "Dimensity 9300", kind: "phone", arch: "DX3", status: "exportable" },
+      { id: "MT6993", name: "Dimensity 9500", kind: "phone", status: "scripts", note: "in SUPPORTED_PLATFORM_CONFIGS, not in the LLM scripts' --platform choices" },
+    ],
+  },
+  {
+    key: "exynos",
+    name: "Samsung Exynos",
+    source: "backends/samsung/README.md",
+    summary: "The EnnBackend delegate supports two chipsets, and ExecuTorch 1.4.0 has no LLM example for either.",
+    chips: [
+      { id: "E9955", name: "Exynos 2500", kind: "phone", status: "no-llm" },
+      { id: "E9965", name: "Exynos 2600", kind: "phone", status: "no-llm" },
+    ],
+  },
+];
+
+// Facts about running the published files that the tables above cannot show.
+export const runtimeNotes = {
+  vulkanDevice:
+    "One Vulkan file has been run on a phone: Qwen3-0.6B at 2k on a Dimensity 9400 (Mali GPU), with ExecuTorch 1.4.0's own runner built with the Vulkan delegate. It answered correctly at 18 tokens per second, against 52 for the XNNPACK file on the same phone.",
+  vulkanAar:
+    "The executorch-android 1.4.0 library that the openweights app ships registers XNNPACK only, so the app cannot load Vulkan files until it moves to executorch-android-vulkan 1.4.0, which registers both.",
+};
