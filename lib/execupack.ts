@@ -27,11 +27,13 @@ export const backends: { key: BackendKey; name: string; hardware: string; path: 
 // upstream:  ExecuTorch 1.4.0 has an export path for this family on this backend.
 // checkpoints: only the listed checkpoints (Qualcomm's registry is per checkpoint, not per architecture).
 // none:      no path in 1.4.0.
-// patched:   no path upstream; execupack carries its own patch (third_party/executorch/patches).
+// patched:   exportable only with execupack's own patch (third_party/executorch/patches).
+// refused:   ExecuTorch has a path, but measured output degrades, so execupack does not publish it.
 export type Support =
   | { kind: "upstream"; note?: string }
   | { kind: "checkpoints"; ids: string[]; note?: string }
   | { kind: "patched"; note: string }
+  | { kind: "refused"; note: string }
   | { kind: "none"; note: string };
 
 export type Family = {
@@ -60,7 +62,7 @@ export const families: Family[] = [
       xnnpack: { kind: "upstream" },
       vulkan: { kind: "upstream" },
       qnn: { kind: "checkpoints", ids: ["Qwen/Qwen3-0.6B", "Qwen/Qwen3-1.7B"] },
-      mtk: { kind: "upstream", note: "model_type qwen3, any size" },
+      mtk: { kind: "patched", note: "MediaTek's stock scripts build RoPE at base 10000; execupack's mediatek-rope-theta.patch makes the fp32 graph match Hugging Face exactly" },
       exynos,
     },
   },
@@ -73,7 +75,7 @@ export const families: Family[] = [
       xnnpack: { kind: "upstream" },
       vulkan: { kind: "upstream" },
       qnn: { kind: "checkpoints", ids: ["Qwen/Qwen2.5-0.5B", "Qwen/Qwen2.5-1.5B"], note: "base checkpoints only" },
-      mtk: { kind: "upstream", note: "model_type qwen2, any size" },
+      mtk: { kind: "refused", note: "the runner's -100 attention mask leaks through Qwen2.5's scores: KL 0.013 and 98% top-1 against Hugging Face before any quantization" },
       exynos,
     },
   },
@@ -86,7 +88,7 @@ export const families: Family[] = [
       xnnpack: { kind: "upstream" },
       vulkan: { kind: "upstream" },
       qnn: { kind: "checkpoints", ids: ["meta-llama/Llama-3.2-1B-Instruct", "meta-llama/Llama-3.2-3B-Instruct"] },
-      mtk: { kind: "upstream", note: "model_type llama, but MediaTek's Llama model has no llama3 RoPE scaling, which every Llama 3.2 config uses" },
+      mtk: { kind: "patched", note: "MediaTek's Llama model lacks rope_theta and Llama 3 RoPE scaling; execupack's mediatek-rope-theta.patch adds both" },
       exynos,
     },
   },
@@ -99,7 +101,7 @@ export const families: Family[] = [
       xnnpack: { kind: "upstream" },
       vulkan: { kind: "upstream" },
       qnn: { kind: "checkpoints", ids: ["HuggingFaceTB/SmolLM2-135M-Instruct"] },
-      mtk: { kind: "upstream", note: "model_type llama; the scripts would pick Llama's SentencePiece tokenizer for SmolLM2's BPE one" },
+      mtk: { kind: "patched", note: "rope_theta from execupack's patch, and the fast tokenizer instead of Llama's SentencePiece default" },
       exynos,
     },
   },
@@ -303,6 +305,8 @@ export const chipBackends: { key: "qnn" | "mtk" | "exynos"; name: string; source
 export const runtimeNotes = {
   vulkanDevice:
     "One Vulkan file has been run on a phone: Qwen3-0.6B at 2k on a Dimensity 9400 (Mali GPU), with ExecuTorch 1.4.0's own runner built with the Vulkan delegate. It answered correctly at 18 tokens per second, against 52 for the XNNPACK file on the same phone.",
+  gate:
+    "XNNPACK files marked 8da4w GPTQ or fp32 linears passed execupack's decision gate against the fp32 model before publishing. Qwen2.5-1.5B-Instruct's are the older round-to-nearest build, which fails that gate, and no int4 build of it passes; its fp32 file would be 6.2 GB.",
   vulkanAar:
     "The executorch-android 1.4.0 library that the openweights app ships registers XNNPACK only, so the app cannot load Vulkan files until it moves to executorch-android-vulkan 1.4.0, which registers both.",
 };

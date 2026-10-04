@@ -42,7 +42,7 @@ const BACKENDS = new Set(["xnnpack", "vulkan", "qnn", "mtk"]);
 const windowTokens = (token) => (token.endsWith("k") ? Number(token.slice(0, -1)) * 1024 : Number(token));
 
 // execupack file names (pipeline/naming.py):
-//   xnnpack/<name>-8da4w[-gptq]-<w>.pte
+//   xnnpack/<name>-8da4w[-gptq]-<w>.pte, or <name>-fp32-<w>.pte (linears unquantized)
 //   vulkan/<name>-vulkan-8da4w-<w>.pte
 //   qnn/<soc>/<name>-...-<w>.pte
 //   mtk/<soc>/<name>-neuropilot-<a16w4>-<w>-chunk<i>of<n>.pte
@@ -57,6 +57,7 @@ function parse(path) {
   let recipe;
   if (backend === "mtk") recipe = file.match(/-neuropilot-(a\d+w\d+)-/i)?.[1].toUpperCase() ?? "NeuroPilot";
   else if (backend === "qnn") recipe = "QNN HTP";
+  else if (/-fp32-/.test(file)) recipe = "fp32 linears";
   else recipe = /-gptq-/.test(file) ? "8da4w GPTQ" : "8da4w";
   return { backend, chip, recipe, window: windowTokens(w[1]) };
 }

@@ -50,7 +50,7 @@ const buildsOf = (repo: PublishedRepo, backend: BackendKey) => repo.builds.filte
 // Can ExecuTorch 1.4.0 (or execupack's patch) build this checkpoint for this backend?
 function possible(family: Family, backend: BackendKey, source: string | null) {
   const s = family.support[backend];
-  if (family.blocked) return false;
+  if (family.blocked || s.kind === "refused") return false;
   if (s.kind === "checkpoints") return source !== null && s.ids.includes(source);
   return s.kind === "upstream" || s.kind === "patched";
 }
@@ -58,6 +58,7 @@ function possible(family: Family, backend: BackendKey, source: string | null) {
 type Cell =
   | { state: "published"; repos: PublishedRepo[]; note?: string }
   | { state: "todo"; note?: string }
+  | { state: "refused"; note: string }
   | { state: "blocked"; note: string }
   | { state: "none"; note: string };
 
@@ -66,6 +67,7 @@ function familyCell(family: Family, backend: BackendKey): Cell {
   const repos = publishedRepos.filter((r) => r.family === family.key && buildsOf(r, backend).length > 0);
   if (repos.length) return { state: "published", repos, note: s.kind === "patched" ? s.note : undefined };
   if (s.kind === "none") return { state: "none", note: s.note };
+  if (s.kind === "refused") return { state: "refused", note: s.note };
   if (family.blocked) return { state: "blocked", note: family.blocked };
   if (s.kind === "checkpoints") return { state: "todo", note: `${s.ids.map((id) => id.split("/")[1]).join(", ")}${s.note ? `; ${s.note}` : ""}` };
   return { state: "todo", note: s.note };
@@ -100,10 +102,11 @@ function Badge({ state }: { state: Cell["state"] }) {
   const style = {
     published: "bg-blue text-white",
     todo: "border border-dashed border-ink text-ink",
+    refused: "border border-ink text-ink",
     blocked: "border border-rule text-ink-soft",
     none: "text-ink-soft",
   }[state];
-  const label = { published: "published", todo: "not yet", blocked: "blocked", none: "not in " + executorchVersion }[state];
+  const label = { published: "published", todo: "not yet", refused: "refused", blocked: "blocked", none: "not in " + executorchVersion }[state];
   return <span className={`inline-block rounded-sm px-1.5 py-0.5 text-xs font-medium ${style}`}>{label}</span>;
 }
 
@@ -272,7 +275,7 @@ export default function ExecuTorchExports() {
             </table>
           </div>
           <p className="mt-4 max-w-2xl text-sm leading-6 text-ink-soft">
-            Windows are context lengths in tokens (2k = 2,048). A dash means ExecuTorch {executorchVersion} has no path for that model on that accelerator.
+            Windows are context lengths in tokens (2k = 2,048). {runtimeNotes.gate} A dash means ExecuTorch {executorchVersion} has no path for that model on that accelerator.
             Every repo also carries the tokenizer at its root and a <code>config.json</code> per backend folder that the app reads. The file list is
             generated from the Hugging Face API; the newest change it saw was on {publishedAsOf}.
           </p>
