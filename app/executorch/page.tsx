@@ -19,7 +19,7 @@ import { type PublishedBuild, type PublishedRepo, publishedAsOf, publishedRepos 
 export const metadata: Metadata = {
   title: "ExecuTorch exports",
   description:
-    "Which open-weight LLMs execupack has exported to ExecuTorch and published on Hugging Face, per accelerator, against everything ExecuTorch 1.4.0 can export for Android.",
+    "Which open-weight LLMs execupack has exported to ExecuTorch and published on Hugging Face, per accelerator, against everything ExecuTorch 1.5.1 can export for Android.",
 };
 
 function Section({ id, title, lede, children }: { id: string; title: string; lede?: string; children: React.ReactNode }) {
@@ -47,7 +47,7 @@ const npuBackends = new Set<BackendKey>(["qnn", "mtk"]);
 
 const buildsOf = (repo: PublishedRepo, backend: BackendKey) => repo.builds.filter((b) => b.backend === backend);
 
-// Can ExecuTorch 1.4.0 (or execupack's patch) build this checkpoint for this backend?
+// Can ExecuTorch 1.5.1 (or execupack's patch) build this checkpoint for this backend?
 function possible(family: Family, backend: BackendKey, source: string | null) {
   const s = family.support[backend];
   if (family.blocked || s.kind === "refused") return false;
@@ -111,6 +111,7 @@ function Badge({ state }: { state: Cell["state"] }) {
 }
 
 const chipLabels: Record<ChipStatus, [string, string]> = {
+  ran: ["runs on it", "bg-ink text-white"],
   targeted: ["execupack targets it", "bg-blue text-white"],
   exportable: ["can export", "border border-dashed border-ink text-ink"],
   sdk: ["needs a newer SDK", "border border-rule text-ink-soft"],
@@ -148,9 +149,13 @@ export default function ExecuTorchExports() {
             </h1>
             <p className="mt-5 max-w-2xl text-lg leading-7 text-ink-soft">
               <A href={execupackLinks.repo}>execupack</A> exports small dense open-weight LLMs, 4B parameters or fewer, from Hugging Face to ExecuTorch{" "}
-              <code>.pte</code> files for the <A href={execupackLinks.app}>openweights</A> Android app, and publishes them under{" "}
-              <A href={execupackLinks.hub}>experimentalmachines</A>. This page sets every published file against what ExecuTorch {executorchVersion}, the
-              version the app&apos;s runtime ships, can export at all, family by family and accelerator by accelerator.
+              <code>.pte</code> files for the <A href={execupackLinks.app}>openweights</A> and{" "}
+              <a href="/execuserve" className="text-blue hover:text-blue-deep">
+                ExecuServe
+              </a>{" "}
+              Android apps, and publishes them under <A href={execupackLinks.hub}>experimentalmachines</A>. This page sets every published file against
+              what ExecuTorch {executorchVersion}, the version both apps&apos; runtimes ship, can export at all, family by family and accelerator by
+              accelerator.
             </p>
             <dl className="mt-10 grid max-w-4xl grid-cols-2 gap-6 sm:grid-cols-4">
               {[
@@ -222,7 +227,7 @@ export default function ExecuTorchExports() {
         <Section
           id="models"
           title="By model"
-          lede={`Every published repo, with the context windows present for each accelerator, followed by the checkpoints ExecuTorch names that have no repo yet. ${missingOnPublished} accelerator builds are possible for published models and missing.`}
+          lede={`Every published repo, with the context windows present for each accelerator, followed by the checkpoints ExecuTorch names that have no repo yet. ${missingOnPublished} accelerator ${missingOnPublished === 1 ? "build is" : "builds are"} possible for published models and missing.`}
         >
           <div className="overflow-x-auto" tabIndex={0} role="region" aria-label="Per-model table, scrolls sideways on small screens">
             <table className="w-full min-w-[56rem] border-collapse text-sm">
@@ -276,7 +281,7 @@ export default function ExecuTorchExports() {
           </div>
           <p className="mt-4 max-w-2xl text-sm leading-6 text-ink-soft">
             Windows are context lengths in tokens (2k = 2,048). {runtimeNotes.gate} A dash means ExecuTorch {executorchVersion} has no path for that model on that accelerator.
-            Every repo also carries the tokenizer at its root and a <code>config.json</code> per backend folder that the app reads. The file list is
+            Every repo also carries the tokenizer at its root and a <code>config.json</code> per backend folder that the apps read. The file list is
             generated from the Hugging Face API; the newest change it saw was on {publishedAsOf}.
           </p>
         </Section>
@@ -330,7 +335,7 @@ export default function ExecuTorchExports() {
         <Section id="sources" title="Sources">
           <p className="max-w-2xl text-sm leading-6 text-ink-soft">
             What ExecuTorch can export is read from its source at the <A href={execupackLinks.executorch}>v{executorchVersion} tag</A>, which defines the
-            registries below. execupack pins the same version because a newer exporter can emit methods the app&apos;s runtime lacks. Decisions and
+            registries below. execupack pins the same version because a newer exporter can emit methods the apps&apos; runtime lacks. Decisions and
             measurements behind each backend are in execupack&apos;s <A href={execupackLinks.plan}>plan</A>.
           </p>
           <table className="mt-6 w-full max-w-4xl border-collapse text-sm">

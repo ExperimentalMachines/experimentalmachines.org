@@ -20,7 +20,7 @@ export type PublishedRepo = {
   builds: PublishedBuild[];
 };
 
-export const publishedAsOf = "2026-10-04";
+export const publishedAsOf = "2026-10-07";
 
 export const publishedRepos: PublishedRepo[] = [
   {
@@ -61,8 +61,8 @@ export const publishedRepos: PublishedRepo[] = [
     "name": "LFM2.5-1.2B-Instruct-heretic",
     "family": "lfm2",
     "source": "experimentalmachines/LFM2.5-1.2B-Instruct-heretic",
-    "sha": "2c60db6066e0bdcd161885935aaf9c4f19e291e4",
-    "lastModified": "2026-10-03",
+    "sha": "e44b7567936ed69a3ce1052772876313df9b750e",
+    "lastModified": "2026-10-04",
     "builds": [
       {
         "backend": "mtk",
@@ -72,7 +72,8 @@ export const publishedRepos: PublishedRepo[] = [
           512,
           2048,
           4096,
-          8192
+          8192,
+          16384
         ]
       },
       {
@@ -94,22 +95,15 @@ export const publishedRepos: PublishedRepo[] = [
     "name": "LFM2.5-2.6B",
     "family": "lfm2",
     "source": "LiquidAI/LFM2.5-2.6B",
-    "sha": "c19ce17cd4812c3b6912ce03ab2a19701541eb2d",
+    "sha": "5e8cb9228aeee7ac35daf044b78e05a93ef7b65b",
     "lastModified": "2026-10-04",
     "builds": [
       {
         "backend": "mtk",
         "chip": "MT6991",
-        "recipe": "A16W4",
-        "windows": [
-          512
-        ]
-      },
-      {
-        "backend": "mtk",
-        "chip": "MT6991",
         "recipe": "A16W8",
         "windows": [
+          512,
           2048,
           4096,
           8192
@@ -134,8 +128,8 @@ export const publishedRepos: PublishedRepo[] = [
     "name": "LFM2.5-2.6B-heretic",
     "family": "lfm2",
     "source": "experimentalmachines/LFM2.5-2.6B-heretic",
-    "sha": "7635b652d48c4594f440c9cea26cddb3d701920d",
-    "lastModified": "2026-10-03",
+    "sha": "61a2a59affbb7f06bfdc9bd9644d0cc3e3b2d778",
+    "lastModified": "2026-10-04",
     "builds": [
       {
         "backend": "mtk",
@@ -145,7 +139,8 @@ export const publishedRepos: PublishedRepo[] = [
           512,
           2048,
           4096,
-          8192
+          8192,
+          16384
         ]
       },
       {
@@ -167,8 +162,8 @@ export const publishedRepos: PublishedRepo[] = [
     "name": "Llama-3.2-1B-Instruct",
     "family": "llama3_2",
     "source": "meta-llama/Llama-3.2-1B-Instruct",
-    "sha": "0b5d9cf6ae23d83d754e34c219bd97dcafc834cf",
-    "lastModified": "2026-10-04",
+    "sha": "5d7f93d5ebedb13be93a840f31a1c629327484bf",
+    "lastModified": "2026-10-07",
     "builds": [
       {
         "backend": "mtk",
@@ -179,6 +174,15 @@ export const publishedRepos: PublishedRepo[] = [
           4096,
           8192,
           16384
+        ]
+      },
+      {
+        "backend": "qnn",
+        "chip": "SM8750",
+        "recipe": "QNN HTP",
+        "windows": [
+          2048,
+          4096
         ]
       },
       {
@@ -212,13 +216,23 @@ export const publishedRepos: PublishedRepo[] = [
     "name": "Llama-3.2-3B-Instruct",
     "family": "llama3_2",
     "source": "meta-llama/Llama-3.2-3B-Instruct",
-    "sha": "139939124e698cb8d9259c8347eaf6e0f2c0a7a0",
-    "lastModified": "2026-10-04",
+    "sha": "95873ccbc231d67c42ea82e51efe253c6919b7e0",
+    "lastModified": "2026-10-07",
     "builds": [
       {
         "backend": "mtk",
         "chip": "MT6991",
         "recipe": "A16W8",
+        "windows": [
+          2048,
+          4096,
+          8192
+        ]
+      },
+      {
+        "backend": "qnn",
+        "chip": "SM8750",
+        "recipe": "QNN HTP",
         "windows": [
           2048,
           4096,
@@ -391,8 +405,8 @@ export const publishedRepos: PublishedRepo[] = [
     "name": "Qwen3-0.6B",
     "family": "qwen3",
     "source": "Qwen/Qwen3-0.6B",
-    "sha": "c951161055a85f1edc32a31bb3ee44a6a2d8d440",
-    "lastModified": "2026-10-04",
+    "sha": "65cc26711d8f5dbe89ec7f064d5715da7aea7bfd",
+    "lastModified": "2026-10-07",
     "builds": [
       {
         "backend": "mtk",
@@ -401,6 +415,15 @@ export const publishedRepos: PublishedRepo[] = [
         "windows": [
           4096,
           8192
+        ]
+      },
+      {
+        "backend": "qnn",
+        "chip": "SM8750",
+        "recipe": "QNN HTP",
+        "windows": [
+          2048,
+          4096
         ]
       },
       {
@@ -564,8 +587,8 @@ export const publishedRepos: PublishedRepo[] = [
     "name": "SmolLM2-135M-Instruct",
     "family": "smollm2",
     "source": "HuggingFaceTB/SmolLM2-135M-Instruct",
-    "sha": "720399c83ad6ebabcd8e966165c41f6fe63e2c3d",
-    "lastModified": "2026-10-03",
+    "sha": "c0d4461c7fffccf692266b1eae07b056091cb140",
+    "lastModified": "2026-10-07",
     "builds": [
       {
         "backend": "mtk",
@@ -576,6 +599,16 @@ export const publishedRepos: PublishedRepo[] = [
           4096,
           8192,
           16384
+        ]
+      },
+      {
+        "backend": "qnn",
+        "chip": "SM8750",
+        "recipe": "QNN HTP",
+        "windows": [
+          2048,
+          4096,
+          8192
         ]
       },
       {
@@ -609,7 +642,7 @@ export const publishedRepos: PublishedRepo[] = [
     "name": "SmolLM2-360M-Instruct",
     "family": "smollm2",
     "source": "HuggingFaceTB/SmolLM2-360M-Instruct",
-    "sha": "90950924fa3ac339d0b18a6505a8633757943865",
+    "sha": "06e462dc6a7e930d4637738fba54512703c4f0ff",
     "lastModified": "2026-10-04",
     "builds": [
       {
