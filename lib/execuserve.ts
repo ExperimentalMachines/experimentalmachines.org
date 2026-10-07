@@ -35,6 +35,10 @@ export const execuserve = {
       body: "A small chat ships inside the server, so a laptop or tablet on your network can talk to the phone's models with nothing installed.",
     },
     {
+      title: "CPU, GPU and NPU",
+      body: "One app runs XNNPACK and Vulkan exports on any phone, and Qualcomm and MediaTek NPU exports on the chips they were compiled for. The catalog offers each phone only the files its own chip can load, and every model says which processor it runs on.",
+    },
+    {
       title: "A multiplatform core",
       body: "Everything but the runtime binding and the app shell is Kotlin Multiplatform and compiles for iOS on every build.",
     },
@@ -47,6 +51,9 @@ export const execuserve = {
     { check: "Warm second turn of a 2,000-token conversation", result: "0.47 s instead of 8.4 s" },
     { check: "Qwen3 tool loop, second request", result: "174 of 205 prompt tokens reused" },
     { check: "XNNPACK export against llama.cpp, Snapdragon 8 Elite", result: "1.2 to 1.6× faster decode" },
+    { check: "Qwen3-1.7B, 700-token prompt, Snapdragon 8 Elite Gen 5: first token on the NPU", result: "0.41 s, against 2.0 s on the CPU and 1.0 s on the GPU" },
+    { check: "Qwen3-1.7B decode on the same phone, CPU / GPU / NPU", result: "54 / 42 / 25 tokens per second" },
+    { check: "MediaTek NPU, LFM2.5-1.2B, Dimensity", result: "NPU prefill, CPU decode at 39 to 43 tokens per second" },
   ],
   quickstart: {
     shell: `tools/execuserve --model ~/models/Qwen3-1.7B-8da4w-gptq-2k.pte
