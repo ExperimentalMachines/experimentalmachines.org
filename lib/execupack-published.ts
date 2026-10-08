@@ -20,7 +20,7 @@ export type PublishedRepo = {
   builds: PublishedBuild[];
 };
 
-export const publishedAsOf = "2026-10-07";
+export const publishedAsOf = "2026-10-08";
 
 export const publishedRepos: PublishedRepo[] = [
   {
@@ -405,7 +405,7 @@ export const publishedRepos: PublishedRepo[] = [
     "name": "Qwen3-0.6B",
     "family": "qwen3",
     "source": "Qwen/Qwen3-0.6B",
-    "sha": "65cc26711d8f5dbe89ec7f064d5715da7aea7bfd",
+    "sha": "07f9ba4bd321668eb901dc45b1bf55b452e242be",
     "lastModified": "2026-10-07",
     "builds": [
       {
@@ -423,7 +423,8 @@ export const publishedRepos: PublishedRepo[] = [
         "recipe": "QNN HTP",
         "windows": [
           2048,
-          4096
+          4096,
+          8192
         ]
       },
       {
@@ -457,13 +458,23 @@ export const publishedRepos: PublishedRepo[] = [
     "name": "Qwen3-1.7B",
     "family": "qwen3",
     "source": "Qwen/Qwen3-1.7B",
-    "sha": "09a7ee948647508b82c29f1ce73dadcf2a73cbec",
-    "lastModified": "2026-10-04",
+    "sha": "3c3b6cead7549147f390787ec05c5d509d397647",
+    "lastModified": "2026-10-08",
     "builds": [
       {
         "backend": "mtk",
         "chip": "MT6991",
         "recipe": "A16W8",
+        "windows": [
+          2048,
+          4096,
+          8192
+        ]
+      },
+      {
+        "backend": "qnn",
+        "chip": "SM8750",
+        "recipe": "QNN HTP",
         "windows": [
           2048,
           4096,
