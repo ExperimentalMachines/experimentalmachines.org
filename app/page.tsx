@@ -10,6 +10,7 @@ import OpenWeights from "@/components/home/OpenWeights";
 import Team from "@/components/home/Team";
 import Upstream from "@/components/home/Upstream";
 import { site } from "@/lib/content";
+import { links } from "@/lib/home";
 
 // The homepage's typefaces. They are scoped to this page; the other pages keep
 // Archivo from the root layout.
@@ -32,7 +33,20 @@ export const metadata: Metadata = {
     type: "website",
     locale: "en_US",
   },
-  twitter: { card: "summary", title: site.name, description },
+  twitter: { card: "summary_large_image", title: site.name, description },
+};
+
+// Structured data for search engines: the organisation, its logo and where it
+// publishes.
+const jsonLd = {
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  name: site.name,
+  url: site.url,
+  logo: `${site.url}/brand/em-mark-1024.png`,
+  description,
+  email: site.email,
+  sameAs: [links.github, links.huggingface],
 };
 
 // The story, top to bottom: what we make, the two apps people use, the models
@@ -40,6 +54,10 @@ export const metadata: Metadata = {
 export default function Home() {
   return (
     <div className={`home ${inter.variable} ${interTight.variable} min-h-screen`}>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c") }}
+      />
       <HomeHeader />
       <main id="main" className="scroll-mt-28 lg:scroll-mt-16">
         <Hero />

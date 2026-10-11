@@ -1,0 +1,14 @@
+{
+  "name": "Experimental Machines",
+  "short_name": "Experimental Machines",
+  "description": "A software and machine-learning organisation building on ExecuTorch: apps, models and runtime fixes that bring open models to phones.",
+  "start_url": "/",
+  "display": "browser",
+  "background_color": "#ffffff",
+  "theme_color": "#121614",
+  "icons": [
+    { "src": "/brand/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/brand/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "/brand/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

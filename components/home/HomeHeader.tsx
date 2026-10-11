@@ -22,8 +22,10 @@ export default function HomeHeader() {
         Skip to content
       </a>
       <nav aria-label="Main" className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-6 px-4 sm:px-6">
-        <Link href="/" className="display shrink-0 whitespace-nowrap text-[1.05rem]">
-          Experimental <span className="font-semibold">Machines</span>
+        {/* The kit's one-colour light mark: its full-colour mark is not for blue. */}
+        <Link href="/" className="flex shrink-0 items-center">
+          {/* eslint-disable-next-line @next/next/no-img-element -- a static export serves committed files */}
+          <img src="/brand/em-mark-mono-dark.svg" alt="Experimental Machines" width={32} height={32} className="h-8 w-8" />
         </Link>
         <div className="hidden items-center gap-8 text-[0.95rem] text-white/85 lg:flex">
           {sections.map((s) => (

@@ -6,8 +6,12 @@ export default function HomeFooter() {
     <footer className="border-t border-rule">
       <div className="mx-auto flex max-w-7xl flex-col gap-8 px-4 py-12 sm:px-6 md:flex-row md:items-end md:justify-between">
         <div>
-          <p className="display text-xl tracking-tight">
-            Experimental <span className="font-semibold">Machines</span>
+          <p className="display flex items-center gap-3 text-xl tracking-tight">
+            {/* eslint-disable-next-line @next/next/no-img-element -- a static export serves committed files */}
+            <img src="/brand/em-mark.svg" alt="" width={28} height={28} className="h-7 w-7" />
+            <span>
+              Experimental <span className="font-semibold">Machines</span>
+            </span>
           </p>
           <p className="mt-2 max-w-sm text-sm leading-6 text-ink-soft">
             An independent software and machine-learning organisation. Our sister lab,{" "}

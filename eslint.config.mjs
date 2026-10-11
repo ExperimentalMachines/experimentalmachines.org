@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // The sister site, when cloned inside this one, is its own project.
+    "experimentalintelligence.org/**",
   ]),
 ]);
 
