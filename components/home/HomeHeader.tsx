@@ -22,13 +22,13 @@ export default function HomeHeader() {
       >
         Skip to content
       </a>
-      <nav aria-label="Main" className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-6 px-4 sm:px-6">
+      <nav aria-label="Main" className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6 xl:gap-6">
         {/* The kit's one-colour light mark: its full-colour mark is not for blue. */}
         <Link href="/" className="flex shrink-0 items-center">
           {/* eslint-disable-next-line @next/next/no-img-element -- a static export serves committed files */}
           <img src="/brand/em-mark-mono-dark.svg" alt="Experimental Machines" width={32} height={32} className="h-8 w-8" />
         </Link>
-        <div className="hidden items-center gap-6 whitespace-nowrap text-[0.95rem] text-white/85 lg:flex xl:gap-8">
+        <div className="hidden items-center gap-5 whitespace-nowrap text-[0.95rem] text-white/85 lg:flex xl:gap-8">
           {sections.map((s) => (
             <a key={s.href} href={s.href} className="hover:text-white">
               {s.label}
@@ -37,17 +37,25 @@ export default function HomeHeader() {
           <a href={links.github} target="_blank" rel="noreferrer" className="hover:text-white">
             GitHub
           </a>
-          {/* The sister site, set apart from this page's sections by a rule. */}
-          <a href={sibling.url} className="border-l border-white/25 pl-6 hover:text-white xl:pl-8">
-            {sibling.name}
+        </div>
+        <div className="flex shrink-0 items-center gap-2">
+          {/* The sister site, beside this page's own call to action. Its mark alone on narrow phones. */}
+          <a
+            href={sibling.url}
+            aria-label={sibling.name}
+            className="inline-flex shrink-0 items-center gap-2 whitespace-nowrap rounded-full border border-white/40 px-3 py-2 text-sm font-medium text-white hover:border-white sm:px-4"
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element -- a static export serves committed files */}
+            <img src="/brand/ei-mark-white.svg" alt="" width={35} height={14} className="h-3.5 w-auto" />
+            <span className="hidden sm:inline">{sibling.name}</span>
+          </a>
+          <a
+            href="#contact"
+            className="hidden shrink-0 whitespace-nowrap rounded-full bg-white px-4 py-2 text-sm font-medium text-blue-deep hover:bg-white/90 min-[380px]:inline-block"
+          >
+            Work with us
           </a>
         </div>
-        <a
-          href="#contact"
-          className="hidden shrink-0 whitespace-nowrap rounded-full bg-white px-4 py-2 text-sm font-medium text-blue-deep hover:bg-white/90 min-[380px]:inline-block"
-        >
-          Work with us
-        </a>
       </nav>
       <nav aria-label="Sections" className="relative border-t border-white/15 lg:hidden">
         {/* A fade at the edge says the row scrolls. */}
@@ -65,9 +73,6 @@ export default function HomeHeader() {
             className="inline-flex min-h-11 shrink-0 items-center hover:text-white"
           >
             GitHub
-          </a>
-          <a href={sibling.url} className="inline-flex min-h-11 shrink-0 items-center hover:text-white">
-            {sibling.name}
           </a>
         </div>
       </nav>
