@@ -1,5 +1,5 @@
 import { site } from "@/lib/content";
-import { team } from "@/lib/home";
+import { team, work } from "@/lib/home";
 
 export default function Team() {
   return (
@@ -28,22 +28,30 @@ export default function Team() {
           ))}
         </ul>
 
-        <div
-          id="contact"
-          className="mt-12 flex scroll-mt-28 sm:mt-20 flex-col gap-6 rounded-3xl bg-bench p-8 sm:p-10 md:flex-row md:items-center md:justify-between lg:scroll-mt-20"
-        >
-          <div>
-            <h3 className="display text-2xl sm:text-3xl">Work with us.</h3>
-            <p className="mt-2 max-w-xl text-base leading-7 text-ink-soft">
-              A problem you want traced, a phone you want supported, or a model you want to deploy.
+        <div id="contact" className="mt-12 scroll-mt-28 rounded-3xl bg-bench p-8 sm:mt-20 sm:p-10 lg:scroll-mt-20">
+          <h3 className="display text-3xl sm:text-4xl">Work with us.</h3>
+
+          <ul className="mt-8 grid gap-x-8 gap-y-8 md:grid-cols-3">
+            {work.map((w) => (
+              <li key={w.title} className="border-t border-ink pt-5">
+                <p className="text-xs font-medium uppercase tracking-[0.08em] text-ink-soft">{w.project}</p>
+                <p className="display mt-3 text-xl leading-tight">{w.title}</p>
+                <p className="mt-2 text-sm leading-6 text-ink-soft">{w.body}</p>
+              </li>
+            ))}
+          </ul>
+
+          <div className="mt-10 flex flex-col gap-5 border-t border-rule pt-8 md:flex-row md:items-center md:justify-between">
+            <p className="max-w-xl text-base leading-7">
+              Tell us the model, the phone or chip, and what you are seeing.
             </p>
+            <a
+              href={`mailto:${site.email}`}
+              className="self-start rounded-full bg-blue px-6 py-3 text-base font-medium text-white hover:bg-blue-deep md:self-auto"
+            >
+              Email us
+            </a>
           </div>
-          <a
-            href={`mailto:${site.email}`}
-            className="self-start rounded-full bg-blue px-6 py-3 text-base font-medium text-white hover:bg-blue-deep md:self-auto"
-          >
-            Email us
-          </a>
         </div>
       </div>
     </section>

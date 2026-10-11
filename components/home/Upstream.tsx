@@ -26,7 +26,7 @@ export default function Upstream() {
           </p>
         </div>
 
-        <div className="mt-12 grid gap-6 lg:grid-cols-[1.4fr_1fr]">
+        <div className="mt-12 grid gap-6 lg:grid-cols-2">
           <a
             href={merged.href}
             target="_blank"
@@ -42,12 +42,12 @@ export default function Upstream() {
             </span>
             <span className="display mt-6 block max-w-xl text-2xl leading-snug sm:text-3xl">{merged.plain}</span>
             <span className="mt-4 block font-mono text-sm leading-6 text-ink-soft">{merged.title}</span>
-            <span className={`mt-auto block self-start pt-8 text-base ${link}`}>Read the pull request</span>
+            <span className={`mt-auto block self-start pt-6 text-base ${link}`}>Read the pull request</span>
           </a>
 
-          <ul className="flex flex-col gap-6">
+          <ul className="flex flex-col divide-y divide-rule rounded-[1.75rem] bg-bench px-6 sm:px-8">
             {upstream.map((u) => (
-              <li key={u.href} className="flex flex-1 flex-col rounded-[1.75rem] bg-bench p-6 sm:p-8">
+              <li key={u.href} className="flex flex-col py-5">
                 <p>
                   <span
                     className={`rounded-full border px-2.5 py-0.5 text-xs ${

@@ -155,6 +155,25 @@ export const earlier: {
   },
 ];
 
+// Work with us: what we take on, each backed by a project on this page.
+export const work = [
+  {
+    title: "Put a model on phones",
+    body: "Name an open model, or the phone it has to run on. We build it for phone CPUs, GPUs and Qualcomm and MediaTek NPUs, and tell you which context windows fit.",
+    project: "ExecuPack",
+  },
+  {
+    title: "Run it inside your app",
+    body: "The model stays on the phone behind the OpenAI and Anthropic APIs, so your Android app calls it like a cloud model.",
+    project: "ExecuServe",
+  },
+  {
+    title: "Trace a problem to its cause",
+    body: "A crash, wrong output or a slow phone. We find the cause and take it upstream, as we did with LFM2's carried-over state and Android's temperature default.",
+    project: "ExecuTorch",
+  },
+];
+
 export type Member = {
   name: string;
   role: string;
