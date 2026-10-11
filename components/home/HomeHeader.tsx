@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { sibling } from "@/lib/content";
 import { links } from "@/lib/home";
 
 // The homepage's own header, in the hero's cobalt and kept that colour on
@@ -27,7 +28,7 @@ export default function HomeHeader() {
           {/* eslint-disable-next-line @next/next/no-img-element -- a static export serves committed files */}
           <img src="/brand/em-mark-mono-dark.svg" alt="Experimental Machines" width={32} height={32} className="h-8 w-8" />
         </Link>
-        <div className="hidden items-center gap-8 text-[0.95rem] text-white/85 lg:flex">
+        <div className="hidden items-center gap-6 whitespace-nowrap text-[0.95rem] text-white/85 lg:flex xl:gap-8">
           {sections.map((s) => (
             <a key={s.href} href={s.href} className="hover:text-white">
               {s.label}
@@ -35,6 +36,10 @@ export default function HomeHeader() {
           ))}
           <a href={links.github} target="_blank" rel="noreferrer" className="hover:text-white">
             GitHub
+          </a>
+          {/* The sister site, set apart from this page's sections by a rule. */}
+          <a href={sibling.url} className="border-l border-white/25 pl-6 hover:text-white xl:pl-8">
+            {sibling.name}
           </a>
         </div>
         <a
@@ -60,6 +65,9 @@ export default function HomeHeader() {
             className="inline-flex min-h-11 shrink-0 items-center hover:text-white"
           >
             GitHub
+          </a>
+          <a href={sibling.url} className="inline-flex min-h-11 shrink-0 items-center hover:text-white">
+            {sibling.name}
           </a>
         </div>
       </nav>
