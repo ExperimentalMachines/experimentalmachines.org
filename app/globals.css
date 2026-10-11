@@ -42,3 +42,37 @@ body {
 .wide {
   font-stretch: 115%;
 }
+
+/* Homepage only. app/page.tsx loads Inter and Inter Tight and sets their
+   variables on the .home wrapper, so the other pages keep Archivo. In the base
+   layer, so utilities on the page (tracking-*, text colours) override it. */
+@layer base {
+  .home {
+    /* Cobalt for the organisation, a cool tint for alternate sections, and a
+       blue-black for text, so the apps' own screenshots sit on neutral ground. */
+    --color-blue: #2b44e6;
+    --color-blue-deep: #1c2ea8;
+    --color-bench: #f2f4fa;
+    --color-ink: #111633;
+    --color-ink-soft: #545b73;
+    --color-rule: #e0e4ef;
+    background: #ffffff;
+    color: var(--color-ink);
+    font-family: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+    /* The site-wide tabular figures also widen Inter's hyphen; figures that
+       line up use the tabular-nums utility instead. */
+    font-feature-settings: normal;
+  }
+
+  .home .display {
+    font-family: var(--font-inter-tight), var(--font-inter), ui-sans-serif, sans-serif;
+    letter-spacing: -0.015em;
+  }
+}
+
+/* Focus rings on the homepage's cobalt hero are white to be seen. Unlayered,
+   like the site-wide :focus-visible rule it overrides. */
+.home .on-blue :focus-visible {
+  outline-color: #ffffff;
+  outline-offset: 3px;
+}

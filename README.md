@@ -1,6 +1,6 @@
 # experimentalmachines.org
 
-Site for Experimental Machines: GPU, NPU and ASIC benchmarks across server, laptop and mobile. Sibling site: experimentalintelligence.org.
+Site for Experimental Machines, an independent software and machine-learning organisation building on ExecuTorch: OpenWeights, ExecuServe, ExecuPack and ExecuBench, plus the earlier GPU, NPU and ASIC benchmarks. Sibling site: experimentalintelligence.org.
 
 Next.js (App Router, TypeScript) + Tailwind CSS v4. Static content, no API routes.
 
@@ -12,7 +12,7 @@ npm run dev
 
 ## Edit content
 
-Copy and the per-class result tables live in `lib/content.ts`. The hero figures read `lib/measurements.ts` and `lib/latency.ts`; the `/asic` page reads `lib/neuron.ts`. Every value is copied from a published benchmark report.
+The homepage's copy lives in `lib/home.ts` and its sections in `components/home/`; it has its own header and footer, so the other pages keep `components/Nav.tsx` and `components/Footer.tsx`. It runs from the two apps people use (OpenWeights, ExecuServe) to the models under them (ExecuPack), the fixes contributed to ExecuTorch, and what comes next (ExecuBench), each with one real visual. Project facts come from each repository's README, results and execupack's research log, upstream items from pytorch/executorch, and the ExecuPack build table from `lib/execupack-published.ts`; screenshots are in `public/home/`. The homepage loads Inter and Inter Tight itself; every other page keeps Archivo from the root layout. `lib/content.ts` holds the site name, contact and sibling link that every page shares. The `/asic` page reads `lib/neuron.ts`. Every value is copied from a published report.
 
 The `/gguf` page reads two generated modules, both from OpenGrad at the `study-001` tag. `lib/gguf.ts` (`scripts/build-gguf-data.mjs`) carries the BF16 GGUF and the nine llama.cpp quantizations on one A100. `lib/gguf-bf16.ts` (`scripts/build-gguf-bf16-data.mjs`) joins that BF16 GGUF against the same weights served by vLLM on an H200, for the engine-comparison section. Neither is edited by hand:
 
