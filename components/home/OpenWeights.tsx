@@ -79,6 +79,9 @@ export default function OpenWeights() {
               Get it on Google Play
             </a>
             <Go href={links.openweights} className={link}>
+              About OpenWeights
+            </Go>
+            <Go href={links.openweightsRepo} className={link}>
               <span className="sr-only">OpenWeights </span>Source
             </Go>
             <Go href={links.openweightsIos} className={link}>

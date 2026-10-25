@@ -11,7 +11,6 @@ export const execuserve = {
     readme: `${repo}#readme`,
     results: `${repo}/blob/main/docs/results/2026-09-29-poco-x8-pro-max.md`,
     executorch: "https://pytorch.org/executorch/",
-    openweights: "https://github.com/ExperimentalMachines/openweights",
   },
   points: [
     {

@@ -8,6 +8,7 @@ const links = [
   { href: "/asic", label: "ASIC" },
   { href: "/gguf", label: "GGUF" },
   { href: "/executorch", label: "ExecuTorch" },
+  { href: "/openweights", label: "OpenWeights" },
   { href: "/execuserve", label: "ExecuServe" },
   { href: "/#contact", label: "Contact" },
 ];
@@ -28,7 +29,7 @@ export default function Nav() {
             <Link
               key={l.href}
               href={l.href}
-              className="hidden text-ink-soft hover:text-ink sm:inline"
+              className="hidden text-ink-soft hover:text-ink lg:inline"
             >
               {l.label}
             </Link>

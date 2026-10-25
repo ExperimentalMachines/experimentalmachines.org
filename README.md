@@ -23,6 +23,8 @@ OPENGRAD=../OpenGrad node scripts/build-gguf-bf16-data.mjs
 
 Both are committed, because CI builds without an OpenGrad checkout.
 
+Everything about OpenWeights lives under `/openweights`. The parent page reads `lib/openweights.ts`, which lists its research pages newest first; the privacy policy Google Play links to and the earlier research pages are still on the app's own GitHub Pages site and are linked from there. `/openweights/prefill-decode` reads `lib/prefill-decode.ts`, the nine CPU, GPU and NPU matrices from the Snapdragon 8 Elite Gen 5 run; its findings table is derived from those cells rather than stored. A new OpenWeights page goes under `app/openweights/` and into that list.
+
 The `/execuserve` page and its privacy policy read `lib/execuserve.ts` and `app/execuserve/privacy/page.tsx`. The privacy page is the URL given to Google Play and mirrors `docs/privacy-policy.md` in the [ExecuServe repository](https://github.com/ExperimentalMachines/execuserve); change both together.
 
 The `/executorch` page sets what execupack has published on Hugging Face against what ExecuTorch 1.5.1 can export. `lib/execupack.ts` is the hand-written family × accelerator table, each claim traced to a file at ExecuTorch's v1.5.1 tag. `lib/execupack-published.ts` is generated from the Hugging Face API and committed; re-run it after new exports land:

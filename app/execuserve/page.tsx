@@ -113,7 +113,11 @@ export default function ExecuServe() {
           </div>
           <p className="mt-4 max-w-2xl text-sm leading-6 text-ink-soft">
             Method and raw results: <A href={execuserve.links.results}>the POCO X8 Pro Max report</A>. The decode advantage of the XNNPACK export over
-            llama.cpp was measured in <A href={execuserve.links.openweights}>OpenWeights</A>, on whose ExecuTorch engine ExecuServe is built.
+            llama.cpp was measured in{" "}
+            <a href="/openweights/" className="text-blue hover:text-blue-deep">
+              OpenWeights
+            </a>
+            , on whose ExecuTorch engine ExecuServe is built.
           </p>
         </Section>
 

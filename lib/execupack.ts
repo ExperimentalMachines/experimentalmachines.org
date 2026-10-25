@@ -9,7 +9,6 @@ export const execupackLinks = {
   repo: "https://github.com/ExperimentalMachines/execupack",
   plan: "https://github.com/ExperimentalMachines/execupack/blob/main/docs/PLAN.md",
   hub: "https://huggingface.co/experimentalmachines",
-  app: "https://github.com/ExperimentalMachines/openweights",
   executorch: "https://github.com/pytorch/executorch/tree/v1.5.1",
 };
 

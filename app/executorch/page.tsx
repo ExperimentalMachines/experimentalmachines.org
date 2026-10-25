@@ -149,7 +149,11 @@ export default function ExecuTorchExports() {
             </h1>
             <p className="mt-5 max-w-2xl text-lg leading-7 text-ink-soft">
               <A href={execupackLinks.repo}>execupack</A> exports small dense open-weight LLMs, 4B parameters or fewer, from Hugging Face to ExecuTorch{" "}
-              <code>.pte</code> files for the <A href={execupackLinks.app}>openweights</A> and{" "}
+              <code>.pte</code> files for the{" "}
+              <a href="/openweights" className="text-blue hover:text-blue-deep">
+                OpenWeights
+              </a>{" "}
+              and{" "}
               <a href="/execuserve" className="text-blue hover:text-blue-deep">
                 ExecuServe
               </a>{" "}
