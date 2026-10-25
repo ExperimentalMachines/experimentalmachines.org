@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
-import Link from "next/link";
-import Footer from "@/components/Footer";
-import Nav from "@/components/Nav";
+import Bars from "@/components/home/Bars";
+import Go from "@/components/home/Go";
+import { h2, lede, link, ProjectLabel } from "@/components/home/ui";
 import { openweights } from "@/lib/openweights";
+import { pdModels, pdTurns } from "@/lib/prefill-decode";
 
 export const metadata: Metadata = {
   title: "OpenWeights: open-weight models on your Android phone",
@@ -10,108 +11,164 @@ export const metadata: Metadata = {
     "Search Hugging Face from inside the app, find out whether a model will run on your phone before you download it, and chat with it on the device. No account, no cloud, no telemetry.",
   openGraph: {
     title: "OpenWeights",
-    description: "Run open-weight language models on your Android phone. No account, no cloud, no telemetry.",
+    description: "Find a model on Hugging Face and run it on your Android phone. No account, no cloud, no telemetry.",
     url: "/openweights/",
     images: ["/home/openweights-chat.png"],
   },
 };
 
-function Section({ id, title, plate, children }: { id: string; title: string; plate?: boolean; children: React.ReactNode }) {
+function Section({ id, title, tint, children }: { id: string; title: string; tint?: boolean; children: React.ReactNode }) {
   return (
-    <section id={id} className={`scroll-mt-14 border-t border-rule ${plate ? "bg-plate" : ""}`}>
-      <div className="mx-auto max-w-6xl px-6 py-14 sm:py-16">
-        <h2 className="wide text-3xl font-bold tracking-tight sm:text-4xl">{title}</h2>
-        <div className="mt-8">{children}</div>
+    <section id={id} className={`scroll-mt-28 lg:scroll-mt-16 ${tint ? "bg-bench" : ""}`}>
+      <div className="mx-auto max-w-7xl px-4 py-20 sm:px-6 sm:py-28">
+        <h2 className={h2}>{title}</h2>
+        <div className="mt-12">{children}</div>
       </div>
     </section>
   );
 }
 
-const A = ({ href, children }: { href: string; children: React.ReactNode }) => (
-  <a href={href} target="_blank" rel="noreferrer" className="text-blue hover:text-blue-deep">
-    {children}
-  </a>
-);
+function Phone({ src, alt, width, height }: { src: string; alt: string; width: number; height: number }) {
+  return (
+    // eslint-disable-next-line @next/next/no-img-element -- a static export serves committed files
+    <img
+      src={src}
+      alt={alt}
+      width={width}
+      height={height}
+      className="h-auto max-h-[320px] w-[46%] max-w-[230px] rounded-t-[1.5rem] border-x-[5px] border-t-[5px] border-white bg-white object-cover object-top sm:max-h-[420px]"
+    />
+  );
+}
+
+// The newest study, drawn for one model: the fastest pairing against the three
+// that keep both halves on one processor.
+const qwen = pdModels.find((m) => m.name === "Qwen3 1.7B" && m.quant === "Q4_0")!;
+const pairings = [
+  { label: "NPU + CPU", cell: qwen.cells[2][0] },
+  { label: "NPU only", cell: qwen.cells[2][2] },
+  { label: "CPU only", cell: qwen.cells[0][0] },
+  { label: "GPU only", cell: qwen.cells[1][1] },
+];
 
 export default function OpenWeights() {
   const { links } = openweights;
+  const [latest, ...earlier] = openweights.research;
   return (
-    <>
-      <Nav />
-      <main>
-        <section id="top" className="scroll-mt-14">
-          <div className="mx-auto grid max-w-6xl items-end gap-12 px-6 pb-14 pt-14 sm:pt-20 lg:grid-cols-[1fr_16rem]">
-            <div>
-              {/* eslint-disable-next-line @next/next/no-img-element -- a static export serves committed files */}
-              <img src="/home/openweights-icon.png" alt="" width={512} height={512} className="h-16 w-16 rounded-2xl" />
-              <p className="mt-6 text-lg font-medium">OpenWeights</p>
-              <h1 className="wide mt-2 max-w-4xl text-3xl font-bold leading-tight tracking-tight sm:text-5xl">
-                Run open-weight language models on your Android phone.
-              </h1>
-              <p className="mt-5 max-w-2xl text-lg leading-7 text-ink-soft">
-                Search Hugging Face from inside the app, find out whether a model will actually run on your device before you download it, and chat with it.
-                Every token is produced by your own hardware: no account, no cloud, no telemetry. GGUF files run in llama.cpp and compiled{" "}
-                <code className="text-ink">.pte</code> files in ExecuTorch, both in the same app.
-              </p>
-              <div className="mt-8 flex flex-wrap gap-3 text-sm">
-                <a href={links.play} target="_blank" rel="noreferrer" className="rounded-md bg-ink px-4 py-2.5 font-medium text-bench hover:bg-blue-deep">
-                  Get it on Google Play
-                </a>
-                <a href={links.repo} target="_blank" rel="noreferrer" className="rounded-md border border-rule bg-plate px-4 py-2.5 font-medium hover:border-blue">
-                  Source on GitHub
-                </a>
-                <a href={links.privacy} className="rounded-md px-4 py-2.5 text-ink-soft hover:text-ink">
-                  Privacy policy
-                </a>
-              </div>
-              <p className="mt-6 text-sm text-ink-soft">
-                {openweights.status} · <A href={links.ios}>iPhone, experimental</A>
-              </p>
-            </div>
-            {/* eslint-disable-next-line @next/next/no-img-element -- a static export serves committed files */}
-            <img
+    <main id="main" className="scroll-mt-28 lg:scroll-mt-16">
+      <section id="top" className="overflow-hidden">
+        <div className="mx-auto grid max-w-7xl gap-12 px-4 pt-14 sm:px-6 sm:pt-20 lg:grid-cols-[1fr_1fr] lg:items-end lg:gap-16">
+          <div className="pb-4 lg:pb-24">
+            <ProjectLabel name="OpenWeights" status="On Google Play" mark="/home/openweights-icon.png" />
+            <h1 className="display mt-8 text-balance text-5xl font-medium leading-[1.02] tracking-[-0.035em] sm:text-6xl">
+              Find a model. Run it here.
+            </h1>
+            <p className={`${lede} mt-6 max-w-xl`}>
+              OpenWeights searches Hugging Face for GGUF and ExecuTorch models, estimates whether one fits your phone before you download it, and runs it on
+              the device. Every token comes from your own hardware: no account, no cloud, no telemetry.
+            </p>
+            <p className="mt-10 flex flex-wrap items-center gap-x-5 gap-y-3 text-base">
+              <a
+                href={links.play}
+                target="_blank"
+                rel="noreferrer"
+                className="rounded-full bg-[#E0FF4F] px-6 py-3 font-medium text-[#052B42] hover:bg-[#d4f53a]"
+              >
+                Get it on Google Play
+              </a>
+              <Go href={links.repo} className={link}>
+                Source
+              </Go>
+              <Go href={links.ios} className={link}>
+                iPhone, experimental
+              </Go>
+            </p>
+          </div>
+          <div className="flex items-end justify-center gap-4 rounded-t-[1.75rem] bg-bench px-6 pt-10 sm:gap-6">
+            <Phone
               src="/home/openweights-chat.png"
               alt="OpenWeights on a phone with LFM2.5 1.2B loaded, ready for a first message"
               width={600}
               height={1222}
-              className="hidden h-auto w-full rounded-[1.75rem] border border-rule lg:block"
+            />
+            <Phone
+              src="/home/openweights-discover.png"
+              alt="OpenWeights' Discover screen: a Hugging Face search box, and Recommended showing the Experimental Machines ExecuTorch builds of LFM2.5 1.2B and 2.6B"
+              width={600}
+              height={861}
             />
           </div>
-        </section>
+        </div>
+      </section>
 
-        <Section id="research" title="Research and benchmarks" plate>
-          <ul className="border-t border-rule">
-            {openweights.research.map((r) => {
-              const title = <span className="wide text-xl font-bold tracking-tight">{r.title}</span>;
-              return (
-                <li key={r.href} className="border-b border-rule py-6">
-                  <p className="text-sm text-ink-soft">{r.date}</p>
-                  <p className="mt-1">
-                    {r.href.startsWith("/") ? (
-                      <Link href={r.href} className="hover:text-blue-deep">
-                        {title}
-                      </Link>
-                    ) : (
-                      <a href={r.href} className="hover:text-blue-deep">
-                        {title}
-                      </a>
-                    )}
-                  </p>
-                  <p className="mt-2 max-w-2xl leading-7 text-ink-soft">{r.line}</p>
-                </li>
-              );
-            })}
-          </ul>
-        </Section>
+      <Section id="features" title="What it does" tint>
+        <dl className="grid gap-x-12 gap-y-10 sm:grid-cols-2 lg:grid-cols-3">
+          {openweights.points.map((p) => (
+            <div key={p.title} className="border-t-2 border-blue pt-4">
+              <dt className="display text-xl">{p.title}</dt>
+              <dd className="mt-2 leading-7 text-ink-soft">{p.body}</dd>
+            </div>
+          ))}
+        </dl>
+      </Section>
 
-        <Section id="source" title="Open source">
-          <p className="max-w-2xl leading-7 text-ink-soft">
-            Apache-2.0, on <A href={links.repo}>GitHub</A>, where problems can be <A href={links.issues}>reported</A>. Models are published by third parties
-            and their licences are their own.
+      <Section id="research" title="Measured on real phones">
+        <div className="grid gap-12 lg:grid-cols-[1fr_1fr] lg:gap-16">
+          <article>
+            <p className="text-sm text-ink-soft">{latest.date}</p>
+            <h3 className="display mt-2 text-3xl leading-tight tracking-[-0.02em]">
+              <Go href={latest.href} className="hover:text-blue-deep">
+                {latest.title}
+              </Go>
+            </h3>
+            <p className={`${lede} mt-4 max-w-xl`}>{latest.line}</p>
+            <p className="mt-6">
+              <Go href={latest.href} className={`${link} font-medium`}>
+                Read the results
+              </Go>
+            </p>
+          </article>
+          <div className="rounded-[1.75rem] bg-bench p-6 sm:p-8">
+            <Bars
+              rows={pairings.map((p) => ({ label: p.label, value: p.cell.seconds, shown: `${p.cell.seconds.toFixed(1)} s` }))}
+              caption={`${qwen.name} ${qwen.quant} on a Snapdragon 8 Elite Gen 5: total time for ${pdTurns} conversation turns. NPU + CPU reads the prompt on the NPU and writes the reply on the CPU. Shorter is faster.`}
+            />
+          </div>
+        </div>
+        <ul className="mt-16 grid gap-x-8 gap-y-8 sm:grid-cols-3">
+          {earlier.map((r) => (
+            <li key={r.href} className="border-t border-rule pt-4">
+              <p className="text-sm text-ink-soft">{r.date}</p>
+              <p className="display mt-1 text-xl">
+                <Go href={r.href} className="hover:text-blue-deep">
+                  {r.title}
+                </Go>
+              </p>
+              <p className="mt-2 text-sm leading-6 text-ink-soft">{r.line}</p>
+            </li>
+          ))}
+        </ul>
+      </Section>
+
+      <Section id="source" title="Open source" tint>
+        <div className="grid gap-8 lg:grid-cols-[1fr_1fr] lg:gap-16">
+          <p className={`${lede} max-w-xl`}>
+            Apache-2.0, on GitHub. {openweights.requirements}; an iPhone version is experimental. Models are published by third parties and their
+            licences are their own.
           </p>
-        </Section>
-      </main>
-      <Footer />
-    </>
+          <p className="flex flex-wrap items-start gap-x-6 gap-y-3 text-base lg:justify-end">
+            <Go href={links.repo} className={link}>
+              Source on GitHub
+            </Go>
+            <Go href={links.issues} className={link}>
+              Report a problem
+            </Go>
+            <Go href={links.privacy} className={link}>
+              Privacy policy
+            </Go>
+          </p>
+        </div>
+      </Section>
+    </main>
   );
 }

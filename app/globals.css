@@ -43,9 +43,10 @@ body {
   font-stretch: 115%;
 }
 
-/* Homepage only. app/page.tsx loads Inter and Inter Tight and sets their
-   variables on the .home wrapper, so the other pages keep Archivo. In the base
-   layer, so utilities on the page (tracking-*, text colours) override it. */
+/* The organisation's look: the homepage and the pages under /openweights. They
+   load Inter and Inter Tight (lib/fonts.ts) and set their variables on the .home
+   wrapper, so the older pages keep Archivo. In the base layer, so utilities on
+   the page (tracking-*, text colours) override it. */
 @layer base {
   .home {
     /* Cobalt for the organisation, a cool tint for alternate sections, and a

@@ -5,7 +5,34 @@ const repo = "https://github.com/ExperimentalMachines/openweights";
 const pages = "https://experimentalmachines.github.io/openweights";
 
 export const openweights = {
-  status: "On Google Play · Android 12+ on arm64 · Apache-2.0",
+  requirements: "Android 12 or later on arm64",
+  // From the README's "What makes it different", figures as published there.
+  points: [
+    {
+      title: "Hugging Face is the model list",
+      body: "Search the Hub for GGUF and ExecuTorch repositories from inside the app. It shows what fits and runs supported architectures on the phone.",
+    },
+    {
+      title: "Fit before the download",
+      body: "The app reads a GGUF's header over HTTP range requests, so it can say what the file needs at your context length, and whether it will run, before you spend a gigabyte.",
+    },
+    {
+      title: "Two runtimes, one app",
+      body: "llama.cpp runs GGUF files and ExecuTorch runs compiled .pte files for eight model families. The app picks by file format, and both ship in the same 28.8 MB release.",
+    },
+    {
+      title: "A fast first turn",
+      body: "The instructions and tool definitions are read into the cache while you type and kept on disk. On the reference phone, a fresh chat's first token came in under one second instead of about 18.5.",
+    },
+    {
+      title: "An agent within limits you set",
+      body: "Seventeen tools and four run modes. The three tools that use the internet each have their own switch, and every tool call is a row in the reply naming what it was given.",
+    },
+    {
+      title: "Private by construction",
+      body: "No accounts, no analytics, no crash reporter, and no backups off the device. What does reach the internet is named: model search and downloads, and the three network tools.",
+    },
+  ],
   links: {
     play: "https://play.google.com/store/apps/details?id=io.github.alpharomercoma.openweights",
     repo,

@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { Inter, Inter_Tight } from "next/font/google";
 import ExecuBench from "@/components/home/ExecuBench";
 import ExecuPack from "@/components/home/ExecuPack";
 import ExecuServe from "@/components/home/ExecuServe";
@@ -10,12 +9,8 @@ import OpenWeights from "@/components/home/OpenWeights";
 import Team from "@/components/home/Team";
 import Upstream from "@/components/home/Upstream";
 import { site } from "@/lib/content";
+import { inter, interTight } from "@/lib/fonts";
 import { links } from "@/lib/home";
-
-// The homepage's typefaces. They are scoped to this page; the other pages keep
-// Archivo from the root layout.
-const inter = Inter({ subsets: ["latin"], variable: "--font-inter", display: "swap" });
-const interTight = Inter_Tight({ subsets: ["latin"], variable: "--font-inter-tight", display: "swap" });
 
 const description =
   "A software and machine-learning organisation building on ExecuTorch: OpenWeights and ExecuServe run open models on phones, ExecuPack builds them for phone chips, and we contribute fixes upstream.";
