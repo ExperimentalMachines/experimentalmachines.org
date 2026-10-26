@@ -46,8 +46,8 @@ export const openweights = {
     {
       href: "/openweights/prefill-decode/",
       title: "Prefill and decode on CPU, GPU and NPU",
-      date: "24 October 2026",
-      line: "Every pairing of the three processors on a Snapdragon 8 Elite Gen 5, for nine models in one llama.cpp build, on real multi-turn conversations.",
+      date: "24 and 25 October 2026",
+      line: "Every pairing of the three processors on a Snapdragon 8 Elite Gen 5, for nine models in one llama.cpp build, on real multi-turn conversations, with 64-token replies, and the likeliest pairings at the conversations' own reply lengths.",
     },
     {
       href: "/openweights/window/",

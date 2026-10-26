@@ -1,7 +1,9 @@
 // The prefill/decode matrix on a Snapdragon 8 Elite Gen 5, for /openweights/prefill-decode.
 // Figures are copied from OpenWeights' report (docs/research/snapdragon-pd-matrix.md and
 // tools/snapdragon/results/2026-10-24-sm8850/ in its repository); change them there first.
-// The findings table is not stored: the page derives it from the cells.
+// The cells keep the decimals the raw rows give, so the ratios the page derives from them match
+// the report's, which rounds once; the page rounds them for display. The findings table is not
+// stored: the page derives it from the cells.
 
 const repo = "https://github.com/ExperimentalMachines/openweights";
 
@@ -11,10 +13,29 @@ export const pdLinks = {
 };
 
 export const processors = ["CPU", "GPU", "NPU"] as const;
+export type Processor = (typeof processors)[number];
 
 // Tokens per second for the prompt (prefill) and the reply (decode), and the summed time of
 // every turn in the cell: prefill, first token, handoff and decode.
 export type PdCell = { prefill: number; decode: number; seconds: number };
+
+// One pairing in one reply-length run: the turns it completed, its summed time over them, the
+// same time with the CPU's stalled decode steps (over 500 ms) taken out where it had any, and
+// whether the cooling gate before it passed or timed out.
+export type PdReplyCell = { turns: number; seconds: number; withoutStalls?: number; gate: "passed" | "timed out" };
+
+// One run of `pd_bench --gen-ref` (analysis-r8.md to analysis-r11.md), where every turn decodes
+// the dataset reply's own length, on one unit of the phone. `pair` is NPU + CPU against NPU only
+// on the turns both completed, in percent of NPU only's time: positive when NPU + CPU took longer.
+export type PdReplyRun = {
+  run: string;
+  unit: string;
+  npuOnly?: PdReplyCell;
+  npuCpu?: PdReplyCell;
+  gpuCpu?: PdReplyCell;
+  cpuOnly?: PdReplyCell;
+  pair?: { turns: number; against: number; withoutStalls?: number };
+};
 
 export type PdModel = {
   name: string;
@@ -24,6 +45,10 @@ export type PdModel = {
   hexagonSessions: number;
   // Rows are the prefill processor and columns the decode processor, both in `processors` order.
   cells: [PdCell, PdCell, PdCell][];
+  // The 64-token matrix again in another cell order (r5, analysis-r5-vs-first.md): the median and
+  // the largest change in a cell's time, in percent, and the fastest pairing that time.
+  secondPass?: { median: number; largest: number; fastest: [Processor, Processor] };
+  reply: PdReplyRun[];
 };
 
 export const pdModels: PdModel[] = [
@@ -34,9 +59,14 @@ export const pdModels: PdModel[] = [
     run: "r4",
     hexagonSessions: 1,
     cells: [
-      [{ prefill: 237, decode: 59.6, seconds: 84.3 }, { prefill: 234, decode: 29.0, seconds: 122.7 }, { prefill: 247, decode: 48.2, seconds: 91.1 }],
-      [{ prefill: 568, decode: 62.1, seconds: 55.0 }, { prefill: 532, decode: 30.3, seconds: 90.5 }, { prefill: 672, decode: 47.4, seconds: 62.4 }],
-      [{ prefill: 3079, decode: 69.3, seconds: 34.6 }, { prefill: 2965, decode: 32.1, seconds: 69.9 }, { prefill: 2999, decode: 47.6, seconds: 47.6 }],
+      [{ prefill: 236.59, decode: 59.637, seconds: 84.278 }, { prefill: 234.32, decode: 28.991, seconds: 122.702 }, { prefill: 247.27, decode: 48.2, seconds: 91.122 }],
+      [{ prefill: 568.07, decode: 62.099, seconds: 54.959 }, { prefill: 532.46, decode: 30.337, seconds: 90.545 }, { prefill: 672.05, decode: 47.414, seconds: 62.404 }],
+      [{ prefill: 3078.9, decode: 69.31, seconds: 34.551 }, { prefill: 2964.55, decode: 32.082, seconds: 69.915 }, { prefill: 2998.6, decode: 47.642, seconds: 47.574 }],
+    ],
+    secondPass: { median: 1.4, largest: 5.5, fastest: ["NPU", "CPU"] },
+    reply: [
+      { run: "r8", unit: "727ba80", npuOnly: { turns: 33, seconds: 292.737, gate: "timed out" }, npuCpu: { turns: 33, seconds: 257.84, gate: "passed" }, gpuCpu: { turns: 33, seconds: 327.629, gate: "timed out" }, cpuOnly: { turns: 33, seconds: 344.355, gate: "passed" }, pair: { turns: 33, against: -11.9 } },
+      { run: "r9", unit: "a1716cc4", npuOnly: { turns: 33, seconds: 292.754, gate: "timed out" }, npuCpu: { turns: 33, seconds: 305.096, gate: "timed out" }, gpuCpu: { turns: 33, seconds: 328.807, gate: "timed out" }, cpuOnly: { turns: 33, seconds: 348.766, gate: "timed out" }, pair: { turns: 33, against: 4.2 } },
     ],
   },
   {
@@ -46,9 +76,12 @@ export const pdModels: PdModel[] = [
     run: "r4",
     hexagonSessions: 1,
     cells: [
-      [{ prefill: 332, decode: 62.9, seconds: 70.2 }, { prefill: 336, decode: 29.8, seconds: 106.8 }, { prefill: 350, decode: 48.3, seconds: 78.5 }],
-      [{ prefill: 561, decode: 64.8, seconds: 54.4 }, { prefill: 552, decode: 30.1, seconds: 91.5 }, { prefill: 658, decode: 47.9, seconds: 62.6 }],
-      [{ prefill: 3664, decode: 69.3, seconds: 33.6 }, { prefill: 3434, decode: 33.4, seconds: 66.2 }, { prefill: 3542, decode: 47.3, seconds: 47.5 }],
+      [{ prefill: 332.36, decode: 62.884, seconds: 70.191 }, { prefill: 335.56, decode: 29.826, seconds: 106.83 }, { prefill: 349.59, decode: 48.3, seconds: 78.494 }],
+      [{ prefill: 561.07, decode: 64.765, seconds: 54.448 }, { prefill: 551.61, decode: 30.129, seconds: 91.474 }, { prefill: 657.95, decode: 47.905, seconds: 62.615 }],
+      [{ prefill: 3663.61, decode: 69.299, seconds: 33.586 }, { prefill: 3434.33, decode: 33.42, seconds: 66.18 }, { prefill: 3541.91, decode: 47.256, seconds: 47.536 }],
+    ],
+    reply: [
+      { run: "r11", unit: "c581fd31", npuOnly: { turns: 33, seconds: 288.316, gate: "timed out" }, npuCpu: { turns: 33, seconds: 221.631, gate: "passed" }, cpuOnly: { turns: 33, seconds: 289.991, gate: "passed" }, pair: { turns: 33, against: -23.1 } },
     ],
   },
   {
@@ -58,9 +91,13 @@ export const pdModels: PdModel[] = [
     run: "r4",
     hexagonSessions: 1,
     cells: [
-      [{ prefill: 234, decode: 46.4, seconds: 93.9 }, { prefill: 241, decode: 32.7, seconds: 111.5 }, { prefill: 251, decode: 39.0, seconds: 99.2 }],
-      [{ prefill: 525, decode: 48.8, seconds: 64.9 }, { prefill: 533, decode: 33.6, seconds: 83.5 }, { prefill: 537, decode: 38.6, seconds: 75.8 }],
-      [{ prefill: 3017, decode: 52.5, seconds: 43.7 }, { prefill: 3047, decode: 36.5, seconds: 61.1 }, { prefill: 3058, decode: 38.8, seconds: 57.4 }],
+      [{ prefill: 234.34, decode: 46.398, seconds: 93.866 }, { prefill: 241.31, decode: 32.747, seconds: 111.53 }, { prefill: 251.29, decode: 39.044, seconds: 99.211 }],
+      [{ prefill: 525.24, decode: 48.8, seconds: 64.89 }, { prefill: 532.71, decode: 33.575, seconds: 83.548 }, { prefill: 537.49, decode: 38.551, seconds: 75.793 }],
+      [{ prefill: 3017.08, decode: 52.471, seconds: 43.682 }, { prefill: 3046.63, decode: 36.533, seconds: 61.135 }, { prefill: 3058.2, decode: 38.756, seconds: 57.428 }],
+    ],
+    secondPass: { median: 1.2, largest: 5.9, fastest: ["NPU", "CPU"] },
+    reply: [
+      { run: "r9", unit: "a1716cc4", npuOnly: { turns: 33, seconds: 330.663, gate: "timed out" }, npuCpu: { turns: 33, seconds: 342.0497, gate: "timed out" }, cpuOnly: { turns: 33, seconds: 390.767, gate: "timed out" }, pair: { turns: 33, against: 3.4 } },
     ],
   },
   {
@@ -70,9 +107,13 @@ export const pdModels: PdModel[] = [
     run: "r4",
     hexagonSessions: 1,
     cells: [
-      [{ prefill: 304, decode: 59.4, seconds: 75.1 }, { prefill: 327, decode: 44.8, seconds: 83.9 }, { prefill: 335, decode: 42.9, seconds: 85.0 }],
-      [{ prefill: 626, decode: 63.2, seconds: 52.6 }, { prefill: 585, decode: 44.4, seconds: 67.6 }, { prefill: 660, decode: 42.5, seconds: 67.7 }],
-      [{ prefill: 3227, decode: 67.1, seconds: 34.9 }, { prefill: 3401, decode: 51.0, seconds: 44.7 }, { prefill: 3477, decode: 42.8, seconds: 52.1 }],
+      [{ prefill: 303.86, decode: 59.386, seconds: 75.092 }, { prefill: 327.08, decode: 44.827, seconds: 83.87 }, { prefill: 334.61, decode: 42.883, seconds: 84.974 }],
+      [{ prefill: 626.09, decode: 63.206, seconds: 52.578 }, { prefill: 585.09, decode: 44.429, seconds: 67.638 }, { prefill: 660.05, decode: 42.474, seconds: 67.659 }],
+      [{ prefill: 3227.31, decode: 67.11, seconds: 34.877 }, { prefill: 3400.96, decode: 50.964, seconds: 44.681 }, { prefill: 3477.12, decode: 42.765, seconds: 52.135 }],
+    ],
+    secondPass: { median: 1.4, largest: 6.4, fastest: ["NPU", "CPU"] },
+    reply: [
+      { run: "r9", unit: "a1716cc4", npuOnly: { turns: 33, seconds: 321.418, gate: "timed out" }, npuCpu: { turns: 33, seconds: 271.074, gate: "timed out" }, cpuOnly: { turns: 33, seconds: 315.328, gate: "timed out" }, pair: { turns: 33, against: -15.7 } },
     ],
   },
   {
@@ -82,9 +123,14 @@ export const pdModels: PdModel[] = [
     run: "r4",
     hexagonSessions: 1,
     cells: [
-      [{ prefill: 139, decode: 32.4, seconds: 148.5 }, { prefill: 138, decode: 18.3, seconds: 199.5 }, { prefill: 141, decode: 29.6, seconds: 153.8 }],
-      [{ prefill: 281, decode: 32.8, seconds: 105.9 }, { prefill: 274, decode: 18.6, seconds: 154.2 }, { prefill: 295, decode: 30.0, seconds: 110.1 }],
-      [{ prefill: 2091, decode: 34.1, seconds: 67.3 }, { prefill: 2115, decode: 19.3, seconds: 114.7 }, { prefill: 2086, decode: 30.0, seconds: 74.9 }],
+      [{ prefill: 138.79, decode: 32.355, seconds: 148.484 }, { prefill: 137.79, decode: 18.312, seconds: 199.546 }, { prefill: 141.4, decode: 29.559, seconds: 153.776 }],
+      [{ prefill: 280.92, decode: 32.842, seconds: 105.902 }, { prefill: 274.4, decode: 18.636, seconds: 154.219 }, { prefill: 295.4, decode: 30.015, seconds: 110.064 }],
+      [{ prefill: 2090.88, decode: 34.109, seconds: 67.328 }, { prefill: 2114.54, decode: 19.274, seconds: 114.729 }, { prefill: 2086.39, decode: 29.995, seconds: 74.941 }],
+    ],
+    secondPass: { median: 1.8, largest: 3.7, fastest: ["NPU", "CPU"] },
+    reply: [
+      { run: "r9", unit: "a1716cc4", npuOnly: { turns: 33, seconds: 452.938, gate: "timed out" }, npuCpu: { turns: 33, seconds: 510.985, gate: "timed out" }, gpuCpu: { turns: 33, seconds: 519.311, gate: "timed out" }, cpuOnly: { turns: 33, seconds: 518.537, gate: "passed" }, pair: { turns: 33, against: 12.8 } },
+      { run: "r9r", unit: "a1716cc4", npuOnly: { turns: 33, seconds: 441.093, gate: "timed out" }, npuCpu: { turns: 33, seconds: 518.082, gate: "timed out" }, cpuOnly: { turns: 33, seconds: 648.947, gate: "timed out" }, pair: { turns: 33, against: 17.5 } },
     ],
   },
   {
@@ -94,9 +140,12 @@ export const pdModels: PdModel[] = [
     run: "r6",
     hexagonSessions: 1,
     cells: [
-      [{ prefill: 143, decode: 26.4, seconds: 160.3 }, { prefill: 143, decode: 16.1, seconds: 212.1 }, { prefill: 147, decode: 25.0, seconds: 163.8 }],
-      [{ prefill: 248, decode: 26.3, seconds: 127.1 }, { prefill: 240, decode: 16.5, seconds: 174.8 }, { prefill: 274, decode: 24.8, seconds: 127.8 }],
-      [{ prefill: 1937, decode: 27.0, seconds: 83.8 }, { prefill: 2010, decode: 17.1, seconds: 128.7 }, { prefill: 1870, decode: 21.1, seconds: 104.7 }],
+      [{ prefill: 143.13, decode: 26.443, seconds: 160.293 }, { prefill: 143.44, decode: 16.079, seconds: 212.073 }, { prefill: 146.78, decode: 24.959, seconds: 163.768 }],
+      [{ prefill: 248.23, decode: 26.323, seconds: 127.109 }, { prefill: 239.84, decode: 16.5, seconds: 174.795 }, { prefill: 274.17, decode: 24.77, seconds: 127.845 }],
+      [{ prefill: 1936.58, decode: 27.037, seconds: 83.779 }, { prefill: 2009.92, decode: 17.114, seconds: 128.666 }, { prefill: 1869.95, decode: 21.117, seconds: 104.73 }],
+    ],
+    reply: [
+      { run: "r11", unit: "c581fd31", npuOnly: { turns: 33, seconds: 528.123, gate: "timed out" }, npuCpu: { turns: 33, seconds: 634.417, withoutStalls: 580.699, gate: "timed out" }, cpuOnly: { turns: 33, seconds: 851.758, withoutStalls: 679.796, gate: "timed out" }, pair: { turns: 33, against: 20.1, withoutStalls: 10.0 } },
     ],
   },
   {
@@ -106,9 +155,16 @@ export const pdModels: PdModel[] = [
     run: "r7",
     hexagonSessions: 1,
     cells: [
-      [{ prefill: 135, decode: 27.2, seconds: 163.1 }, { prefill: 138, decode: 21.4, seconds: 181.8 }, { prefill: 137, decode: 20.2, seconds: 188.2 }],
-      [{ prefill: 238, decode: 27.7, seconds: 124.3 }, { prefill: 239, decode: 21.1, seconds: 147.4 }, { prefill: 253, decode: 21.0, seconds: 145.7 }],
-      [{ prefill: 1454, decode: 28.4, seconds: 81.3 }, { prefill: 1574, decode: 22.2, seconds: 101.7 }, { prefill: 1493, decode: 21.0, seconds: 106.8 }],
+      [{ prefill: 135.08, decode: 27.174, seconds: 163.053 }, { prefill: 138.45, decode: 21.42, seconds: 181.804 }, { prefill: 137.17, decode: 20.212, seconds: 188.216 }],
+      [{ prefill: 238.32, decode: 27.749, seconds: 124.312 }, { prefill: 238.9, decode: 21.133, seconds: 147.362 }, { prefill: 252.73, decode: 20.983, seconds: 145.669 }],
+      [{ prefill: 1453.89, decode: 28.438, seconds: 81.308 }, { prefill: 1574.17, decode: 22.155, seconds: 101.652 }, { prefill: 1492.7, decode: 21.02, seconds: 106.763 }],
+    ],
+    reply: [
+      // The reservation ended 29 turns into NPU only, before CPU only.
+      { run: "r9", unit: "a1716cc4", npuOnly: { turns: 29, seconds: 537.785, gate: "timed out" }, npuCpu: { turns: 33, seconds: 599.151, gate: "timed out" }, pair: { turns: 29, against: -2.1 } },
+      // The phone stopped answering before NPU + CPU finished.
+      { run: "r10", unit: "c581fd31", npuOnly: { turns: 33, seconds: 599.759, gate: "passed" }, cpuOnly: { turns: 33, seconds: 569.426, gate: "passed" } },
+      { run: "r11", unit: "c581fd31", npuOnly: { turns: 33, seconds: 601.764, gate: "timed out" }, npuCpu: { turns: 33, seconds: 678.433, withoutStalls: 560.177, gate: "timed out" }, cpuOnly: { turns: 33, seconds: 704.525, withoutStalls: 642.991, gate: "timed out" }, pair: { turns: 33, against: 12.7, withoutStalls: -6.9 } },
     ],
   },
   {
@@ -118,9 +174,12 @@ export const pdModels: PdModel[] = [
     run: "r6",
     hexagonSessions: 2,
     cells: [
-      [{ prefill: 85, decode: 20.3, seconds: 237.7 }, { prefill: 106, decode: 16.9, seconds: 232.6 }, { prefill: 86, decode: 19.0, seconds: 243.8 }],
-      [{ prefill: 167, decode: 20.5, seconds: 171.0 }, { prefill: 163, decode: 12.8, seconds: 232.8 }, { prefill: 165, decode: 19.0, seconds: 180.2 }],
-      [{ prefill: 1152, decode: 20.8, seconds: 111.0 }, { prefill: 1307, decode: 12.8, seconds: 173.2 }, { prefill: 1202, decode: 19.0, seconds: 119.2 }],
+      [{ prefill: 84.83, decode: 20.332, seconds: 237.741 }, { prefill: 105.85, decode: 16.91, seconds: 232.626 }, { prefill: 85.93, decode: 19.045, seconds: 243.765 }],
+      [{ prefill: 167.49, decode: 20.522, seconds: 171.02 }, { prefill: 162.9, decode: 12.82, seconds: 232.766 }, { prefill: 165.33, decode: 19.001, seconds: 180.199 }],
+      [{ prefill: 1151.85, decode: 20.756, seconds: 110.982 }, { prefill: 1306.63, decode: 12.757, seconds: 173.2 }, { prefill: 1202.26, decode: 18.969, seconds: 119.18 }],
+    ],
+    reply: [
+      { run: "r9", unit: "a1716cc4", npuOnly: { turns: 33, seconds: 733.537, gate: "timed out" }, npuCpu: { turns: 33, seconds: 1014.092, withoutStalls: 878.647, gate: "timed out" }, cpuOnly: { turns: 33, seconds: 1150.895, withoutStalls: 1016.954, gate: "timed out" }, pair: { turns: 33, against: 38.2, withoutStalls: 19.8 } },
     ],
   },
   {
@@ -130,9 +189,15 @@ export const pdModels: PdModel[] = [
     run: "r6",
     hexagonSessions: 2,
     cells: [
-      [{ prefill: 54, decode: 15.3, seconds: 353.5 }, { prefill: 53, decode: 6.2, seconds: 557.9 }, { prefill: 55, decode: 15.4, seconds: 349.8 }],
-      [{ prefill: 102, decode: 15.0, seconds: 253.7 }, { prefill: 106, decode: 6.3, seconds: 443.0 }, { prefill: 105, decode: 15.3, seconds: 249.0 }],
-      [{ prefill: 813, decode: 15.5, seconds: 149.5 }, { prefill: 951, decode: 6.4, seconds: 338.9 }, { prefill: 801, decode: 15.4, seconds: 149.9 }],
+      [{ prefill: 53.81, decode: 15.256, seconds: 353.474 }, { prefill: 53.18, decode: 6.177, seconds: 557.901 }, { prefill: 54.72, decode: 15.388, seconds: 349.751 }],
+      [{ prefill: 102.4, decode: 15.042, seconds: 253.681 }, { prefill: 105.78, decode: 6.253, seconds: 443.021 }, { prefill: 104.66, decode: 15.287, seconds: 249.034 }],
+      [{ prefill: 813.18, decode: 15.512, seconds: 149.539 }, { prefill: 951.41, decode: 6.402, seconds: 338.942 }, { prefill: 800.95, decode: 15.371, seconds: 149.869 }],
+    ],
+    // Against r6, where all nine of its cells ran.
+    secondPass: { median: 2.9, largest: 5.1, fastest: ["NPU", "NPU"] },
+    reply: [
+      // The reservation ended 20 turns into CPU only.
+      { run: "r8", unit: "727ba80", npuOnly: { turns: 33, seconds: 1064.709, gate: "timed out" }, npuCpu: { turns: 33, seconds: 1339.856, withoutStalls: 1049.272, gate: "timed out" }, cpuOnly: { turns: 20, seconds: 911.938, withoutStalls: 717.368, gate: "timed out" }, pair: { turns: 33, against: 25.8, withoutStalls: -1.4 } },
     ],
   },
 ];
@@ -150,6 +215,14 @@ export function pdSummary(m: PdModel) {
     slowest: all.reduce((a, b) => (b.seconds > a.seconds ? b : a)),
     cpuOnly: m.cells[0][0],
   };
+}
+
+// One pairing across a model's reply-length runs: the mean of the runs that completed all 33
+// turns, how far apart those were (the longest over the shortest, less one), and which they were.
+export function pdReplyMean(m: PdModel, key: "npuOnly" | "npuCpu" | "cpuOnly") {
+  const done = m.reply.filter((r) => r[key]?.turns === pdTurns);
+  const xs = done.map((r) => r[key]!.seconds);
+  return xs.length ? { seconds: mean(xs), apart: Math.max(...xs) / Math.min(...xs) - 1, runs: done.map((r) => r.run) } : undefined;
 }
 
 // The first conversation in each length bucket (by characters) with at least two user turns.

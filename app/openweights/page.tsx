@@ -131,7 +131,7 @@ export default function OpenWeights() {
           <div className="rounded-[1.75rem] bg-bench p-6 sm:p-8">
             <Bars
               rows={pairings.map((p) => ({ label: p.label, value: p.cell.seconds, shown: `${p.cell.seconds.toFixed(1)} s` }))}
-              caption={`${qwen.name} ${qwen.quant} on a Snapdragon 8 Elite Gen 5: total time for ${pdTurns} conversation turns. NPU + CPU reads the prompt on the NPU and writes the reply on the CPU. Shorter is faster.`}
+              caption={`${qwen.name} ${qwen.quant} on a Snapdragon 8 Elite Gen 5: total time for ${pdTurns} conversation turns with 64-token replies. NPU + CPU reads the prompt on the NPU and writes the reply on the CPU. Shorter is faster.`}
             />
           </div>
         </div>
