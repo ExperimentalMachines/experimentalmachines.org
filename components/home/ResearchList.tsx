@@ -2,8 +2,9 @@ import Go from "@/components/home/Go";
 import { link } from "@/components/home/ui";
 import type { ResearchItem } from "@/lib/research";
 
-// A research page's list of studies, tools or talks: each one's date or kind,
-// its title as the link, and one line on what it found or does.
+// A list of pages: a research area's studies, tools or talks, or the 404 page's
+// way back in. Each shows its date or kind, its title as the link, and one line
+// on what it found or does.
 export default function ResearchList({ items, columns = 3 }: { items: ResearchItem[]; columns?: 2 | 3 }) {
   return (
     <ul className={`grid gap-x-8 gap-y-10 sm:grid-cols-2 ${columns === 3 ? "lg:grid-cols-3" : "lg:gap-x-16"}`}>

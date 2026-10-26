@@ -8,8 +8,6 @@
   --color-rule: #d6dad4;
   --color-blue: #1e4fd8;
   --color-blue-deep: #163fae;
-  --font-sans: var(--font-archivo), ui-sans-serif, system-ui, Helvetica, Arial,
-    sans-serif;
 }
 
 html {
@@ -39,15 +37,11 @@ body {
   outline-offset: 2px;
 }
 
-.wide {
-  font-stretch: 115%;
-}
-
-/* The organisation's look, on every page: the homepage, and the others through
-   components/home/HomeShell.tsx. They load Inter and Inter Tight (lib/fonts.ts)
-   and set their variables on the .home wrapper; the root colours and Archivo
-   above are left for Next's 404 page. In the base layer, so utilities on the
-   page (tracking-*, text colours) override it. */
+/* The organisation's look, on every page: the homepage, and the others
+   (404 included) through components/home/HomeShell.tsx. They load Inter and
+   Inter Tight (lib/fonts.ts) and set their variables on the .home wrapper,
+   which also sets the colours below over the root ones above. In the base
+   layer, so utilities on the page (tracking-*, text colours) override it. */
 @layer base {
   .home {
     /* Cobalt for the organisation, a cool tint for alternate sections, and a

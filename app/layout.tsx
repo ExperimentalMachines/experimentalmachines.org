@@ -1,14 +1,6 @@
 import type { Metadata, Viewport } from "next";
-import { Archivo } from "next/font/google";
 import "./globals.css";
 import { site } from "@/lib/content";
-
-const archivo = Archivo({
-  subsets: ["latin"],
-  axes: ["wdth"],
-  variable: "--font-archivo",
-  display: "swap",
-});
 
 export const metadata: Metadata = {
   metadataBase: new URL(site.url),
@@ -39,7 +31,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${archivo.variable} antialiased`}>
+    <html lang="en" className="antialiased">
       <body className="min-h-screen">{children}</body>
     </html>
   );
