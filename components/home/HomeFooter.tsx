@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { sibling, site } from "@/lib/content";
 import { links } from "@/lib/home";
 
@@ -22,6 +23,13 @@ export default function HomeFooter() {
           </p>
         </div>
         <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm text-ink-soft">
+          {/* The research areas, which have no section on the homepage. */}
+          <Link href="/asic/" className="hover:text-ink">
+            ASIC research
+          </Link>
+          <Link href="/gguf/" className="hover:text-ink">
+            GGUF research
+          </Link>
           <a href={links.github} target="_blank" rel="noreferrer" className="hover:text-ink">
             GitHub
           </a>

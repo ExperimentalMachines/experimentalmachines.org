@@ -4,7 +4,7 @@
 const repo = "https://github.com/ExperimentalMachines/execuserve";
 
 export const execuserve = {
-  status: "Alpha · Android 12+ on arm64 · Apache-2.0",
+  status: "Android 12+ on arm64 · Apache-2.0",
   phone: "POCO X8 Pro Max (Dimensity 9500s)",
   links: {
     repo,

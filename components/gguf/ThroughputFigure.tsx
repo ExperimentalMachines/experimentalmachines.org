@@ -13,10 +13,10 @@ const TOP = 58;
 const ROW = 27;
 const PANEL = (W - LABEL - GAP - R) / 2;
 const H = TOP + ggufRows.length * ROW + 36;
-const INK = "#121614";
-const BLUE = "#1e4fd8";
-const SOFT = "#4a524c";
-const RULE = "#d6dad4";
+const INK = "var(--color-ink)";
+const BLUE = "var(--color-blue)";
+const SOFT = "var(--color-ink-soft)";
+const RULE = "var(--color-rule)";
 
 const panels = [
   { key: "tg" as const, sd: "tgSd" as const, title: "Generation, 128 tokens", max: 400, ticks: [0, 100, 200, 300, 400], x0: LABEL },

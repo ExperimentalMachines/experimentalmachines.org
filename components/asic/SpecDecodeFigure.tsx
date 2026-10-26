@@ -10,10 +10,10 @@ const TOP = 40;
 const BOTTOM = 52;
 const PW = W - L - R;
 const PH = H - TOP - BOTTOM;
-const INK = "#121614";
-const BLUE = "#1e4fd8";
-const SOFT = "#4a524c";
-const RULE = "#d6dad4";
+const INK = "var(--color-ink)";
+const BLUE = "var(--color-blue)";
+const SOFT = "var(--color-ink-soft)";
+const RULE = "var(--color-rule)";
 
 const xs = (k: number) => L + (k / 10) * PW;
 const yt = (v: number) => TOP + PH - (v / 90) * PH;
@@ -69,7 +69,7 @@ export default function SpecDecodeFigure() {
                   {d.k}
                 </text>
                 <g className="pointer-events-none opacity-0 group-hover:opacity-100">
-                  <rect x={bx} y={TOP + 8} width={190} height={66} fill="#ffffff" stroke={RULE} />
+                  <rect x={bx} y={TOP + 8} width={190} height={66} fill="#ffffff" stroke={RULE} rx={8} />
                   <text x={bx + 10} y={TOP + 27} fill={SOFT}>
                     {d.k === 0 ? "no draft" : `${d.k} draft tokens per call`}
                   </text>

@@ -13,10 +13,10 @@ const R = 30;
 const ROW = 27;
 const X0 = LABEL;
 const XMAX = W - R;
-const INK = "#121614";
-const BLUE = "#1e4fd8";
-const SOFT = "#4a524c";
-const RULE = "#d6dad4";
+const INK = "var(--color-ink)";
+const BLUE = "var(--color-blue)";
+const SOFT = "var(--color-ink-soft)";
+const RULE = "var(--color-rule)";
 
 const P1_TOP = 56;
 const P2_TITLE = 296;

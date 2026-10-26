@@ -1,15 +1,12 @@
 import Go from "@/components/home/Go";
 import { h2, lede, link, ProjectLabel } from "@/components/home/ui";
 import { links } from "@/lib/home";
+import { latencyChips, latencyModels } from "@/lib/openweights-latency";
 
-// LFM2.5 1.2B, median ms per output token, from the latency report's data.
-const latency = [
-  { chip: "Dimensity 9400", et: 25, gguf: 31 },
-  { chip: "Snapdragon 8 Gen 3", et: 27, gguf: 43 },
-  { chip: "Snapdragon 8 Elite", et: 18, gguf: 27 },
-  { chip: "Tensor G5", et: 46, gguf: 106 },
-  { chip: "Exynos 2400", et: 38, gguf: 59 },
-];
+// LFM2.5 1.2B, median ms per output token, from the latency study's data.
+const lfm = latencyModels.find((m) => m.name === "LFM2.5 1.2B")!;
+const latency = latencyChips.map((c, i) => ({ chip: c.name, et: lfm.et[i].tpot, gguf: lfm.llama[i].tpot }));
+const slowest = Math.max(...latency.map((r) => r.gguf));
 
 export default function OpenWeights() {
   return (
@@ -43,14 +40,14 @@ export default function OpenWeights() {
                   <span className="text-ink-soft">{r.chip}</span>
                   <span className="space-y-1">
                     <span className="flex items-center gap-2">
-                      <span className="h-2 rounded-full bg-blue" style={{ width: `${(r.et / 106) * 75}%` }} />
+                      <span className="h-2 rounded-full bg-blue" style={{ width: `${(r.et / slowest) * 75}%` }} />
                       <span className="text-xs font-medium tabular-nums">
                         {r.et} ms
                         <span className="sr-only"> with the ExecuTorch build,</span>
                       </span>
                     </span>
                     <span className="flex items-center gap-2">
-                      <span className="h-2 rounded-full bg-ink/15" style={{ width: `${(r.gguf / 106) * 75}%` }} />
+                      <span className="h-2 rounded-full bg-ink/15" style={{ width: `${(r.gguf / slowest) * 75}%` }} />
                       <span className="text-xs tabular-nums text-ink-soft">
                         {r.gguf} ms
                         <span className="sr-only"> with the GGUF</span>

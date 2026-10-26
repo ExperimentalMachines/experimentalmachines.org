@@ -16,7 +16,7 @@ export const links = {
   openweights: "/openweights",
   openweightsRepo: `${gh}/openweights`,
   openweightsIos: `${gh}/OpenWeights-iOS`,
-  openweightsLatency: "https://experimentalmachines.github.io/openweights/latency.html",
+  openweightsLatency: "/openweights/latency/",
   execupack: `${gh}/execupack`,
   execupackFindings: `${gh}/execupack/blob/main/docs/research/README.md`,
   execuserve: "/execuserve",
@@ -128,8 +128,8 @@ export const upstream = [
   },
 ];
 
-// Earlier hardware research. The ids keep the anchors the shared navigation
-// on the other pages links back to.
+// Earlier hardware research. The ids keep the /#server, /#laptop and /#phone
+// anchors that earlier versions of the site linked to.
 export const earlier: {
   id: "server" | "laptop" | "phone";
   title: string;

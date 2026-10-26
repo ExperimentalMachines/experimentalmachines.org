@@ -3,10 +3,10 @@ import { sibling } from "@/lib/content";
 import { links } from "@/lib/home";
 
 // The homepage's own header, in the hero's cobalt and kept that colour on
-// scroll. The pages under /openweights use it too, naming themselves as
-// `current`: that project's link goes to its page and marks it, and the rest
-// lead back to the homepage's sections. The older pages keep components/Nav.tsx,
-// whose /#server, /#laptop and /#phone links land in "Where we started" here.
+// scroll. On the homepage (`home`) its links scroll to the sections; every other
+// page in the organisation's look (components/home/HomeShell.tsx) links back to
+// them, and a project's own pages name it as `current`, which links that project
+// to its page and marks it.
 const sections = [
   { id: "openweights", label: "OpenWeights" },
   { id: "execuserve", label: "ExecuServe" },
@@ -15,8 +15,7 @@ const sections = [
   { id: "people", label: "People" },
 ];
 
-export default function HomeHeader({ current }: { current?: "openweights" }) {
-  const home = current === undefined;
+export default function HomeHeader({ home = false, current }: { home?: boolean; current?: "openweights" | "execuserve" }) {
   const items = sections.map((s) => ({
     ...s,
     href: home ? `#${s.id}` : s.id === current ? `/${s.id}/` : `/#${s.id}`,

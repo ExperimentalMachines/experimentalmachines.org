@@ -53,7 +53,7 @@ export default function Home() {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c") }}
       />
-      <HomeHeader />
+      <HomeHeader home />
       <main id="main" className="scroll-mt-28 lg:scroll-mt-16">
         <Hero />
         <OpenWeights />

@@ -5,11 +5,12 @@ import { ladder, objectives, trainingCost } from "@/lib/neuron";
 // MFU on hover. Right: what each training objective did on Trainium1.
 const MAX = 9000;
 
-function Bar({ chip, tok, mfu, seq, blue }: { chip: string; tok: number | null; mfu: number | null; seq: number; blue?: boolean }) {
+// `last` anchors the hover readout to the bar's right edge, so it stays on a phone's screen.
+function Bar({ chip, tok, mfu, seq, blue, last }: { chip: string; tok: number | null; mfu: number | null; seq: number; blue?: boolean; last?: boolean }) {
   if (tok === null) {
     return (
-      <div className="group relative flex h-full w-14 flex-col justify-end">
-        <div className="flex h-10 items-center justify-center border border-dashed border-rule text-center text-[11px] leading-3 text-ink-soft" role="img" aria-label={`${chip}, sequence ${seq}: does not fit in device memory`}>
+      <div className="group relative flex h-full w-11 flex-col justify-end sm:w-14">
+        <div className="flex h-10 items-center justify-center rounded border border-dashed border-rule text-center text-[11px] leading-3 text-ink-soft" role="img" aria-label={`${chip}, sequence ${seq}: does not fit in device memory`}>
           does not fit
         </div>
       </div>
@@ -17,15 +18,19 @@ function Bar({ chip, tok, mfu, seq, blue }: { chip: string; tok: number | null; 
   }
   const h = (tok / MAX) * 100;
   return (
-    <div className="group relative flex h-full w-14 flex-col justify-end">
+    <div className="group relative flex h-full w-11 flex-col justify-end sm:w-14">
       <div className={`mb-1 text-center text-xs font-semibold tabular-nums ${blue ? "text-blue" : "text-ink"}`}>{tok.toLocaleString()}</div>
       <div
         role="img"
         aria-label={`${chip}, sequence ${seq}: ${tok.toLocaleString()} tokens per second, ${mfu}% MFU`}
-        className={`w-full ${blue ? "bg-blue group-hover:bg-blue-deep" : "bg-ink group-hover:bg-ink-soft"}`}
+        className={`w-full rounded-t ${blue ? "bg-blue group-hover:bg-blue-deep" : "bg-ink group-hover:bg-ink-soft"}`}
         style={{ height: `${h}%` }}
       />
-      <span className="pointer-events-none absolute bottom-full left-1/2 z-10 mb-1 -translate-x-1/2 whitespace-nowrap border border-rule bg-plate px-2 py-1 text-xs opacity-0 transition-opacity group-hover:opacity-100">
+      <span
+        className={`pointer-events-none absolute bottom-full z-10 mb-1 hidden whitespace-nowrap rounded-md border border-rule bg-white px-2 py-1 text-xs shadow-sm group-hover:block ${
+          last ? "right-0" : "left-1/2 -translate-x-1/2"
+        }`}
+      >
         <span className="font-semibold">{chip}</span>, seq {seq.toLocaleString()}: {tok.toLocaleString()} tok/s, {mfu}% MFU
       </span>
     </div>
@@ -39,23 +44,23 @@ export default function TrainingFigure() {
         <div>
           <div className="flex items-center gap-5 text-xs text-ink-soft">
             <span className="flex items-center gap-2">
-              <span className="inline-block h-3 w-3 bg-ink" aria-hidden /> Trainium1, $1.34/hr
+              <span className="inline-block h-3 w-3 rounded-sm bg-ink" aria-hidden /> Trainium1, $1.34/hr
             </span>
             <span className="flex items-center gap-2">
-              <span className="inline-block h-3 w-3 bg-blue" aria-hidden /> Trainium2, $2.24/hr
+              <span className="inline-block h-3 w-3 rounded-sm bg-blue" aria-hidden /> Trainium2, $2.24/hr
             </span>
           </div>
           <div className="mt-4 flex h-56 items-end justify-between border-b border-rule bg-plate px-4 pt-8">
-            {ladder.map((row) => (
+            {ladder.map((row, i) => (
               <div key={row.seq} className="flex h-full items-end gap-1.5">
-                <Bar chip="Trainium1" tok={row.trn1?.tok ?? null} mfu={row.trn1?.mfu ?? null} seq={row.seq} />
-                <Bar chip="Trainium2" tok={row.trn2.tok} mfu={row.trn2.mfu} seq={row.seq} blue />
+                <Bar chip="Trainium1" tok={row.trn1?.tok ?? null} mfu={row.trn1?.mfu ?? null} seq={row.seq} last={i === ladder.length - 1} />
+                <Bar chip="Trainium2" tok={row.trn2.tok} mfu={row.trn2.mfu} seq={row.seq} blue last={i === ladder.length - 1} />
               </div>
             ))}
           </div>
           <div className="flex justify-between px-4 pt-2 text-xs text-ink-soft">
             {ladder.map((row) => (
-              <span key={row.seq} className="w-[7.4rem] text-center">
+              <span key={row.seq} className="w-[5.9rem] text-center sm:w-[7.4rem]">
                 seq {row.seq.toLocaleString()}
               </span>
             ))}

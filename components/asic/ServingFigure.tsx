@@ -13,10 +13,10 @@ const TOP = 44;
 const BOTTOM = 56;
 const PW = W - L - R;
 const PH = H - TOP - BOTTOM;
-const INK = "#121614";
-const BLUE = "#1e4fd8";
-const SOFT = "#4a524c";
-const RULE = "#d6dad4";
+const INK = "var(--color-ink)";
+const BLUE = "var(--color-blue)";
+const SOFT = "var(--color-ink-soft)";
+const RULE = "var(--color-rule)";
 
 const xs = (c: number) => L + (Math.log2(c) / 8) * PW;
 const ys = (v: number) => TOP + PH - ((Math.log10(v) - 1) / (Math.log10(20000) - 1)) * PH;
@@ -91,7 +91,7 @@ function Chart() {
                 {c}
               </text>
               <g className="pointer-events-none opacity-0 group-hover:opacity-100">
-                <rect x={bx} y={TOP + PH - 24 - rows.length * 19 - 34} width={196} height={rows.length * 19 + 30} fill="#ffffff" stroke={RULE} />
+                <rect x={bx} y={TOP + PH - 24 - rows.length * 19 - 34} width={196} height={rows.length * 19 + 30} fill="#ffffff" stroke={RULE} rx={8} />
                 <text x={bx + 10} y={TOP + PH - 24 - rows.length * 19 - 14} fill={SOFT}>
                   {c} concurrent {c === 1 ? "stream" : "streams"}
                 </text>
@@ -119,10 +119,10 @@ function CostBars() {
     <div className="text-sm">
       <div className="flex items-center gap-5 text-xs text-ink-soft">
         <span className="flex items-center gap-2">
-          <span className="inline-block h-3 w-3 bg-ink" aria-hidden /> at 32 streams
+          <span className="inline-block h-3 w-3 rounded-sm bg-ink" aria-hidden /> at 32 streams
         </span>
         <span className="flex items-center gap-2">
-          <span className="inline-block h-3 w-3 border border-ink bg-plate" aria-hidden /> best observed
+          <span className="inline-block h-3 w-3 rounded-sm border border-ink bg-white" aria-hidden /> best observed
         </span>
       </div>
       <div className="mt-4 space-y-4">
@@ -137,13 +137,13 @@ function CostBars() {
                 <span
                   role="img"
                   aria-label={`${d.device}: $${b.value.toFixed(3)} per million output tokens at ${b.at} streams`}
-                  className={`absolute left-0 top-0 h-full ${b.solid ? "bg-ink" : "border border-ink bg-plate"}`}
+                  className={`absolute left-0 top-0 h-full rounded-r ${b.solid ? "bg-ink" : "border border-ink bg-white"}`}
                   style={{ width: `${(b.value / MAX) * 100}%` }}
                 />
                 <span className="absolute top-1/2 -translate-y-1/2 px-2 text-xs font-semibold tabular-nums" style={{ left: `${(b.value / MAX) * 100}%` }}>
                   ${b.value.toFixed(3)}
                 </span>
-                <span className="pointer-events-none absolute right-0 top-1/2 z-10 -translate-y-1/2 whitespace-nowrap border border-rule bg-plate px-2 py-1 text-xs opacity-0 transition-opacity group-hover:opacity-100">
+                <span className="pointer-events-none absolute right-0 top-1/2 z-10 -translate-y-1/2 whitespace-nowrap rounded-md border border-rule bg-white px-2 py-1 text-xs shadow-sm opacity-0 transition-opacity group-hover:opacity-100">
                   {b.tok.toLocaleString()} tok/s at {b.at} streams, ${d.rate}/hr
                 </span>
               </div>
@@ -159,7 +159,7 @@ function CostBars() {
 export default function ServingFigure() {
   return (
     <figure>
-      <div className="grid gap-10 lg:grid-cols-[1fr_18rem] lg:gap-14">
+      <div className="grid gap-10 xl:grid-cols-[1fr_18rem] xl:gap-14">
         <Chart />
         <CostBars />
       </div>
