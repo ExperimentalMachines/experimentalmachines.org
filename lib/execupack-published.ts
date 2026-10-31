@@ -158,6 +158,28 @@ export const publishedRepos: PublishedRepo[] = [
     ]
   },
   {
+    "id": "experimentalmachines/LFM3-1.7B-Base-ExecuTorch",
+    "name": "LFM3-1.7B-Base",
+    "family": "lfm3",
+    "source": "LiquidAI/LFM3-1.7B-Base",
+    "sha": "c2e3f9483222fe8f401df06423df5b1388ae42b1",
+    "lastModified": "2026-10-31",
+    "builds": [
+      {
+        "backend": "xnnpack",
+        "chip": null,
+        "recipe": "8da4w GPTQ",
+        "windows": [
+          2048,
+          4096,
+          8192,
+          16384,
+          32768
+        ]
+      }
+    ]
+  },
+  {
     "id": "experimentalmachines/LFM3-1.7B-ExecuTorch",
     "name": "LFM3-1.7B",
     "family": "lfm3",

@@ -293,7 +293,7 @@ export default function ExecuTorchExports() {
           </table>
         </div>
         <p className="mt-4 max-w-3xl text-sm leading-6 text-ink-soft">
-          Windows are context lengths in tokens (2k = 2,048). {runtimeNotes.gate} {runtimeNotes.lfm3} A dash means ExecuTorch {executorchVersion} has no path for that model on that accelerator.
+          Windows are context lengths in tokens (2k = 2,048). {runtimeNotes.gate} {runtimeNotes.lfm3} {runtimeNotes.nextRelease} A dash means ExecuTorch {executorchVersion} has no path for that model on that accelerator.
           Every repo also carries the tokenizer at its root and a <code>config.json</code> per backend folder that the apps read. The file list is
           generated from the Hugging Face API; the newest change it saw was on {publishedAsOf}.
         </p>

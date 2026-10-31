@@ -340,8 +340,10 @@ export const runtimeNotes = {
     "Vulkan files have run through the apps on three GPUs: a Mali-G925 (Dimensity), an Adreno 750 (Snapdragon 8 Gen 3) and the Snapdragon 8 Elite Gen 5's. On the last, Qwen3-1.7B at 4k decodes at 42 tokens per second on the GPU against 54 on the CPU, and reads a 700-token prompt about twice as fast; on the Mali the CPU decodes two to four times faster.",
   gate:
     "XNNPACK files marked 8da4w GPTQ or fp32 linears passed execupack's decision gate against the fp32 model before publishing. Qwen2.5-1.5B-Instruct's are the older round-to-nearest build, which fails that gate, and no int4 build of it passes; its fp32 file would be 6.2 GB.",
+  nextRelease:
+    "ExecuTorch 1.6.0 is at release candidate (rc1, tagged 2026-10-30). Exports stay on 1.5.1, the runtime both apps ship, until the apps move; execupack's LFM3 definition already exports and runs under 1.6.0.",
   lfm3:
-    "LFM3-1.7B's files are traced from execupack's own LFM3 definition, since ExecuTorch has none, and run on any ExecuTorch 1.5.1 runtime with the LLM runner's custom ops. Neither app has an LFM3 chat template yet, so neither loads them until one is added.",
+    "LFM3-1.7B's files, and its base model's (published on request; a completion model, not a chat model), are traced from execupack's own LFM3 definition, since ExecuTorch has none, and run on any ExecuTorch 1.5.1 runtime with the LLM runner's custom ops. Neither app has an LFM3 chat template yet, so neither loads them until one is added.",
   vulkanAar:
     "Both apps now ship ExecuTorch 1.5.1 with the Vulkan delegate beside XNNPACK; ExecuServe's build adds Qualcomm's QNN and MediaTek's NeuroPilot, and offers each phone only the NPU files compiled for its own chip.",
 };
