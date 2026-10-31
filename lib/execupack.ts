@@ -343,7 +343,7 @@ export const runtimeNotes = {
   nextRelease:
     "ExecuTorch 1.6.0 is at release candidate (rc1, tagged 2026-10-30). Exports stay on 1.5.1, the runtime both apps ship, until the apps move; execupack's LFM3 definition already exports and runs under 1.6.0.",
   lfm3:
-    "LFM3-1.7B's files, and its base model's (published on request; a completion model, not a chat model), are traced from execupack's own LFM3 definition, since ExecuTorch has none, and run on any ExecuTorch 1.5.1 runtime with the LLM runner's custom ops. Neither app has an LFM3 chat template yet, so neither loads them until one is added.",
+    "LFM3-1.7B's files, and its base model's (published on request; a completion model, not a chat model), are traced from execupack's own LFM3 definition, since ExecuTorch has none, and run on any ExecuTorch 1.5.1 runtime with the LLM runner's custom ops. On a Snapdragon 8 Elite Gen 5, through ExecuTorch's llama_main, the 2k file decodes at 43 tokens per second and calls tools in LFM3's format, and the 32k file reads a 5,870-token prompt and recalls a code from its first line (with a runner that prefills in chunks of 2,047 tokens; ExecuTorch's stock 1.5.1 runner fails any prompt of 2,048 tokens or more on export_llm files, an upstream bug). Neither app has an LFM3 chat template yet, so neither loads them until one is added.",
   vulkanAar:
     "Both apps now ship ExecuTorch 1.5.1 with the Vulkan delegate beside XNNPACK; ExecuServe's build adds Qualcomm's QNN and MediaTek's NeuroPilot, and offers each phone only the NPU files compiled for its own chip.",
 };
