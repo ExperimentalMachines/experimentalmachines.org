@@ -30,6 +30,7 @@ const FAMILY_RULES = [
   [/^Llama-3\.2-/, "llama3_2"],
   [/^SmolLM2-/, "smollm2"],
   [/^SmolLM3-/, "smollm3"],
+  [/^LFM3/, "lfm3"],
   [/^LFM2/, "lfm2"],
   [/^gemma-3-/i, "gemma3"],
   [/^gemma-2-/i, "gemma2"],

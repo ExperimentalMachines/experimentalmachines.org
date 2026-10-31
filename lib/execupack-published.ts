@@ -20,7 +20,7 @@ export type PublishedRepo = {
   builds: PublishedBuild[];
 };
 
-export const publishedAsOf = "2026-10-08";
+export const publishedAsOf = "2026-10-31";
 
 export const publishedRepos: PublishedRepo[] = [
   {
@@ -158,12 +158,34 @@ export const publishedRepos: PublishedRepo[] = [
     ]
   },
   {
+    "id": "experimentalmachines/LFM3-1.7B-ExecuTorch",
+    "name": "LFM3-1.7B",
+    "family": "lfm3",
+    "source": "LiquidAI/LFM3-1.7B",
+    "sha": "fd07e0717da417d1deb2bd5b14c2e8d53db6e501",
+    "lastModified": "2026-10-31",
+    "builds": [
+      {
+        "backend": "xnnpack",
+        "chip": null,
+        "recipe": "8da4w GPTQ",
+        "windows": [
+          2048,
+          4096,
+          8192,
+          16384,
+          32768
+        ]
+      }
+    ]
+  },
+  {
     "id": "experimentalmachines/Llama-3.2-1B-Instruct-ExecuTorch",
     "name": "Llama-3.2-1B-Instruct",
     "family": "llama3_2",
     "source": "meta-llama/Llama-3.2-1B-Instruct",
-    "sha": "5d7f93d5ebedb13be93a840f31a1c629327484bf",
-    "lastModified": "2026-10-07",
+    "sha": "aece9782d82b6f6dd63cfc0cff42828413c382b1",
+    "lastModified": "2026-10-08",
     "builds": [
       {
         "backend": "mtk",
@@ -182,7 +204,9 @@ export const publishedRepos: PublishedRepo[] = [
         "recipe": "QNN HTP",
         "windows": [
           2048,
-          4096
+          4096,
+          8192,
+          16384
         ]
       },
       {
@@ -216,8 +240,8 @@ export const publishedRepos: PublishedRepo[] = [
     "name": "Llama-3.2-3B-Instruct",
     "family": "llama3_2",
     "source": "meta-llama/Llama-3.2-3B-Instruct",
-    "sha": "95873ccbc231d67c42ea82e51efe253c6919b7e0",
-    "lastModified": "2026-10-07",
+    "sha": "7c23fbadcc624206a7a22666bd603b8774fbe07d",
+    "lastModified": "2026-10-08",
     "builds": [
       {
         "backend": "mtk",
@@ -236,7 +260,8 @@ export const publishedRepos: PublishedRepo[] = [
         "windows": [
           2048,
           4096,
-          8192
+          8192,
+          16384
         ]
       },
       {
@@ -458,7 +483,7 @@ export const publishedRepos: PublishedRepo[] = [
     "name": "Qwen3-1.7B",
     "family": "qwen3",
     "source": "Qwen/Qwen3-1.7B",
-    "sha": "3c3b6cead7549147f390787ec05c5d509d397647",
+    "sha": "7245b5590b069e10781aa4f38f9da8e57981d1fe",
     "lastModified": "2026-10-08",
     "builds": [
       {
@@ -478,7 +503,8 @@ export const publishedRepos: PublishedRepo[] = [
         "windows": [
           2048,
           4096,
-          8192
+          8192,
+          16384
         ]
       },
       {

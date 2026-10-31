@@ -27,7 +27,7 @@ export const backends: { key: BackendKey; name: string; hardware: string; path: 
 // upstream:  ExecuTorch 1.5.1 has an export path for this family on this backend.
 // checkpoints: only the listed checkpoints (Qualcomm's registry is per checkpoint, not per architecture).
 // none:      no path in 1.5.1.
-// patched:   exportable only with execupack's own patch (third_party/executorch/patches).
+// patched:   exportable only with execupack's own patch (third_party/executorch/patches) or model definition (pipeline/).
 // refused:   ExecuTorch has a path, but measured output degrades, so execupack does not publish it.
 export type Support =
   | { kind: "upstream"; note?: string }
@@ -115,6 +115,23 @@ export const families: Family[] = [
       vulkan: { kind: "none", note: "no Vulkan kernel for the short convolution; a file that lowers anyway segfaults at the first prefill" },
       qnn: { kind: "none", note: NO_QNN },
       mtk: { kind: "patched", note: "no LFM2 model in examples/mediatek; execupack's mediatek-lfm2.patch adds one" },
+      exynos,
+    },
+  },
+  {
+    key: "lfm3",
+    name: "LFM3",
+    sizes: "1.7B",
+    // ExecuTorch names no LFM3 checkpoint: it has no LFM3 model at all.
+    canonical: [],
+    support: {
+      xnnpack: {
+        kind: "patched",
+        note: "ExecuTorch 1.5.1 has no LFM3 model, and its transformer cannot express LFM3's sliding-window layers, second RoPE, per-head output gate or extra norms; execupack's own definition (pipeline/lfm3_model.py) matches Hugging Face on fp32 logits",
+      },
+      vulkan: { kind: "none", note: "no Vulkan kernel for the short convolution, which LFM3 keeps from LFM2" },
+      qnn: { kind: "none", note: NO_QNN },
+      mtk: { kind: "none", note: "no LFM3 model in examples/mediatek" },
       exynos,
     },
   },
@@ -231,7 +248,7 @@ export const excluded: { what: string; why: string }[] = [
   { what: "Codegen2 1B", why: "code completion, not chat" },
   { what: "Llama 2, Llama 3, Llama 3.1, Qwen2.5-Coder 32B", why: "above 4B" },
   { what: "Qwen3.5 MoE", why: "mixture of experts" },
-  { what: "Llama 3.2 Vision, InternVL3, SmolVLM, Granite Speech, Gemma 4", why: "multimodal; the apps run text models" },
+  { what: "Llama 3.2 Vision, InternVL3, SmolVLM, Granite Speech, Gemma 4, LFM3-VL, LFM3-Omni, LFM3-Audio", why: "multimodal; the apps run text models" },
   { what: "LFM2-350M, LFM2-700M, LFM2-1.2B", why: "the apps choose a chat template from the model's name and know LFM2.5, not the first LFM2 releases" },
 ];
 
@@ -323,6 +340,8 @@ export const runtimeNotes = {
     "Vulkan files have run through the apps on three GPUs: a Mali-G925 (Dimensity), an Adreno 750 (Snapdragon 8 Gen 3) and the Snapdragon 8 Elite Gen 5's. On the last, Qwen3-1.7B at 4k decodes at 42 tokens per second on the GPU against 54 on the CPU, and reads a 700-token prompt about twice as fast; on the Mali the CPU decodes two to four times faster.",
   gate:
     "XNNPACK files marked 8da4w GPTQ or fp32 linears passed execupack's decision gate against the fp32 model before publishing. Qwen2.5-1.5B-Instruct's are the older round-to-nearest build, which fails that gate, and no int4 build of it passes; its fp32 file would be 6.2 GB.",
+  lfm3:
+    "LFM3-1.7B's files are traced from execupack's own LFM3 definition, since ExecuTorch has none, and run on any ExecuTorch 1.5.1 runtime with the LLM runner's custom ops. Neither app has an LFM3 chat template yet, so neither loads them until one is added.",
   vulkanAar:
     "Both apps now ship ExecuTorch 1.5.1 with the Vulkan delegate beside XNNPACK; ExecuServe's build adds Qualcomm's QNN and MediaTek's NeuroPilot, and offers each phone only the NPU files compiled for its own chip.",
 };
