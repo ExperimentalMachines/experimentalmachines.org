@@ -25,7 +25,13 @@ OPENGRAD=../OpenGrad node scripts/build-gguf-bf16-data.mjs
 
 Both are committed, because CI builds without an OpenGrad checkout.
 
-Everything about OpenWeights lives under `/openweights`, and its layout marks OpenWeights as the current project in the header. The parent page reads `lib/openweights.ts`, which lists its research pages newest first. The privacy policy stays on the app's own GitHub Pages site, because that is the address registered in Google Play. `/openweights/prefill-decode` reads `lib/prefill-decode.ts`, the nine CPU, GPU and NPU matrices from the Snapdragon 8 Elite Gen 5 run; its findings table is derived from those cells rather than stored. `/openweights/latency`, `/openweights/window` and `/openweights/reruns` were first published on that GitHub Pages site; `lib/openweights-latency.ts`, `lib/openweights-window.ts` and `lib/openweights-reruns.ts` carry their data as published there, and their charts are in `components/openweights/`, with each phone's colour and marker in `chips.tsx`. The homepage's OpenWeights figure reads the latency data. A new OpenWeights page goes under `app/openweights/` and into that list.
+Everything about OpenWeights lives under `/openweights`, and its layout marks OpenWeights as the current project in the header. The parent page reads `lib/openweights.ts`, which lists its research pages newest first. The privacy policy stays on the app's own GitHub Pages site, because that is the address registered in Google Play. `/openweights/prefill-decode` reads `lib/prefill-decode-data.ts`, the nine CPU, GPU and NPU matrices at reply length from the Snapdragon 8 Elite Gen 5 runs, generated from OpenWeights' raw results at a pinned commit and committed because CI builds without that checkout; `lib/prefill-decode.ts` adds the links and the few clock and thermal notes taken from its report. Re-run after new results land:
+
+```bash
+OPENWEIGHTS=../mobile-inference node scripts/build-prefill-decode-data.mjs <commit>
+```
+
+`/openweights/latency`, `/openweights/window` and `/openweights/reruns` were first published on that GitHub Pages site; `lib/openweights-latency.ts`, `lib/openweights-window.ts` and `lib/openweights-reruns.ts` carry their data as published there, and their charts are in `components/openweights/`, with each phone's colour and marker in `chips.tsx`. The homepage's OpenWeights figure reads the latency data. A new OpenWeights page goes under `app/openweights/` and into that list.
 
 The `/execuserve` page and its privacy policy read `lib/execuserve.ts` and `app/execuserve/privacy/page.tsx`. The privacy page is the URL given to Google Play and mirrors `docs/privacy-policy.md` in the [ExecuServe repository](https://github.com/ExperimentalMachines/execuserve); change both together.
 

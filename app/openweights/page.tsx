@@ -41,14 +41,14 @@ function Phone({ src, alt, width, height }: { src: string; alt: string; width: n
   );
 }
 
-// The newest study, drawn for one model: the fastest pairing against the three
-// that keep both halves on one processor.
-const qwen = pdModels.find((m) => m.name === "Qwen3 1.7B" && m.quant === "Q4_0")!;
+// The newest study, drawn for the model the app ships: the three pairings that keep both halves
+// on one processor, and NPU reading with CPU writing.
+const qwen = pdModels.find((m) => m.name === "Qwen3 1.7B" && m.quant === "Q8_0")!;
 const pairings = [
-  { label: "NPU + CPU", cell: qwen.cells[2][0] },
-  { label: "NPU only", cell: qwen.cells[2][2] },
-  { label: "CPU only", cell: qwen.cells[0][0] },
-  { label: "GPU only", cell: qwen.cells[1][1] },
+  { label: "NPU → NPU", cell: qwen.cells[2][2] },
+  { label: "NPU → CPU", cell: qwen.cells[2][0] },
+  { label: "CPU → CPU", cell: qwen.cells[0][0] },
+  { label: "GPU → GPU", cell: qwen.cells[1][1] },
 ];
 
 export default function OpenWeights() {
@@ -131,7 +131,7 @@ export default function OpenWeights() {
           <div className="rounded-[1.75rem] bg-bench p-6 sm:p-8">
             <Bars
               rows={pairings.map((p) => ({ label: p.label, value: p.cell.seconds, shown: `${p.cell.seconds.toFixed(1)} s` }))}
-              caption={`${qwen.name} ${qwen.quant} on a Snapdragon 8 Elite Gen 5: total time for ${pdTurns} conversation turns with 64-token replies. NPU + CPU reads the prompt on the NPU and writes the reply on the CPU. Shorter is faster.`}
+              caption={`${qwen.name} ${qwen.quant}, the model OpenWeights ships, on a warm Snapdragon 8 Elite Gen 5: total time for the same ${pdTurns} conversation turns at their own reply lengths. CPU → NPU means prefill on the CPU, decode on the NPU. Shorter is faster.`}
             />
           </div>
         </div>

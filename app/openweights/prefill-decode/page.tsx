@@ -1,27 +1,37 @@
 import type { Metadata } from "next";
-import Bars from "@/components/home/Bars";
 import Go from "@/components/home/Go";
 import { h2, lede, link } from "@/components/home/ui";
 import {
-  pdConversations,
-  pdExecutorch,
+  name,
+  pairs,
+  pdGate,
   pdLinks,
   pdModels,
+  pdNewTokens,
   pdPhone,
-  pdReplyMean,
-  pdSummary,
+  pdReplyTokens,
+  pdSensors,
+  pdSpread,
+  pdStall,
+  pdStuck,
+  pdThermal,
+  pdThrottle,
+  pdTrigger,
   pdTurns,
+  pdWarm,
   processors,
+  ranked,
   type PdModel,
 } from "@/lib/prefill-decode";
 
 export const metadata: Metadata = {
   title: "Prefill and decode on CPU, GPU and NPU: OpenWeights",
   description:
-    "Nine models, each run through all nine pairings of the processor that reads the prompt and the one that writes the reply, in one llama.cpp build on a Snapdragon 8 Elite Gen 5, with 64-token replies; then the likeliest pairings at the conversations' own reply lengths.",
+    "Nine models on a warm Snapdragon 8 Elite Gen 5, each through every pairing of the processor that does prefill and the one that does decode, at the conversations' own reply lengths, with the phone's throttling measured beside them.",
   openGraph: {
-    title: "Read on the NPU. Where to write depends on the reply.",
-    description: "Every prefill and decode pairing of CPU, GPU and NPU on a Snapdragon 8 Elite Gen 5, for nine models in one llama.cpp build, and the likeliest at full reply length.",
+    title: "Prefill on the NPU. Decode anywhere but the GPU.",
+    description:
+      "Every prefill and decode pairing of CPU, GPU and NPU on a warm Snapdragon 8 Elite Gen 5, for nine models in one llama.cpp build: one matrix per model.",
     url: "/openweights/prefill-decode/",
   },
 };
@@ -29,13 +39,17 @@ export const metadata: Metadata = {
 function Section({ id, title, tint, children }: { id: string; title: string; tint?: boolean; children: React.ReactNode }) {
   return (
     <section id={id} className={`scroll-mt-28 lg:scroll-mt-16 ${tint ? "bg-bench" : ""}`}>
-      <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 sm:py-24">
+      <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 sm:py-20">
         <h2 className={h2}>{title}</h2>
-        <div className="mt-10">{children}</div>
+        <div className="mt-10 space-y-12">{children}</div>
       </div>
     </section>
   );
 }
+
+const List = ({ children }: { children: React.ReactNode }) => (
+  <ul className="max-w-3xl list-disc space-y-3 pl-5 text-lg leading-8 text-ink-soft marker:text-ink/30">{children}</ul>
+);
 
 const Item = ({ lead, children }: { lead: string; children: React.ReactNode }) => (
   <li>
@@ -43,11 +57,9 @@ const Item = ({ lead, children }: { lead: string; children: React.ReactNode }) =
   </li>
 );
 
-const List = ({ children }: { children: React.ReactNode }) => (
-  <ul className="max-w-3xl list-disc space-y-3 pl-5 text-lg leading-8 text-ink-soft marker:text-ink/30">{children}</ul>
-);
-
 const Note = ({ children }: { children: React.ReactNode }) => <p className="mt-4 max-w-3xl text-sm leading-6 text-ink-soft">{children}</p>;
+
+const Sub = ({ children }: { children: React.ReactNode }) => <h3 className="display text-2xl">{children}</h3>;
 
 // A table that scrolls sideways on narrow screens, focusable so the keyboard can scroll it.
 const Scroll = ({ label, children }: { label: string; children: React.ReactNode }) => (
@@ -55,597 +67,777 @@ const Scroll = ({ label, children }: { label: string; children: React.ReactNode 
     role="region"
     aria-label={`${label}, scrolls sideways on small screens`}
     tabIndex={0}
-    className="overflow-x-auto rounded-lg focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-blue"
+    className="mt-4 overflow-x-auto rounded-lg focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-blue"
   >
     {children}
   </div>
 );
 
-const th = "pb-3 pr-4 text-left text-xs font-normal text-ink-soft";
-const thNum = "pb-3 pr-4 text-right text-xs font-normal text-ink-soft";
-
-const n = (x: number) => Math.round(x).toLocaleString("en-US");
-const f1 = (x: number) => x.toFixed(1);
-// Seconds at reply length, which run past a thousand: rounded as f1 rounds, then grouped.
-const s1 = (x: number) => {
-  const [whole, tenth] = f1(x).split(".");
-  return `${Number(whole).toLocaleString("en-US")}.${tenth} s`;
-};
-// A signed percentage, with a real minus sign.
-const pct = (x: number) => `${x < 0 ? "−" : x > 0 ? "+" : ""}${Math.abs(x).toFixed(1)}%`;
-const pairing = (p: { prefillOn: string; decodeOn: string }) => `${p.prefillOn} + ${p.decodeOn}`;
-const named = ([p, d]: readonly [string, string]) => (p === d ? `${p} only` : `${p} + ${d}`);
-// Decode rates to one decimal, or two where one would hide which of CPU and NPU is faster.
-const rates = (xs: number[]) => {
-  const dp = Math.abs(xs[0] - xs[2]) <= 0.1 ? 2 : 1;
-  return xs.map((x) => x.toFixed(dp)).join(" / ");
-};
-
-const summaries = pdModels.map(pdSummary);
-const shares = summaries.map((s) => Math.round((100 * s.fastest.seconds) / s.cpuOnly.seconds));
-const npuVsCpu = summaries.map((s) => s.prefill[2] / s.prefill[0]);
-const npuVsGpu = summaries.map((s) => s.prefill[2] / s.prefill[1]);
-const range = (xs: number[]) => `${f1(Math.min(...xs))} to ${f1(Math.max(...xs))}`;
-
-// The hero draws one model's three main pairings at both reply lengths.
-const hero = pdModels.find((m) => m.name === "Qwen3 1.7B" && m.quant === "Q4_0")!;
-const heroPairings = [
-  { label: "NPU + CPU", short: hero.cells[2][0], long: pdReplyMean(hero, "npuCpu")! },
-  { label: "NPU only", short: hero.cells[2][2], long: pdReplyMean(hero, "npuOnly")! },
-  { label: "CPU only", short: hero.cells[0][0], long: pdReplyMean(hero, "cpuOnly")! },
-];
-const heroRows = (pick: (p: (typeof heroPairings)[number]) => number, shown: (x: number) => string) =>
-  heroPairings.map((p) => ({ label: p.label, value: pick(p), shown: shown(pick(p)) })).sort((a, b) => a.value - b.value);
-
-function Matrix({ m }: { m: PdModel }) {
-  const { fastest } = pdSummary(m);
-  const all = m.cells.flat().map((c) => c.seconds);
-  const [lo, hi] = [Math.min(...all), Math.max(...all)];
-  const fastestNow = named([fastest.prefillOn, fastest.decodeOn]);
+// A plain table: a header row, then rows whose first cell names the row.
+function Table({ label, head, rows, min = "36rem" }: { label: string; head: string[]; rows: React.ReactNode[][]; min?: string }) {
   return (
-    <div className="min-w-0 max-w-xl">
-      <h3 className="display text-xl">
-        {m.name} <span className="text-ink-soft">{m.quant}</span>
-      </h3>
-      <p className="mt-1 text-sm text-ink-soft">
-        {m.session === "first" ? "First" : "Second"} session ({m.run}), {m.hexagonSessions} Hexagon session{m.hexagonSessions > 1 ? "s" : ""}
-        {m.secondPass && (
-          <>
-            . Second pass: cells within {m.secondPass.largest}%,{" "}
-            {named(m.secondPass.fastest) === fastestNow ? "same fastest" : `${named(m.secondPass.fastest)} fastest`}
-          </>
-        )}
-      </p>
-      <div className="mt-4">
-        <Scroll label={`${m.name} ${m.quant} matrix`}>
-          <table className="w-full min-w-[19rem] table-fixed border-separate border-spacing-1 text-[13px] tabular-nums sm:text-sm">
-            <thead>
-              <tr>
-                <th className="w-[19%] pb-1 text-left align-bottom text-[0.7rem] font-normal leading-4 text-ink-soft">
-                  prefill <span aria-hidden>↓</span>
-                  <br />
-                  decode <span aria-hidden>→</span>
+    <div className="max-w-4xl">
+      <Scroll label={label}>
+        <table className="w-full text-sm" style={{ minWidth: min }}>
+          <thead>
+            <tr className="align-bottom">
+              {head.map((h, i) => (
+                <th key={i} className={`pb-3 text-left text-xs font-normal text-ink-soft ${i < head.length - 1 ? "pr-4" : ""}`}>
+                  {h}
                 </th>
-                {processors.map((p) => (
-                  <th key={p} scope="col" className="pb-1 text-left text-xs font-medium">
-                    {p}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {m.cells.map((row, i) => (
-                <tr key={processors[i]}>
-                  <th scope="row" className="text-left text-xs font-medium">
-                    {processors[i]}
-                  </th>
-                  {row.map((c, j) => {
-                    const best = fastest.prefillOn === processors[i] && fastest.decodeOn === processors[j];
-                    // Faster cells carry more of the cobalt; the fastest is solid.
-                    const t = hi === lo ? 1 : (hi - c.seconds) / (hi - lo);
-                    return (
-                      <td
-                        key={processors[j]}
-                        className={`rounded-md px-1.5 py-2 align-top sm:px-2 ${best ? "bg-blue text-white" : ""}`}
-                        style={best ? undefined : { backgroundColor: `color-mix(in srgb, var(--color-blue) ${Math.round(4 + 20 * t)}%, white)` }}
-                      >
-                        <span className="block whitespace-nowrap">
-                          {n(c.prefill)} <span className={best ? "text-white/70" : "text-ink-soft"}>/</span> {f1(c.decode)}
-                        </span>
-                        <span className={`block text-xs ${best ? "text-white/85" : "text-ink-soft"}`}>
-                          {f1(c.seconds)} s{best && <span className="sr-only">, the fastest pairing</span>}
-                        </span>
-                      </td>
-                    );
-                  })}
-                </tr>
               ))}
-            </tbody>
-          </table>
-        </Scroll>
-      </div>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((r, k) => (
+              <tr key={k} className="border-t border-rule align-top">
+                {r.map((c, i) =>
+                  i === 0 ? (
+                    <th key={i} scope="row" className="py-3 pr-4 text-left font-medium">
+                      {c}
+                    </th>
+                  ) : (
+                    <td key={i} className={`py-3 text-ink-soft ${i < r.length - 1 ? "pr-4" : ""}`}>
+                      {c}
+                    </td>
+                  ),
+                )}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </Scroll>
     </div>
   );
 }
 
-// A pairing's time at reply length: the mean of its complete runs, which they were and how far
-// apart, or how far its only run got.
-function ReplyTime({ m, k }: { m: PdModel; k: "npuOnly" | "npuCpu" | "cpuOnly" }) {
-  const x = pdReplyMean(m, k);
-  if (!x) {
-    const part = m.reply.find((r) => r[k]);
-    return <span className="text-ink-soft">{part ? `cut short, ${part[k]!.turns} of ${pdTurns} turns` : "not run"}</span>;
-  }
+const th = "pb-3 pr-4 text-left text-xs font-normal text-ink-soft";
+const thNum = "pb-3 pr-4 text-right text-xs font-normal text-ink-soft";
+const td = "py-3 pr-4 text-right";
+
+const grouped = (x: number, d = 0) =>
+  x.toLocaleString("en-US", {
+    minimumFractionDigits: d,
+    maximumFractionDigits: d,
+  });
+// How much longer than the fastest, to one decimal below 1% so a near tie does not read as +0%.
+const slower = (x: number, best: number) => {
+  const d = (100 * x) / best - 100;
+  return `+${d < 1 ? d.toFixed(1) : Math.round(d)}%`;
+};
+const label = (m: PdModel) => (
+  <>
+    {m.name} <span className="font-normal text-ink-soft">{m.quant}</span>
+  </>
+);
+const ordinal = (n: number) => `${n}${n === 1 ? "st" : n === 2 ? "nd" : n === 3 ? "rd" : "th"}`;
+const short = (m: PdModel) => `${m.name}${m.quant === "Q8_0" ? " Q8_0" : ""}`;
+const range = (xs: number[], d = 1) => `${Math.min(...xs).toFixed(d)} to ${Math.max(...xs).toFixed(d)}`;
+const andList = (xs: string[]) => (xs.length < 2 ? xs.join("") : `${xs.slice(0, -1).join(", ")} and ${xs.at(-1)}`);
+
+const best = pdModels.map((m) => ranked(m));
+const npuPrefillFastest = best.filter((r) => r[0].prefill === "NPU").length;
+const gpuDecodeFastest = best.filter((r) => r[0].decode === "GPU").length;
+const npuVsCpu = pdModels.map((m) => m.prefill[2].tokS / m.prefill[0].tokS);
+const npuVsGpu = pdModels.map((m) => m.prefill[2].tokS / m.prefill[1].tokS);
+const npuFirst = pdModels.map((m) => m.prefill[2].firstTokenMs);
+const cpuFirst = pdModels.map((m) => m.prefill[0].firstTokenMs / 1000);
+const coolCells = pdModels.flatMap((m) =>
+  pairs(m)
+    .filter((p) => p.cell.coolStart)
+    .map((p) => ({ m, p })),
+);
+const shares = pdModels.flatMap((m) =>
+  pairs(m)
+    .filter((p) => !p.cell.coolStart)
+    .map((p) => 100 * p.cell.decodeShare),
+);
+const cpuStep = pdModels.map((m) => m.cpuStepMs);
+
+// The GPU's pooled decode rate against the slower of the other two, in percent below it; within 5%
+// is called level.
+const gpuGap = (m: PdModel) => 100 * (1 - m.decode[1].tokS / Math.min(m.decode[0].tokS, m.decode[2].tokS));
+const gpuSlowest = pdModels.filter((m) => gpuGap(m) >= 5);
+const gpuLevel = pdModels.filter((m) => gpuGap(m) < 5);
+
+// Which processor decoded in each model's fastest pairing, and where the next pairing with the same
+// prefill is within 1%.
+const writers = best.map((r, k) => {
+  const [a, b] = r;
+  const tie = b.prefill === a.prefill && b.cell.seconds / a.cell.seconds < 1.01;
+  return { model: pdModels[k], decode: a.decode, tie, gap: 100 * (b.cell.seconds / a.cell.seconds - 1) };
+});
+
+// Every compared pairing in which CPU decode got stuck, model by model.
+const stops = pdModels.flatMap((m) =>
+  pairs(m)
+    .filter((p) => !p.cell.coolStart && p.cell.frozenSeconds > 0)
+    .map((p) => ({ m, p })),
+);
+const stuckShares = stops.map(({ p }) => (100 * p.cell.frozenSeconds) / p.cell.seconds);
+const pct = (x: number) => (x < 0.5 ? "under 1%" : `${Math.round(x)}%`);
+
+// If a fix won back the same share of stuck time in every pairing, would a model's fastest change?
+const couldFlip = pdModels.flatMap((m, k) => {
+  const top = best[k][0];
+  const same = (p: { prefill: string; decode: string }) => p.prefill === top.prefill && p.decode === top.decode;
+  const need = pairs(m)
+    .filter((p) => !p.cell.coolStart && !same(p) && p.cell.frozenSeconds > top.cell.frozenSeconds)
+    .map((p) => ({
+      p,
+      share: (p.cell.seconds - top.cell.seconds) / (p.cell.frozenSeconds - top.cell.frozenSeconds),
+    }))
+    .filter((x) => x.share < 1)
+    .sort((a, b) => a.share - b.share);
+  return need.length ? [{ m, ...need[0] }] : [];
+});
+
+function Matrix({ m, rank }: { m: PdModel; rank: ReturnType<typeof ranked> }) {
+  const top = rank[0].cell.seconds;
+  const low = rank.at(-1)!.cell.seconds;
   return (
-    <>
-      {s1(x.seconds)}
-      {x.runs.length > 1 && (
-        <span className="block text-xs text-ink-soft">
-          {x.runs.join(", ")}: {f1(100 * x.apart)}% apart
-        </span>
-      )}
-    </>
+    <div className="min-w-0">
+      <h3 className="display text-xl">{label(m)}</h3>
+      <p className="mt-1 text-sm text-ink-soft">Phone {m.phone}</p>
+      <Scroll label={`${m.name} ${m.quant}: every pairing`}>
+        <table className="w-full min-w-[19rem] table-fixed border-separate border-spacing-1 text-sm tabular-nums">
+          <thead>
+            <tr>
+              <th className="w-[22%] pb-1 text-left align-bottom text-[0.7rem] font-normal leading-4 text-ink-soft">
+                prefill <span aria-hidden>↓</span>
+                <br />
+                decode <span aria-hidden>→</span>
+              </th>
+              {processors.map((p) => (
+                <th key={p} scope="col" className="pb-1 text-left text-xs font-medium">
+                  {p}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {m.cells.map((row, i) => (
+              <tr key={processors[i]}>
+                <th scope="row" className="text-left text-xs font-medium">
+                  {processors[i]}
+                </th>
+                {row.map((c, j) => {
+                  const fastest = !c.coolStart && c.seconds === top;
+                  const order = (
+                    <span aria-hidden className={`absolute right-1.5 top-1 text-[0.65rem] ${fastest ? "text-white/70" : "text-ink-soft"}`}>
+                      {c.order}
+                    </span>
+                  );
+                  if (c.coolStart)
+                    return (
+                      <td key={j} className="relative rounded-md border border-dashed border-ink/25 px-2 py-2 align-top text-ink-soft">
+                        {order}
+                        <span className="block">{grouped(c.seconds)} s</span>
+                        <span className="block text-xs">started cool</span>
+                        <span className="sr-only">, ran {ordinal(c.order)}</span>
+                      </td>
+                    );
+                  const t = low === top ? 1 : (low - c.seconds) / (low - top);
+                  return (
+                    <td
+                      key={j}
+                      className={`relative rounded-md px-2 py-2 align-top ${fastest ? "bg-blue text-white" : ""}`}
+                      style={
+                        fastest
+                          ? undefined
+                          : {
+                              backgroundColor: `color-mix(in srgb, var(--color-blue) ${Math.round(5 + 22 * t)}%, white)`,
+                            }
+                      }
+                    >
+                      {order}
+                      <span className="block font-medium">
+                        {grouped(c.seconds)} s
+                        {c.frozenSeconds > 0 && (
+                          <>
+                            <span aria-hidden>*</span>
+                            <span className="sr-only">, including {Math.round(c.frozenSeconds)} s with decode stuck</span>
+                          </>
+                        )}
+                      </span>
+                      <span className={`block text-xs ${fastest ? "text-white/85" : "text-ink-soft"}`}>
+                        {fastest ? "fastest" : slower(c.seconds, top)}
+                      </span>
+                      <span className="sr-only">, ran {ordinal(c.order)}</span>
+                    </td>
+                  );
+                })}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </Scroll>
+    </div>
   );
 }
-
-// NPU + CPU against NPU only within each reply-length run, one line per run, named where the
-// model ran more than once. The mark is for cells whose cooling gates ended differently.
-function ReplyAgainst({ m }: { m: PdModel }) {
-  return m.reply
-    .filter((r) => r.pair)
-    .map((r) => {
-      const p = r.pair!;
-      const sameGate = r.npuCpu!.gate === r.npuOnly!.gate;
-      return (
-        <span key={r.run} className="block">
-          {m.reply.length > 1 && <span className="text-ink-soft">{r.run} </span>}
-          {pct(p.against)}
-          {!sameGate && "*"}
-          {p.turns !== pdTurns && <span className="text-ink-soft">, {p.turns} turns</span>}
-          {p.withoutStalls !== undefined && <span className="block text-xs text-ink-soft">{pct(p.withoutStalls)} without stalls</span>}
-        </span>
-      );
-    });
-}
-
-// The model's reply-length runs, by the report's labels, and the units they ran on.
-const runsLine = (m: PdModel) => {
-  const runs = m.reply.map((r) => r.run);
-  if (runs.length === 1) return runs[0];
-  const units = new Set(m.reply.map((r) => r.unit)).size;
-  return `${runs.slice(0, -1).join(", ")} and ${runs.at(-1)}, on ${units} unit${units > 1 ? "s" : ""}`;
-};
 
 export default function PrefillDecode() {
   return (
     <main id="main" className="scroll-mt-28 lg:scroll-mt-16">
       <section id="top">
-        <div className="mx-auto grid max-w-7xl gap-12 px-4 py-14 sm:px-6 sm:py-20 lg:grid-cols-[1.1fr_1fr] lg:gap-16">
-          <div>
-            <nav aria-label="Breadcrumb">
-              <ol className="flex flex-wrap items-center gap-2 text-sm text-ink-soft">
-                <li>
-                  <a href="/openweights/" className="hover:text-ink">
-                    OpenWeights
-                  </a>
-                </li>
-                <li aria-hidden>/</li>
-                <li>
-                  <a href="/openweights/#research" className="hover:text-ink">
-                    Research
-                  </a>
-                </li>
-              </ol>
-            </nav>
-            <h1 className="display mt-8 text-balance text-5xl font-medium leading-[1.02] tracking-[-0.035em] sm:text-6xl">
-              Read on the NPU. Where to write depends on the reply.
-            </h1>
-            <p className={`${lede} mt-6 max-w-xl`}>
-              On a Snapdragon 8 Elite Gen 5 the NPU read prompts {range(npuVsCpu)} times faster than the CPU, on all nine models we ran. With 64-token
-              replies, reading on the NPU and writing on the CPU was the fastest of the nine pairings, at {Math.min(...shares)}% to {Math.max(...shares)}% of
-              the CPU&apos;s time alone; on Qwen3 4B it ties with the NPU alone. At the conversations&apos; own reply lengths, about six times longer, the
-              phone throttled and the NPU alone was faster on most of the transformers.
-            </p>
-            <p className="mt-4 max-w-xl leading-7 text-ink-soft">
-              Each model ran through every combination of where the prompt is read (prefill) and where the reply is written (decode), in one llama.cpp
-              build, on real multi-turn conversations. Measured on 24 and 25 October 2026, on phones in Qualcomm Device Cloud.
-            </p>
-          </div>
-          <div className="self-end rounded-[1.75rem] bg-bench p-6 sm:p-8">
-            <p className="mb-4 text-sm font-medium">64-token replies</p>
-            <Bars rows={heroRows((p) => p.short.seconds, (x) => `${f1(x)} s`)} caption={`${hero.name} ${hero.quant}: total time for the ${pdTurns} conversation turns.`} />
-            <p className="mb-4 mt-10 text-sm font-medium">The conversations&apos; own reply lengths</p>
-            <Bars
-              rows={heroRows((p) => p.long.seconds, s1)}
-              caption="The same turns, the mean of two runs, on a scale of their own. A pairing is named prefill processor first. Shorter is faster."
-            />
-          </div>
+        <div className="mx-auto max-w-7xl px-4 py-14 sm:px-6 sm:py-20">
+          <nav aria-label="Breadcrumb">
+            <ol className="flex flex-wrap items-center gap-2 text-sm text-ink-soft">
+              <li>
+                <a href="/openweights/" className="hover:text-ink">
+                  OpenWeights
+                </a>
+              </li>
+              <li aria-hidden>/</li>
+              <li>
+                <a href="/openweights/#research" className="hover:text-ink">
+                  Research
+                </a>
+              </li>
+            </ol>
+          </nav>
+          <h1 className="display mt-8 max-w-4xl text-balance text-5xl font-medium leading-[1.02] tracking-[-0.035em] sm:text-6xl">
+            Prefill on the NPU. Decode anywhere but the GPU.
+          </h1>
+          <p className={`${lede} mt-6 max-w-2xl`}>
+            Nine models on a {pdPhone.soc}. Each ran every pairing of the processor that does prefill and the one that does decode, on one phone in
+            one run. The phone throttles itself as it heats, so we measured that too, and compare pairings that started warm.
+          </p>
+          <ul className="mt-10 grid max-w-4xl gap-6 sm:grid-cols-3">
+            {[
+              [`${npuPrefillFastest} of ${pdModels.length}`, "models were fastest with NPU prefill"],
+              [`${gpuDecodeFastest} of ${pdModels.length}`, "models were fastest with GPU decode"],
+              [`Up to ${Math.round(Math.max(...stuckShares))}%`, "of a CPU-decode pairing's time went to decode steps that took over half a second"],
+            ].map(([big, small]) => (
+              <li key={small} className="border-t-2 border-blue pt-4">
+                <p className="display text-3xl">{big}</p>
+                <p className="mt-1 leading-6 text-ink-soft">{small}</p>
+              </li>
+            ))}
+          </ul>
         </div>
       </section>
 
-      <Section id="findings" title="Findings" tint>
+      <Section id="findings" title="What we found" tint>
         <List>
-          <Item lead="Prefill:">
-            the NPU is fastest on every model, {range(npuVsCpu)} times the CPU and {range(npuVsGpu)} times the GPU.
+          <Item lead="Prefill: the NPU, on every model.">
+            {range(npuVsCpu)} times as fast as the CPU and {range(npuVsGpu)} times as fast as the GPU. The first token came after a median{" "}
+            {Math.round(Math.min(...npuFirst))} to {Math.round(Math.max(...npuFirst))} ms, against {range(cpuFirst)} s on the CPU.
           </Item>
-          <Item lead="Decode:">
-            the CPU is fastest on eight models and level with the NPU on Qwen3 4B (15.27 against 15.35 tok/s). On the transformers its lead over the NPU
-            shrinks with size, from 1.27 to 1.37 times at 0.6B and 1B to 1.08 times on Llama 3.2 3B. The two LFM2.5 hybrids keep a wider lead: 1.48 times at
-            1.2B, 1.34 times at 2.6B.
+          <Item lead="Decode: the NPU or the CPU, depending on the model.">
+            The NPU decoded in the fastest pairing of {writers.filter((w) => w.decode === "NPU" && !w.tie).length} models and the CPU in{" "}
+            {andList(writers.filter((w) => w.decode === "CPU" && !w.tie).map((w) => short(w.model)))}. On{" "}
+            {andList(writers.filter((w) => w.tie).map((w) => short(w.model)))}, NPU prefill with CPU decode and with NPU decode finished within{" "}
+            {andList(writers.filter((w) => w.tie).map((w) => `${w.gap.toFixed(1)}%`))} of each other.
           </Item>
-          <Item lead="Long context:">
-            past 2,048 tokens of context the NPU decoded faster than the CPU on five transformers (Qwen3 4B: 12.6 against 10.6 tok/s). Four or five turns
-            each, late in replay and so also the hottest: a tendency, not a rule.
+          <Item lead="The GPU: never in the fastest pairing.">
+            It was the slowest decoder on {gpuSlowest.length} models and within {andList(gpuLevel.map((m) => `${gpuGap(m).toFixed(1)}%`))} of the CPU
+            on {andList(gpuLevel.map(short))}. On Qwen3 4B its median decode step rose from {pdThermal.gpuStep4b.before} ms at 1,024 to 1,535 tokens
+            of context to {pdThermal.gpuStep4b.after} ms at 2,048 to 2,559.
           </Item>
-          <Item lead="Fastest pairing at 64 tokens:">
-            NPU prefill with CPU decode on all nine models, at {Math.min(...shares)}% to {Math.max(...shares)}% of CPU-only time. On Qwen3 4B it ties with
-            NPU only: 0.2% ahead in the first pass, 0.3% behind in the second. On Llama 3.2 3B, NPU only is 7.4% slower. At the conversations&apos; own
-            reply lengths this changes;{" "}
-            <a href="#reply-length" className={link}>
-              see below
+          <Item lead="Decode is most of the wait.">
+            The replies run {pdReplyTokens.median} tokens at the median, and decode took {Math.floor(Math.min(...shares))}% to over{" "}
+            {Math.floor(Math.max(...shares))}% of each pairing&apos;s time, so the decoder decides more than the prefill processor.
+          </Item>
+          <Item lead="Heat shapes the results.">
+            The phone throttles itself in two steps as it heats. Every pairing compared ran under the first; the second comes and goes, and CPU decode
+            gets stuck while it is on. Both are described under{" "}
+            <a href="#heat" className={link}>
+              Heat
             </a>
-            .
-          </Item>
-          <Item lead="GPU:">
-            never the fastest at either phase. On the two LFM2.5 hybrids it decodes faster than the NPU (46.7 against 42.7, 21.6 against 20.7 tok/s); on the
-            seven transformers it decodes slowest.
-          </Item>
-          <Item lead="Handoff:">copying the conversation state from one processor to another took a median 0.6 to 11 ms per turn.</Item>
-          <Item lead="Second pass:">
-            five models ran again with every cell in another order. Each kept its slowest pairing, and the four smaller ones their fastest; cells moved a
-            median 1.2% to 2.9%, at most 6.4%. Qwen3 4B&apos;s top two swapped, NPU only taking 149.6 s and NPU + CPU 150.1 s: over both passes, a tie.
+            , below.
           </Item>
         </List>
-        <div className="mt-12">
-          <Scroll label="Findings per model">
-            <table className="w-full min-w-[52rem] text-sm tabular-nums">
+        <div>
+          <Sub>The fastest pairing for each model</Sub>
+          <Scroll label="The fastest pairing for each model">
+            <table className="w-full min-w-[44rem] text-sm tabular-nums">
               <thead>
                 <tr className="align-bottom">
                   <th className={th}>Model</th>
-                  <th className={thNum}>NPU prefill vs CPU</th>
-                  <th className={thNum}>NPU prefill vs GPU</th>
-                  <th className={thNum}>Decode tok/s, CPU / GPU / NPU</th>
-                  <th className={thNum}>Fastest</th>
-                  <th className={thNum}>Fastest vs CPU only</th>
+                  <th className={th}>Fastest</th>
+                  <th className={thNum}>Its time</th>
+                  <th className={thNum}>Next best</th>
+                  <th className={thNum}>CPU only</th>
                   <th className={`${thNum} pr-0`}>Slowest</th>
                 </tr>
               </thead>
               <tbody>
                 {pdModels.map((m, k) => {
-                  const s = summaries[k];
+                  const r = best[k];
+                  const top = r[0].cell.seconds;
+                  const cpu = m.cells[0][0];
+                  const last = r.at(-1)!;
                   return (
-                    <tr key={`${m.name}${m.quant}`} className="border-t border-rule">
+                    <tr key={`${m.name}${m.quant}`} className="border-t border-rule align-top">
                       <th scope="row" className="py-3 pr-4 text-left font-medium">
-                        {m.name} <span className="font-normal text-ink-soft">{m.quant}</span>
+                        {label(m)}
                       </th>
-                      <td className="py-3 pr-4 text-right">{f1(npuVsCpu[k])}×</td>
-                      <td className="py-3 pr-4 text-right">{f1(npuVsGpu[k])}×</td>
-                      <td className="py-3 pr-4 text-right">{rates(s.decode)}</td>
-                      <td className="py-3 pr-4 text-right font-medium text-blue-deep">{pairing(s.fastest)}</td>
-                      <td className="py-3 pr-4 text-right">{shares[k]}%</td>
-                      <td className="py-3 text-right">{pairing(s.slowest)}</td>
+                      <td className="py-3 pr-4 font-medium text-blue-deep">{name(r[0])}</td>
+                      <td className={td}>{grouped(top)} s</td>
+                      <td className={td}>
+                        {name(r[1])}, {slower(r[1].cell.seconds, top)}
+                      </td>
+                      <td className={td}>{slower(cpu.seconds, top)}</td>
+                      <td className="py-3 text-right">
+                        {name(last)}, {slower(last.cell.seconds, top)}
+                      </td>
                     </tr>
                   );
                 })}
               </tbody>
             </table>
           </Scroll>
+          <Note>
+            CPU → NPU means prefill on the CPU, decode on the NPU. Times are the total for the same {pdTurns} conversation turns; percentages are how
+            much longer than the fastest.
+            {coolCells.length > 0 && ` ${andList(coolCells.map(({ m, p }) => `${short(m)}'s ${name(p)}`))}, which started cool, is left out.`}
+          </Note>
         </div>
-        <Note>
-          64-token replies, first pass. Ratios and decode rates are the mean of the three cells that use each processor. A pairing is named prefill
-          processor first, so NPU + CPU reads the prompt on the NPU and writes the reply on the CPU.
-        </Note>
+      </Section>
+
+      <Section id="method" title="How it was run">
+        <List>
+          <Item lead="Phones:">
+            three {pdPhone.soc} phones of the same kind (A, B and C), Android 16, root shell, on AC power in Qualcomm Device Cloud&apos;s rack,{" "}
+            {pdPhone.dates}. Each model ran all nine of its pairings on one phone, in one run.
+          </Item>
+          <Item lead="Runtime:">
+            llama.cpp {pdPhone.llamacpp} with its CPU, OpenCL (GPU) and Hexagon (NPU) backends in one process. When prefill and decode run on
+            different processors, the conversation state is copied across every turn. The CPU used 6 threads.
+          </Item>
+          <Item lead="Models:">
+            Qwen3 0.6B, 1.7B and 4B; Gemma 3 1B; Llama 3.2 1B and 3B; LFM2.5 1.2B and 2.6B. All in Q4_0, the 4-bit format all three backends speed up,
+            and Qwen3 1.7B also in Q8_0, an 8-bit format. The LFM2.5 models are hybrids, mixing attention with other layer types, in Liquid AI&apos;s
+            own Q4_0 builds.
+          </Item>
+          <Item lead="Conversations:">
+            nine from WildChat-1M, UltraChat 200k and Daring-Anteater, {pdTurns} turns in all. Each turn&apos;s prefill covers only its new tokens,{" "}
+            {pdNewTokens[0]} to {grouped(pdNewTokens[1])} depending on the model; earlier turns are already in the cache.
+          </Item>
+          <Item lead="Same work in every pairing:">
+            each turn decodes as many tokens as the dataset&apos;s own reply has ({pdReplyTokens.median} at the median, up to{" "}
+            {grouped(pdReplyTokens.max)}, counted by Qwen3), and the next turn continues from the dataset&apos;s history, not from what the model
+            wrote. So all nine pairings do exactly the same amount of work, even where their outputs differ.
+          </Item>
+        </List>
+      </Section>
+
+      <Section id="heat" title="Heat: what we read and what the phone does" tint>
+        <div>
+          <Sub>What we read</Sub>
+          <Table
+            label="What we read"
+            head={["Reading", "What it is", "What it tells us"]}
+            rows={pdSensors.map((s) => [s.sensor, s.what, s.use])}
+            min="40rem"
+          />
+          <div className="mt-4 max-w-3xl text-sm leading-6 text-ink-soft">
+            <p>In the phone&apos;s own names:</p>
+            <ul className="mt-1 list-disc pl-5">
+              <li>
+                CPU: temperature zones <code>cpu-0-*</code> and <code>cpu-1-*</code>, clock ceiling <code>scaling_max_freq</code>, core pauses{" "}
+                <code>thermal-pause-C0</code> and <code>thermal-pause-3C</code>
+              </li>
+              <li>
+                GPU: temperature zones <code>gpuss-*</code>, clock cap <code>thermal_pwrlevel</code>, further slowdown <code>kgsl</code>
+              </li>
+              <li>
+                NPU: temperature zones <code>nsphvx-*</code> and <code>nsphmx-*</code>, slowdown <code>cdsp</code>
+              </li>
+              <li>
+                Board: the XO thermistor <code>sys-therm-0</code>, named <code>pmk8850_xo_therm</code> in the device tree
+              </li>
+            </ul>
+          </div>
+        </div>
+
+        <div>
+          <Sub>Warming up and cooling down, as observed</Sub>
+          <Table
+            label="Warming up and cooling down, as observed"
+            head={["Stage", "What the phone does", "Temperature"]}
+            min="44rem"
+            rows={[
+              ["Idle", "No caps on the CPU or GPU", "Hottest processor 40 to 55 °C"],
+              [
+                "Within 1 to 7 minutes of heavy work",
+                "Soft throttle on: CPU and GPU clocks capped at about half. It can flicker on and off before it settles",
+                "No single trigger found: the CPU's sensors read anywhere from about 70 to 105 °C when it appeared",
+              ],
+              [
+                "Warm",
+                "Soft throttle stays on. Every pairing compared here started in this state",
+                `Hottest processor ${Math.round(pdWarm.gateC[0])} to ${Math.round(pdWarm.gateC[1])} °C as each pairing started; the CPU up to ${Math.round(pdWarm.maxC.cpu)} °C during`,
+              ],
+              [
+                "Hard throttle on",
+                "CPU cores paused, GPU and NPU slowed further, on top of the soft throttle",
+                `XO thermistor reaches ${pdTrigger.onC} °C`,
+              ],
+              ["Hard throttle off, usually about a minute later", "Back to the soft throttle", `XO thermistor below ${pdTrigger.offC} °C`],
+              ["Idle again", "Soft throttle off within about 10 minutes, the one time this was timed", ""],
+            ]}
+          />
+          <List>
+            <li>
+              Between {pdTrigger.offC} and {pdTrigger.onC} °C the hard throttle stays as it was: on if the sensor last reached {pdTrigger.onC} °C, off
+              if it last fell below {pdTrigger.offC} °C. The gap keeps it from flickering.
+            </li>
+            <li>
+              The processors share heat: with only the CPU working, the NPU&apos;s sensors read {pdSpread.cpuOnlyNpuC} °C; with the NPU doing nearly
+              all the work, the CPU&apos;s read {pdSpread.npuOnlyCpuC} °C (Llama 3.2 3B). The XO thermistor warms whichever processor works, so the
+              hard throttle hits all three.
+            </li>
+          </List>
+        </div>
+
+        <div>
+          <Sub>How each processor is throttled</Sub>
+          <Table
+            label="How each processor is throttled"
+            head={["", "Soft throttle", "Hard throttle"]}
+            min="48rem"
+            rows={processors.map((k) => [
+              k,
+              <>
+                <span className="text-ink">{pdThrottle.soft[k].what}</span>
+                <span className="mt-1 block">{pdThrottle.soft[k].seen}</span>
+              </>,
+              <>
+                <span className="text-ink">{pdThrottle.hard[k].what}</span>
+                <span className="mt-1 block">{pdThrottle.hard[k].seen}</span>
+              </>,
+            ])}
+          />
+          <Note>
+            The soft throttle&apos;s CPU and GPU figures compare the same 9 turns of Qwen3 4B on one phone, once with nothing capped and once capped.
+            The NPU&apos;s hard-throttle figures compare the same turns run with and without it: two thirds on Qwen3 4B and Llama 3.2 3B, about half
+            on Qwen3 1.7B.
+          </Note>
+        </div>
+
+        <div>
+          <Sub>What this means for the comparison</Sub>
+          <List>
+            <Item lead="Every pairing compared started warm.">
+              Before each pairing the benchmark waited, checking every {pdGate.pollS} seconds for up to {pdGate.maxS / 60} minutes, for all three
+              processors to read {pdGate.limitC} °C or less and the soft throttle to lift. If they did, the pairing started cool; if time ran out, it
+              started warm. Only warm starts are compared. At every compared turn&apos;s start and end the GPU cap read 578 MHz, and the CPU ceilings
+              read 1.90 and 2.23 GHz on {grouped(pdWarm.cpuCeilingTurns)} of {grouped(pdWarm.turns)} turns (lower still on the rest).
+            </Item>
+            <Item lead="Cool starts were rerun or set aside.">
+              After the phone sits idle, a run&apos;s first pairings can start cool. LFM2.5 1.2B and Qwen3 1.7B were run again, all nine pairings,
+              after a throwaway warm-up pass of the model on the CPU.
+              {coolCells.length > 0 &&
+                ` ${andList(coolCells.map(({ m, p }) => `${short(m)}'s ${name(p)}`))} started cool; it is shown with a dashed border and not compared.`}
+            </Item>
+            <Item lead="Order still matters.">
+              Each pairing inherits the heat of the ones before it, and the hard throttle lands on whichever pairing is running: CPU decode gets
+              stuck, NPU decode slows. So each matrix shows the order its pairings ran in, and these are the results of one shuffled order. Small
+              gaps, such as LFM2.5 2.6B&apos;s 0.4%, are within that.
+            </Item>
+            <Item lead="Compare within a model.">
+              Models ran on different phones and do different work per token, so seconds do not compare across models.
+            </Item>
+          </List>
+        </div>
       </Section>
 
       <Section id="matrices" title="Every pairing, model by model">
-        <p className="max-w-3xl leading-7 text-ink-soft">
-          Rows are the processor that reads the prompt, columns the one that writes the reply. Each cell gives prefill and decode in tokens per second, then
-          the total time for the {pdTurns} turns, with 64-token replies, in the first pass. The more cobalt a cell carries, the faster it was for that model;
-          the solid cell is the fastest. Five models ran a second pass in another cell order; under each of them, the largest change in a cell&apos;s time.
-        </p>
-        <div className="mt-12 grid gap-x-12 gap-y-14 lg:grid-cols-2 xl:grid-cols-3">
-          {pdModels.map((m) => (
-            <Matrix key={`${m.name}${m.quant}`} m={m} />
+        <List>
+          <li>Rows: the prefill processor. Columns: the decode processor. Solid blue: the model&apos;s fastest; the darker, the faster.</li>
+          <li>
+            Each cell: the total time for the same {pdTurns} turns, and how much longer than the fastest. The small number is the order it ran in.
+          </li>
+          <li>
+            *: the total includes time CPU decode was stuck; see{" "}
+            <a href="#stuck" className={link}>
+              When CPU decode gets stuck
+            </a>
+            .
+          </li>
+        </List>
+        <div className="grid gap-x-12 gap-y-14 md:grid-cols-2 xl:grid-cols-3">
+          {pdModels.map((m, k) => (
+            <Matrix key={`${m.name}${m.quant}`} m={m} rank={best[k]} />
           ))}
         </div>
       </Section>
 
-      <Section id="reply-length" title="At the conversations' own reply lengths" tint>
-        <List>
-          <Item lead="Why:">
-            every turn above writes 64 tokens. The datasets&apos; replies to those turns are about six times longer: 401 tokens median by Qwen3&apos;s
-            tokenizer, up to 1,141 by Gemma&apos;s. At that length writing the reply is 84% to 99% of each pairing&apos;s time.
-          </Item>
-          <Item lead="Run:">
-            each turn decodes its own reply&apos;s length, every step timed, in up to four pairings per model chosen from the 64-token ranking, on three
-            units of the phone. The cooling gate before each cell waits, up to 120 s here (300 s for Qwen3 0.6B in r9), without cooling anything, and after the first cell the phone rarely
-            got back under 55 °C in that time: 32 of the 40 cells started with the CPU&apos;s clock ceilings lowered, most of them to 1.90 and 2.23 GHz with
-            the GPU capped.
-          </Item>
-          <Item lead="Throttled, the decoder decides, and it depends on the model.">
-            Where both NPU-prefill cells started throttled, NPU + CPU took 10% to 20% longer than NPU only on Qwen3 1.7B (in two orders), its Q8_0 and Llama
-            3.2 3B even without the CPU&apos;s stalls. The two tied on the two smallest transformers, and on Qwen3 4B, over its 33 turns, NPU only led only
-            through the stalls. On the hybrid LFM2.5 1.2B the throttled CPU slowed but stayed ahead, and NPU + CPU won every turn; on LFM2.5 2.6B the two
-            were level in one run, and in another NPU + CPU lost with the CPU&apos;s stalls and won without them. Gemma 3 1B&apos;s CPU decoded faster than
-            its NPU even capped (51.5 against 46.5 tok/s on matched capped turns, one schedule).
-          </Item>
-          <Item lead="CPU stalls:">
-            on the four models with the largest weights, Qwen3 4B, Llama 3.2 3B, Qwen3 1.7B Q8_0 and, in one of its three runs, LFM2.5 2.6B, cells decoding
-            on the CPU had single steps of 0.5 to 15.9 s, 54 to 291 s per cell. Each of those cells reached about 107 °C at some turn&apos;s end (the stalled
-            turns themselves ended at 94.6 to 106.6 °C); nothing recorded shows the cause. No NPU-only cell stalled, nor any cell of the five smaller models.
-          </Item>
-          <Item lead="When NPU + CPU started after a passed gate">
-            (Qwen3 0.6B, Gemma 3 1B), it was fastest, at 75% and 76% of CPU-only time, as at 64 tokens. Qwen3 0.6B&apos;s same pairing, started throttled
-            on another unit, took 87%.
-          </Item>
-          <Item lead="The NPU keeps its pace:">
-            its 64-token decode rate predicted its time at reply length within about 5% on seven models (Qwen3 4B over the 20 turns all its cells
-            completed), and where it ran more than once its totals came within 3% of each other. Cells decoding on the CPU took 3% to 61% longer than
-            predicted, and their totals differed by up to 25% between runs.
-          </Item>
-        </List>
-        <div className="mt-12">
-          <Scroll label="Reply-length results per model">
-            <table className="w-full min-w-[50rem] text-sm tabular-nums">
-              {/* The last two columns share a heading, so they are a column group of their own. */}
-              <colgroup span={4} />
-              <colgroup span={2} />
-              <thead>
-                <tr className="align-bottom">
-                  <th rowSpan={2} scope="col" className={th}>
-                    Model
-                  </th>
-                  <th rowSpan={2} scope="col" className={thNum}>
-                    NPU only
-                  </th>
-                  <th rowSpan={2} scope="col" className={thNum}>
-                    NPU + CPU
-                  </th>
-                  <th rowSpan={2} scope="col" className={thNum}>
-                    CPU only
-                  </th>
-                  <th colSpan={2} scope="colgroup" className={`${thNum} pb-1 pr-0`}>
-                    NPU + CPU against NPU only
-                  </th>
-                </tr>
-                <tr className="align-bottom">
-                  <th scope="col" className={thNum}>
-                    64-token replies
-                  </th>
-                  <th scope="col" className={`${thNum} pr-0`}>
-                    Their own lengths
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {pdModels.map((m) => (
-                  <tr key={`${m.name}${m.quant}`} className="border-t border-rule align-top">
-                    <th scope="row" className="py-3 pr-4 text-left font-medium">
-                      {m.name} <span className="font-normal text-ink-soft">{m.quant}</span>
-                      <span className="block text-xs font-normal text-ink-soft">{runsLine(m)}</span>
-                    </th>
-                    <td className="py-3 pr-4 text-right">
-                      <ReplyTime m={m} k="npuOnly" />
-                    </td>
-                    <td className="py-3 pr-4 text-right">
-                      <ReplyTime m={m} k="npuCpu" />
-                    </td>
-                    <td className="py-3 pr-4 text-right">
-                      <ReplyTime m={m} k="cpuOnly" />
-                    </td>
-                    <td className="py-3 pr-4 text-right">{pct(100 * (m.cells[2][0].seconds / m.cells[2][2].seconds - 1))}</td>
-                    <td className="py-3 text-right">
-                      <ReplyAgainst m={m} />
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </Scroll>
-        </div>
-        <Note>
-          r8 to r11 are the report&apos;s labels for the runs, each one order on one unit. Seconds are summed over the {pdTurns} turns; where a pairing
-          completed them in more than one run, they are the mean of the runs named under it, with how far apart those were. LFM2.5 2.6B&apos;s NPU only in
-          r9, cut at 29 turns, is left out of its mean, and r10 has no NPU + CPU: the phone stopped answering before it finished. The last two columns
-          give how much longer NPU + CPU took than NPU only (minus: less): with 64-token replies in the first pass, and at reply length within each run,
-          on the turns both cells completed. * NPU + CPU started after a passed cooling gate and NPU only after a timed-out one. Matching gate results are
-          not matched thermal histories either: a gate that timed out covers a range of temperatures and caps. &ldquo;Without stalls&rdquo; deletes the
-          stalled steps&apos; time: it measures their share, not what the cell would have taken without whatever caused them. GPU + CPU ran on Qwen3 0.6B
-          and 1.7B only, at 94% to 100% of CPU-only time.
-        </Note>
-      </Section>
-
-      <Section id="executorch" title="ExecuTorch on the NPU">
-        <List>
-          <li>Qwen3 0.6B through ExecuTorch 1.5.1&apos;s QNN runner (QNN 2.39, a 2,048-token SM8850 export), the app&apos;s other runtime.</li>
-          <li>
-            NPU only: ExecuTorch cannot move a conversation between its CPU, GPU and NPU programs, so it can fill only the diagonal, and only its NPU
-            cell ran here.
-          </li>
-          <li>
-            The 27 of 33 turns whose whole history fits its window, each run twice; 54 of 54 runs succeeded. The llama.cpp column is its NPU-only cell from
-            the first session.
-          </li>
-        </List>
-        <div className="mt-12">
-          <Scroll label="ExecuTorch against llama.cpp">
-            <table className="w-full min-w-[40rem] text-sm tabular-nums">
-              <thead>
-                <tr className="align-bottom">
-                  <th className={th}>Qwen3 0.6B, NPU only</th>
-                  <th className={thNum}>ExecuTorch QNN (run 1 / run 2)</th>
-                  <th className={`${thNum} pr-0`}>llama.cpp Hexagon</th>
-                </tr>
-              </thead>
-              <tbody>
-                {pdExecutorch.map((r) => (
-                  <tr key={r.measure} className="border-t border-rule">
-                    <th scope="row" className="py-3 pr-4 text-left font-medium">
-                      {r.measure}
-                    </th>
-                    <td className="py-3 pr-4 text-right">{r.executorch}</td>
-                    <td className="py-3 text-right">{r.llamacpp}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </Scroll>
-        </div>
-        <Note>
-          Same timed decode length and, on first turns, the same prompt tokens; different exports and quantisation, so this compares the two configurations
-          as tested, not the runtimes in general. Same-session control: llama.cpp&apos;s NPU-only cell, rerun in the second session starting 29 minutes after
-          ExecuTorch ended, gave 50.3 tok/s decode, 2,242 tok/s first-turn prefill and a 70 ms median first token on the same 27 turns, so the gap persists
-          within one session.
-        </Note>
-      </Section>
-
-      <Section id="method" title="How it was run" tint>
-        <div className="grid gap-16 lg:grid-cols-2">
-          <div className="min-w-0">
-            <h3 className="display text-2xl">The conversations</h3>
-            <ul className="mt-5 list-disc space-y-3 pl-5 leading-7 text-ink-soft marker:text-ink/30">
-              <Item lead="Three public conversation sets,">
-                the first conversation in each length bucket (short, medium, long, by characters) with at least two user turns:
-                <ul className="mt-2 list-[circle] space-y-1 pl-5">
-                  <Item lead="WildChat-1M">(allenai): real users talking to a deployed assistant.</Item>
-                  <Item lead="UltraChat 200k">
-                    (HuggingFaceH4, <code className="text-ink">train_sft</code>): generated multi-turn dialogues.
-                  </Item>
-                  <Item lead="Daring-Anteater">(NVIDIA): mostly generated instruction dialogues.</Item>
-                </ul>
-              </Item>
-              <Item lead="Replay:">
-                teacher forced, so every earlier assistant turn is the dataset&apos;s own reply and all nine cells read exactly the same tokens. Up to six turns
-                per conversation, 8,192-token window, greedy.
-              </Item>
-              <Item lead="Output:">
-                64 tokens per turn in every cell (the first from the prefill side, then 63 timed decode steps), past an end of turn if the model writes one.
-                The reply-length runs decode the length of the dataset&apos;s reply instead, every step timed.
-              </Item>
-              <Item lead="Not used:">
-                ShareGPT52K (the Hugging Face datasets server cannot read it) and MT-Bench (user turns only; the replay needs the dataset&apos;s replies).
-              </Item>
-            </ul>
-            <div className="mt-8">
-              <Scroll label="Conversations">
-                <table className="w-full min-w-[36rem] text-sm tabular-nums">
+      <Section id="processors" title="Rates by processor" tint>
+        <div className="grid gap-14 lg:grid-cols-3">
+          {[
+            {
+              title: "Prefill",
+              unit: "new tokens per second",
+              vals: (m: PdModel) => m.prefill.map((p) => p.tokS),
+              show: (x: number) => grouped(x),
+              high: true,
+            },
+            {
+              title: "Time to first token",
+              unit: "milliseconds, median per turn",
+              vals: (m: PdModel) => m.prefill.map((p) => p.firstTokenMs),
+              show: (x: number) => grouped(x),
+              high: false,
+            },
+            {
+              title: "Decode",
+              unit: "tokens per second",
+              vals: (m: PdModel) => m.decode.map((d) => d.tokS),
+              show: (x: number) => x.toFixed(1),
+              high: true,
+            },
+          ].map((t) => (
+            <div key={t.title} className="min-w-0">
+              <Sub>{t.title}</Sub>
+              <p className="mt-1 text-sm text-ink-soft">{t.unit}</p>
+              <Scroll label={t.title}>
+                <table className="w-full min-w-[20rem] text-sm tabular-nums">
                   <thead>
                     <tr className="align-bottom">
-                      <th className={th}>Conversation</th>
-                      <th className={th}>Length</th>
-                      <th className={thNum}>Characters</th>
-                      <th className={thNum}>Turns replayed</th>
-                      <th className={thNum}>New tokens per turn</th>
-                      <th className={`${thNum} pr-0`}>Context at last turn</th>
+                      <th className={th}>Model</th>
+                      {processors.map((p) => (
+                        <th key={p} className={thNum}>
+                          {p}
+                        </th>
+                      ))}
                     </tr>
                   </thead>
                   <tbody>
-                    {pdConversations.map((c) => (
-                      <tr key={`${c.set}${c.index}`} className="border-t border-rule">
-                        <td className="py-3 pr-4">
-                          {c.set} #{c.index}
-                        </td>
-                        <td className="py-3 pr-4 text-ink-soft">{c.length}</td>
-                        <td className="py-3 pr-4 text-right">{n(c.characters)}</td>
-                        <td className="py-3 pr-4 text-right">{c.turns}</td>
-                        <td className="py-3 pr-4 text-right">
-                          {n(c.newTokens[0])} to {n(c.newTokens[1])}
-                        </td>
-                        <td className="py-3 text-right">{n(c.context)}</td>
-                      </tr>
-                    ))}
+                    {pdModels.map((m) => {
+                      const v = t.vals(m);
+                      const topV = t.high ? Math.max(...v) : Math.min(...v);
+                      return (
+                        <tr key={`${m.name}${m.quant}`} className="border-t border-rule">
+                          <th scope="row" className="py-2.5 pr-4 text-left text-[13px] font-medium">
+                            {label(m)}
+                          </th>
+                          {v.map((x, i) => (
+                            <td key={i} className={`whitespace-nowrap py-2.5 pr-4 text-right ${x === topV ? "font-medium text-blue-deep" : ""}`}>
+                              {t.show(x)}
+                            </td>
+                          ))}
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </Scroll>
             </div>
-            <Note>{pdTurns} turns in all. Token counts are from Qwen3&apos;s tokenizer; other models tokenize slightly differently.</Note>
-          </div>
+          ))}
+        </div>
+        <Note>
+          Each figure pools the warm pairings that used that processor for that phase. The best of the three is in bold blue.
+          {coolCells.length > 0 && " Qwen3 4B's GPU prefill and CPU decode figures leave out the pairing that started cool."}
+        </Note>
+      </Section>
 
-          <div className="min-w-0">
-            <h3 className="display text-2xl">The phone</h3>
-            <p className="mt-5 leading-7 text-ink-soft">
-              <span className="font-medium text-ink">Snapdragon 8 Elite Gen 5</span> (SM8850, board <code className="text-ink">canoe</code>), 23 GB RAM,
-              Android 16, root shell, on AC power in Qualcomm&apos;s rack. The 64-token runs used two reservations; the reply-length runs four more, on three
-              units.
-            </p>
-            <h4 className="mt-8 font-medium">CPU: Qualcomm Oryon, 8 cores in two clusters</h4>
-            <div className="mt-3">
-              <Scroll label="CPU clusters">
-                <table className="w-full min-w-[22rem] text-sm tabular-nums">
-                  <thead>
-                    <tr className="align-bottom">
-                      <th className={th}>Cores</th>
-                      <th className={th}>Type</th>
-                      <th className={thNum}>Max clock</th>
-                      <th className={`${thNum} pr-0`}>Min clock</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {pdPhone.cores.map((c) => (
-                      <tr key={c.cores} className="border-t border-rule">
-                        <td className="py-3 pr-4">{c.cores}</td>
-                        <td className="py-3 pr-4">{c.type}</td>
-                        <td className="py-3 pr-4 text-right">{c.max}</td>
-                        <td className="py-3 text-right">{c.min}</td>
+      <section id="stuck" className="scroll-mt-28 lg:scroll-mt-16">
+        <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 sm:py-20">
+          <details className="group max-w-4xl">
+            <summary className="flex cursor-pointer list-none items-start gap-4 rounded-lg focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-blue [&::-webkit-details-marker]:hidden">
+              <span aria-hidden className="mt-2 text-2xl text-blue transition-transform group-open:rotate-90">
+                ▸
+              </span>
+              <span>
+                <h2 className={h2}>When CPU decode gets stuck</h2>
+                <span className="mt-3 block text-lg leading-8 text-ink-soft">
+                  What happens during the hard throttle, what it cost each pairing, why we think it happens, whether the OpenWeights app hits it, and
+                  what could fix it.
+                </span>
+              </span>
+            </summary>
+
+            <div className="mt-12 space-y-14">
+              <div>
+                <Sub>What happens</Sub>
+                <List>
+                  <li>
+                    The models&apos; median CPU decode steps took {Math.min(...cpuStep)} to {Math.max(...cpuStep)} ms. We call a step stuck when it
+                    takes over half a second.
+                  </li>
+                  <li>
+                    {pdStuck.turns} of the CPU-decode turns got stuck.{" "}
+                    {pdStuck.single.length > 0
+                      ? `In ${pdStuck.turns - pdStuck.single.length} of them decode crawled through one unbroken stretch`
+                      : "In each, decode crawled through one unbroken stretch"}{" "}
+                    of {Math.round(pdStuck.stretchSeconds[0])} to {Math.round(pdStuck.stretchSeconds[1])} seconds, producing{" "}
+                    {pdStuck.tokensInStretch[0]} to {pdStuck.tokensInStretch[1]} tokens (single steps up to {Math.round(pdStuck.tokenSeconds[1])} s),
+                    then went back to normal.
+                    {pdStuck.single.length > 0 && ` The other had one slow step of ${pdStuck.single.join(" and ")} s.`}
+                  </li>
+                  <li>No NPU decode step took over half a second, and the GPU&apos;s slow steps late in long conversations are its normal pace.</li>
+                </List>
+                <Scroll label="What it cost each pairing">
+                  <table className="w-full min-w-[44rem] text-sm tabular-nums">
+                    <thead>
+                      <tr className="align-bottom">
+                        <th className={th}>Model</th>
+                        <th className={th}>Pairing</th>
+                        <th className={thNum}>Total time</th>
+                        <th className={thNum}>Of which stuck</th>
+                        <th className={thNum}>Longest step</th>
+                        <th className={`${thNum} pr-0`}>Turns stuck</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </Scroll>
-            </div>
-            <Note>All eight report implementer 0x51 (Qualcomm), part 0x002. No efficiency cores. The benchmark used 6 threads.</Note>
-            <h4 className="mt-8 font-medium">GPU, NPU and runtime</h4>
-            <dl className="mt-3 text-sm leading-6">
-              {[
-                ["GPU", pdPhone.gpu],
-                ["NPU", pdPhone.npu],
-              ].map(([k, v]) => (
-                <div key={k} className="grid grid-cols-[5.5rem_1fr] gap-4 border-t border-rule py-3">
-                  <dt className="text-ink-soft">{k}</dt>
-                  <dd>{v}</dd>
-                </div>
-              ))}
-              <div className="grid grid-cols-[5.5rem_1fr] gap-4 border-t border-rule py-3">
-                <dt className="text-ink-soft">Runtime</dt>
-                <dd>
-                  llama.cpp <code>{pdPhone.llamacpp}</code> with <code>ggml-cpu</code>, <code>ggml-opencl</code> and <code>ggml-hexagon</code>, built with
-                  Qualcomm&apos;s toolchain image.
-                </dd>
+                    </thead>
+                    <tbody>
+                      {stops.map(({ m, p }) => (
+                        <tr key={`${m.name}${m.quant}${name(p)}`} className="border-t border-rule">
+                          <th scope="row" className="py-3 pr-4 text-left font-medium">
+                            {label(m)}
+                          </th>
+                          <td className="py-3 pr-4">{name(p)}</td>
+                          <td className={td}>{grouped(p.cell.seconds, 1)} s</td>
+                          <td className={td}>
+                            {p.cell.frozenSeconds.toFixed(1)} s{" "}
+                            <span className="text-ink-soft">({pct((100 * p.cell.frozenSeconds) / p.cell.seconds)})</span>
+                          </td>
+                          <td className={td}>{p.cell.longestStopSeconds.toFixed(1)} s</td>
+                          <td className="py-3 text-right">
+                            {p.cell.stopTurns} of {pdTurns}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </Scroll>
+                <Note>
+                  The stuck time stays in the totals, because a user would wait through it. A fix would win back less than that share, since the hard
+                  throttle would still slow the CPU.{" "}
+                  {couldFlip.length === 0
+                    ? "Even with all of it won back, no model's fastest pairing would change."
+                    : `If a fix won back the same fraction of its stuck time in every pairing, the fastest would change only ${andList(
+                        couldFlip.map(
+                          (x) =>
+                            `on ${short(x.m)}, from ${name(ranked(x.m)[0])} to ${name(x.p)}, once that fraction passed about ${Math.round(100 * x.share)}%`,
+                        ),
+                      )}.`}
+                </Note>
               </div>
-            </dl>
-          </div>
+
+              <div>
+                <Sub>It happens during the hard throttle</Sub>
+                <List>
+                  <li>
+                    A log of the XO thermistor and the throttle switches every 2 seconds caught six hard throttles in a row. Each time the CPU was
+                    decoding, it was stuck for that same minute, to within a few seconds. The time the NPU was decoding, it kept going.
+                  </li>
+                </List>
+                <Table
+                  label="Six hard throttles, logged"
+                  head={["On", "Off", "Length", "Decoding", "CPU decode stuck"]}
+                  min="38rem"
+                  rows={pdStall.events.map((e) => [e.on, e.off, `${e.seconds} s`, `${e.decode}, ${e.model}`, e.stuck || "No; the NPU kept going"])}
+                />
+                <Note>
+                  Local time, 3 November 2026. Earlier runs, logged every 10 seconds, agree: on Qwen3 4B and Llama 3.2 3B every stuck step fell in a
+                  turn with the hard throttle on. Hard throttles lasted {pdThermal.stretchMinutes[0]} to {pdThermal.stretchMinutes[1]} minutes, most
+                  of them about one.
+                </Note>
+              </div>
+
+              <div>
+                <Sub>Why we think it happens</Sub>
+                <List>
+                  <li>The CPU decodes with 6 threads. Normally each has a core of its own.</li>
+                  <li>
+                    llama.cpp computes each token as a chain of operations ({grouped(pdStall.graphNodes)} in Llama 3.2 3B&apos;s plan). Many are split
+                    across the threads, and the threads wait for each other before the next one starts: hundreds of times per token.
+                  </li>
+                  <li>The hard throttle leaves 2 cores, so only 2 of the 6 threads can run at a time.</li>
+                  <li>
+                    A thread that has finished its part does not give up its core. Unlike a Python thread waiting for the global interpreter lock
+                    (GIL), which sleeps, it keeps checking whether the others are done until the scheduler moves it off, while the threads with work
+                    left wait for a core.
+                  </li>
+                  <li>Each wait can then cost milliseconds, hundreds of times per token: enough to turn milliseconds per token into seconds.</li>
+                  <li>This fits the code and the timings, but it has not been proven.</li>
+                </List>
+              </div>
+
+              <div>
+                <Sub>Does the OpenWeights app hit it?</Sub>
+                <List>
+                  <li>
+                    The app sets its decode threads once before each reply, from Android&apos;s heat signal: {pdStall.app.normal} on this phone,{" "}
+                    {pdStall.app.light} when Android reports light or moderate heat, {pdStall.app.severe} at severe, and at critical or above it does
+                    not start the reply.
+                  </li>
+                  <li>
+                    On this phone Android reported {andList(pdStall.android.map((r) => `${r.status} (skin ${r.skinC} °C)`))}, about 20 minutes apart;
+                    skin is Android&apos;s estimate of the phone&apos;s surface temperature.
+                  </li>
+                  <li>
+                    A reply already running keeps its threads, so a hard throttle that starts mid-reply can still meet {pdStall.app.normal}. On a
+                    phone whose Android signal lags the heat, the app would keep {pdStall.app.normal} threads throughout.
+                  </li>
+                </List>
+              </div>
+
+              <div>
+                <Sub>What could fix it</Sub>
+                <Table
+                  label="What could fix it"
+                  head={["Change", "Where", "Status"]}
+                  min="36rem"
+                  rows={[
+                    ["Drop to 2 threads as soon as one decode step takes over half a second, then step back up", "App", "Not measured"],
+                    [
+                      "Make a waiting thread give up its core after a short check, instead of holding it",
+                      "llama.cpp",
+                      "Not measured; must not slow normal decode",
+                    ],
+                    ["Decode on the NPU during the hard throttle", "App", "Not measured; the NPU is slower then too"],
+                    [
+                      "Read how many cores the app may use, before each step",
+                      "App",
+                      "Ruled out on this phone: the count stayed at 8 through a logged hard throttle",
+                    ],
+                  ]}
+                />
+              </div>
+            </div>
+          </details>
         </div>
+      </section>
+
+      <Section id="tilt" title="What could tilt this" tint>
+        <List>
+          <Item lead="Against the CPU:">
+            6 threads throughout. Fewer threads might avoid getting stuck in the hard throttle; that is not tested here.
+          </Item>
+          <Item lead="Against the GPU:">
+            one GPU backend, llama.cpp&apos;s OpenCL. Its slowdown on long conversations may be the backend, not the chip.
+          </Item>
+          <Item lead="The NPU:">
+            one llama.cpp build; newer builds change its NPU backend. NPU decode also uses the CPU for the output layer and the embedding lookup; how
+            much of its time that takes was not measured.
+          </Item>
+          <Item lead="One format:">Q4_0 for all but one model, the format all three backends speed up. Other CPU formats were not tried.</Item>
+        </List>
       </Section>
 
-      <Section id="limits" title="Limits">
+      <Section id="limits" title="Not measured">
         <List>
-          <Item lead="One or two passes.">
-            At 64 tokens five models ran twice and four once. At reply length each run is one order on one unit, and three models ran more than once. The 33
-            turns of a cell are not independent repeats.
-          </Item>
-          <Item lead="Throttled.">
-            Each cell waits until CPU, GPU and NPU are at or under 55 °C (at 64 tokens up to 300 s; 12 of the first pass&apos;s 81 cells and 6 of the
-            second&apos;s 45 started without passing), but most
-            turns end with the GPU capped or a CPU ceiling lowered, and at reply length 32 of the 40 cells started with the CPU&apos;s ceilings lowered. The
-            rankings describe this phone in its rack, not a hand-held phone.
-          </Item>
-          <Item lead="NPU cells include CPU work.">
-            These models share their output layer with the embedding table, and llama.cpp keeps it on the CPU: about 13% of each decode step&apos;s weight
-            bytes on Qwen3 4B, up to 45% on Gemma 3 1B.
-          </Item>
-          <Item lead="Six reservations.">
-            The 64-token runs used two reservations of the same phone and the reply-length runs four more, on three units. Unit, order and heat were not
-            varied apart.
-          </Item>
-          <Item lead="Not measured:">
-            an unprivileged app, cold start, prompts past 3,303 tokens, memory, energy and answer quality; at reply length, GPU decode, CPU or GPU prefill
-            into NPU decode, and GPU prefill on any model but Qwen3 0.6B and 1.7B.
-          </Item>
+          <li>Energy, battery drain and memory.</li>
+          <li>A phone in a hand, rather than in a rack on AC power.</li>
+          <li>An ordinary app without root, and a cold start.</li>
+          <li>Contexts past about 4,000 tokens, replies of the model&apos;s own length, and continuing a conversation from what the model wrote.</li>
+          <li>Answer quality.</li>
         </List>
-        <p className="mt-12 max-w-3xl text-sm leading-6 text-ink-soft">
-          Source: <Go href={pdLinks.report} className={link}>the report</Go> (<code>docs/research/snapdragon-pd-matrix.md</code>) and{" "}
-          <Go href={pdLinks.results} className={link}>its results</Go> (<code>tools/snapdragon/results/2026-10-24-sm8850/</code>) in the OpenWeights
-          repository.
+        <p className="max-w-3xl text-sm leading-6 text-ink-soft">
+          Source:{" "}
+          <Go href={pdLinks.report} className={link}>
+            the report
+          </Go>{" "}
+          and{" "}
+          <Go href={pdLinks.results} className={link}>
+            its raw results
+          </Go>{" "}
+          in the OpenWeights repository. The tables are generated from the raw results; the heat readings come from the phone and are recorded in the
+          report.
         </p>
       </Section>
     </main>

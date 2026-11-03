@@ -71,8 +71,8 @@ export const ggufStudies: ResearchItem[] = [
   {
     href: "/openweights/prefill-decode/",
     title: "Prefill and decode on CPU, GPU and NPU",
-    meta: "24 and 25 October 2026, OpenWeights",
-    line: "Nine GGUF models through every pairing of the processor that reads the prompt and the one that writes the reply, in one llama.cpp build on a Snapdragon 8 Elite Gen 5, with 64-token replies, and the likeliest pairings at the conversations' own reply lengths.",
+    meta: "2 and 3 November 2026, OpenWeights",
+    line: "Nine GGUF models through every pairing of the processor that does prefill and the one that does decode, in one llama.cpp build on a warm Snapdragon 8 Elite Gen 5, at the conversations' own reply lengths: one matrix per model.",
   },
   {
     href: "https://github.com/ExperimentalMachines/copilot-local-bench",
