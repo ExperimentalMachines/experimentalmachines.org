@@ -29,7 +29,8 @@ const rows = (run) =>
     .map((l) => JSON.parse(l));
 
 const models = [
-// Each model's nine cells come from one run on one phone. Phones: A 64a112da, B c581fd31, C 783ee7e5.
+// Each model's nine cells come from one run on one phone, except Qwen3 4B's gpu:cpu (below). Phones:
+// A 64a112da, B c581fd31, C 783ee7e5, D 4816891.
   { file: "Qwen3-0.6B-Q4_0", name: "Qwen3 0.6B", quant: "Q4_0", run: "r12", unit: "64a112da", phone: "A" },
   { file: "google_gemma-3-1b-it-Q4_0", name: "Gemma 3 1B", quant: "Q4_0", run: "r12", unit: "64a112da", phone: "A" },
   { file: "Llama-3.2-1B-Instruct-Q4_0", name: "Llama 3.2 1B", quant: "Q4_0", run: "r12", unit: "64a112da", phone: "A" },
@@ -39,8 +40,9 @@ const models = [
   { file: "Qwen3-1.7B-Q8_0", name: "Qwen3 1.7B", quant: "Q8_0", run: "r13", unit: "c581fd31", phone: "B" },
   { file: "LFM2.5-2.6B-QAD-Q4_0", name: "LFM2.5 2.6B", quant: "Q4_0, hybrid", run: "r13", unit: "c581fd31", phone: "B" },
   { file: "Llama-3.2-3B-Instruct-Q4_0", name: "Llama 3.2 3B", quant: "Q4_0", run: "r14", unit: "783ee7e5", phone: "C" },
-  // r14's first cell (gpu:cpu) started cool: kept, marked and not compared, so the matrix stays one run.
-  { file: "Qwen3-4B-Q4_0", name: "Qwen3 4B", quant: "Q4_0", run: "r14", unit: "783ee7e5", phone: "C" },
+  // r14's first cell (gpu:cpu) started cool. By the maintainer's choice it is replaced by r18b, the same
+  // cell run warm on phone D (r16's warm rerun on phone C is kept in the results, not shown).
+  { file: "Qwen3-4B-Q4_0", name: "Qwen3 4B", quant: "Q4_0", run: "r14", unit: "783ee7e5", phone: "C", replace: { "gpu:cpu": "r18b" }, replacePhone: "D" },
 ];
 const P = ["cpu", "gpu", "npu"];
 const TURNS = 33;
@@ -106,6 +108,7 @@ const out = models.map((m) => {
         order: order.indexOf(`${p}:${d}`) + 1,
         // The run the cell came from, where it is not the model's.
         run: m.replace?.[`${p}:${d}`] ?? m.run,
+        phone: m.replace?.[`${p}:${d}`] ? m.replacePhone : m.phone,
       };
     }),
   );
@@ -152,6 +155,7 @@ const pdStuck = {
   tokensInStretch: [Math.min(...multi.map((x) => x.steps)), Math.max(...multi.map((x) => x.steps))],
   secondsPerToken: [round(Math.min(...multi.map((x) => x.seconds / x.steps)), 1), round(Math.max(...multi.map((x) => x.seconds / x.steps)), 1)],
   tokenSeconds: [round(Math.min(...multi.map((x) => x.minStep)), 1), round(Math.max(...multi.map((x) => x.maxStep)), 1)],
+  tokensPerMinute: [Math.round(Math.min(...multi.map((x) => (60 * x.steps) / x.seconds))), Math.round(Math.max(...multi.map((x) => (60 * x.steps) / x.seconds)))],
   single: stuck.filter((x) => x.steps === 1).map((x) => round(x.seconds, 1)).sort((a, b) => a - b),
   place: [Math.min(...stuck.map((x) => x.place)), Math.max(...stuck.map((x) => x.place))],
   replyMedian: median(stuck.map((x) => x.reply)),
@@ -185,6 +189,7 @@ export type PdCell = {
   coolStart: boolean;
   order: number;
   run: string;
+  phone: string;
 };
 
 // prefill: tokens per second reading the prompt and the median time to the first token, per

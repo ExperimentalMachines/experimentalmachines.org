@@ -22,7 +22,7 @@ export type Processor = (typeof processors)[number];
 
 export const pdPhone = {
   soc: "Snapdragon 8 Elite Gen 5 (SM8850)",
-  dates: "2 and 3 November 2026",
+  dates: "2 to 4 November 2026",
   llamacpp: "b2e5e9b (release b10549)",
 };
 
@@ -68,7 +68,8 @@ export const pdThrottle = {
     NPU: { what: "No visible limit; its clock cannot be read", seen: "No slowdown found: an NPU-only pairing repeated within 1% with the soft throttle on and off" },
   },
   hard: {
-    CPU: { what: "6 of its 8 cores paused, leaving cores 0 and 1 (going by the switches' names)", seen: "Decode stuck: 5 to 17 tokens a minute, single steps up to 18 s" },
+    // "seen" for the CPU is filled in on the page from the generated stuck-turn figures.
+    CPU: { what: "6 of its 8 cores paused, leaving cores 0 and 1 (going by the switches' names)", seen: "" },
     GPU: { what: "Slowed further", seen: "Not measured" },
     NPU: { what: "Slowed", seen: "Decode at about half to two thirds of its speed at the median, never stuck" },
   },
@@ -95,6 +96,9 @@ export const pdStall = {
   // Llama 3.2 3B's reserved graph for one token (log-r14: "graph nodes = 874"); skipped and fused nodes
   // mean this is not an exact count of thread waits.
   graphNodes: 874,
+  // A fourth phone (D, unit 4816891, r18b; trig-r18.txt) logged five hard throttles at the same switch
+  // points: first readings after each switch on 78.00 to 78.20 C, after each switch off 69.69 to 69.93 C.
+  phoneD: { events: 5, onC: [78.0, 78.2], offC: [69.7, 69.9] },
   // Six hard throttles the 2 s log caught on 3 November, local time, with who was decoding.
   events: [
     { on: "18:00:50", off: "18:01:51", seconds: 61, decode: "CPU", model: "Qwen3 1.7B", stuck: "18:00:50 to 18:01:51" },

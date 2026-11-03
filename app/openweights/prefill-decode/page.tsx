@@ -198,7 +198,17 @@ function Matrix({ m, rank }: { m: PdModel; rank: ReturnType<typeof ranked> }) {
   return (
     <div className="min-w-0">
       <h3 className="display text-xl">{label(m)}</h3>
-      <p className="mt-1 text-sm text-ink-soft">Phone {m.phone}</p>
+      <p className="mt-1 text-sm text-ink-soft">
+        Phone {m.phone}
+        {Object.keys(m.replaced).map((c) => {
+          const [pf, dc] = c.split(":");
+          const cell =
+            m.cells[processors.indexOf(pf.toUpperCase() as (typeof processors)[number])][
+              processors.indexOf(dc.toUpperCase() as (typeof processors)[number])
+            ];
+          return `; ${pf.toUpperCase()} → ${dc.toUpperCase()} on phone ${cell.phone}`;
+        })}
+      </p>
       <Scroll label={`${m.name} ${m.quant}: every pairing`}>
         <table className="w-full min-w-[19rem] table-fixed border-separate border-spacing-1 text-sm tabular-nums">
           <thead>
@@ -225,7 +235,7 @@ function Matrix({ m, rank }: { m: PdModel; rank: ReturnType<typeof ranked> }) {
                   const fastest = !c.coolStart && c.seconds === top;
                   const order = (
                     <span aria-hidden className={`absolute right-1.5 top-1 text-[0.65rem] ${fastest ? "text-white/70" : "text-ink-soft"}`}>
-                      {c.order}
+                      {c.phone !== m.phone ? c.phone : c.order}
                     </span>
                   );
                   if (c.coolStart)
@@ -234,7 +244,7 @@ function Matrix({ m, rank }: { m: PdModel; rank: ReturnType<typeof ranked> }) {
                         {order}
                         <span className="block">{grouped(c.seconds)} s</span>
                         <span className="block text-xs">started cool</span>
-                        <span className="sr-only">, ran {ordinal(c.order)}</span>
+                        <span className="sr-only">{c.phone !== m.phone ? `, run on phone ${c.phone}` : `, ran ${ordinal(c.order)}`}</span>
                       </td>
                     );
                   const t = low === top ? 1 : (low - c.seconds) / (low - top);
@@ -263,7 +273,7 @@ function Matrix({ m, rank }: { m: PdModel; rank: ReturnType<typeof ranked> }) {
                       <span className={`block text-xs ${fastest ? "text-white/85" : "text-ink-soft"}`}>
                         {fastest ? "fastest" : slower(c.seconds, top)}
                       </span>
-                      <span className="sr-only">, ran {ordinal(c.order)}</span>
+                      <span className="sr-only">{c.phone !== m.phone ? `, run on phone ${c.phone}` : `, ran ${ordinal(c.order)}`}</span>
                     </td>
                   );
                 })}
@@ -300,8 +310,8 @@ export default function PrefillDecode() {
             Prefill on the NPU. Decode anywhere but the GPU.
           </h1>
           <p className={`${lede} mt-6 max-w-2xl`}>
-            Nine models on a {pdPhone.soc}. Each ran every pairing of the processor that does prefill and the one that does decode, on one phone in
-            one run. The phone throttles itself as it heats, so we measured that too, and compare pairings that started warm.
+            Nine models on a {pdPhone.soc}. Each ran every pairing of the processor that does prefill and the one that does decode, and every pairing
+            started with the phone warm. The phone throttles itself as it heats, so we measured that too.
           </p>
           <ul className="mt-10 grid max-w-4xl gap-6 sm:grid-cols-3">
             {[
@@ -399,8 +409,9 @@ export default function PrefillDecode() {
       <Section id="method" title="How it was run">
         <List>
           <Item lead="Phones:">
-            three {pdPhone.soc} phones of the same kind (A, B and C), Android 16, root shell, on AC power in Qualcomm Device Cloud&apos;s rack,{" "}
-            {pdPhone.dates}. Each model ran all nine of its pairings on one phone, in one run.
+            four {pdPhone.soc} phones of the same kind (A to D), Android 16, root shell, on AC power in Qualcomm Device Cloud&apos;s rack,{" "}
+            {pdPhone.dates}. Each model ran all nine of its pairings on one phone, in one run, except Qwen3 4B&apos;s GPU → CPU, run again on phone D
+            because it had started cool.
           </Item>
           <Item lead="Runtime:">
             llama.cpp {pdPhone.llamacpp} with its CPU, OpenCL (GPU) and Hexagon (NPU) backends in one process. When prefill and decode run on
@@ -506,7 +517,11 @@ export default function PrefillDecode() {
               </>,
               <>
                 <span className="text-ink">{pdThrottle.hard[k].what}</span>
-                <span className="mt-1 block">{pdThrottle.hard[k].seen}</span>
+                <span className="mt-1 block">
+                  {k === "CPU"
+                    ? `Decode stuck: ${pdStuck.tokensPerMinute[0]} to ${pdStuck.tokensPerMinute[1]} tokens a minute, single steps up to ${Math.round(pdStuck.tokenSeconds[1])} s`
+                    : pdThrottle.hard[k].seen}
+                </span>
               </>,
             ])}
           />
@@ -526,9 +541,10 @@ export default function PrefillDecode() {
               started warm. Only warm starts are compared. At every compared turn&apos;s start and end the GPU cap read 578 MHz, and the CPU ceilings
               read 1.90 and 2.23 GHz on {grouped(pdWarm.cpuCeilingTurns)} of {grouped(pdWarm.turns)} turns (lower still on the rest).
             </Item>
-            <Item lead="Cool starts were rerun or set aside.">
+            <Item lead="Cool starts were run again.">
               After the phone sits idle, a run&apos;s first pairings can start cool. LFM2.5 1.2B and Qwen3 1.7B were run again, all nine pairings,
-              after a throwaway warm-up pass of the model on the CPU.
+              after a throwaway warm-up pass of the model on the CPU. Qwen3 4B&apos;s GPU → CPU was run again on its own, warm, on a fourth phone (D);
+              its matrix marks that cell with a D instead of a run number.
               {coolCells.length > 0 &&
                 ` ${andList(coolCells.map(({ m, p }) => `${short(m)}'s ${name(p)}`))} started cool; it is shown with a dashed border and not compared.`}
             </Item>
@@ -548,7 +564,8 @@ export default function PrefillDecode() {
         <List>
           <li>Rows: the prefill processor. Columns: the decode processor. Solid blue: the model&apos;s fastest; the darker, the faster.</li>
           <li>
-            Each cell: the total time for the same {pdTurns} turns, and how much longer than the fastest. The small number is the order it ran in.
+            Each cell: the total time for the same {pdTurns} turns, and how much longer than the fastest. The small number is the order it ran in; a
+            letter marks a pairing run on another phone.
           </li>
           <li>
             *: the total includes time CPU decode was stuck; see{" "}
@@ -732,9 +749,10 @@ export default function PrefillDecode() {
                   rows={pdStall.events.map((e) => [e.on, e.off, `${e.seconds} s`, `${e.decode}, ${e.model}`, e.stuck || "No; the NPU kept going"])}
                 />
                 <Note>
-                  Local time, 3 November 2026. Earlier runs, logged every 10 seconds, agree: on Qwen3 4B and Llama 3.2 3B every stuck step fell in a
-                  turn with the hard throttle on. Hard throttles lasted {pdThermal.stretchMinutes[0]} to {pdThermal.stretchMinutes[1]} minutes, most
-                  of them about one.
+                  Local time, 3 November 2026. A fourth phone (D) logged {pdStall.phoneD.events} more at the same switch points (
+                  {pdStall.phoneD.onC[0].toFixed(1)} to {pdStall.phoneD.onC[1].toFixed(1)} °C on, {pdStall.phoneD.offC[0].toFixed(1)} to {pdStall.phoneD.offC[1].toFixed(1)} °C off). Earlier
+                  runs, logged every 10 seconds, agree: on Qwen3 4B and Llama 3.2 3B every stuck step fell in a turn with the hard throttle on. Hard
+                  throttles lasted {pdThermal.stretchMinutes[0]} to {pdThermal.stretchMinutes[1]} minutes, most of them about one.
                 </Note>
               </div>
 
