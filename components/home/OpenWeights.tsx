@@ -78,6 +78,9 @@ export default function OpenWeights() {
             <Go href={links.openweights} className={link}>
               About OpenWeights
             </Go>
+            <Go href="/research/#openweights" className={link}>
+              <span className="sr-only">OpenWeights </span>Research
+            </Go>
             <Go href={links.openweightsRepo} className={link}>
               <span className="sr-only">OpenWeights </span>Source
             </Go>

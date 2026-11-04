@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
-import Bars from "@/components/home/Bars";
+import FeaturedStudy from "@/components/home/FeaturedStudy";
 import Go from "@/components/home/Go";
+import ResearchList from "@/components/home/ResearchList";
 import { h2, lede, link, ProjectLabel } from "@/components/home/ui";
 import { openweights } from "@/lib/openweights";
-import { pdModels, pdTurns } from "@/lib/prefill-decode";
 
 export const metadata: Metadata = {
   title: "OpenWeights: open-weight models on your Android phone",
@@ -36,24 +36,14 @@ function Phone({ src, alt, width, height }: { src: string; alt: string; width: n
       alt={alt}
       width={width}
       height={height}
-      className="h-auto max-h-[320px] w-[46%] max-w-[230px] rounded-t-[1.5rem] border-x-[5px] border-t-[5px] border-white bg-white object-cover object-top sm:max-h-[420px]"
+      className="h-auto w-[46%] max-w-[230px] rounded-t-[1.5rem] border-x-[5px] border-t-[5px] border-white bg-white"
     />
   );
 }
 
-// The newest study, drawn for the model the app ships: the three pairings that keep both halves
-// on one processor, and NPU reading with CPU writing.
-const qwen = pdModels.find((m) => m.name === "Qwen3 1.7B" && m.quant === "Q8_0")!;
-const pairings = [
-  { label: "NPU → NPU", cell: qwen.cells[2][2] },
-  { label: "NPU → CPU", cell: qwen.cells[2][0] },
-  { label: "CPU → CPU", cell: qwen.cells[0][0] },
-  { label: "GPU → GPU", cell: qwen.cells[1][1] },
-];
-
 export default function OpenWeights() {
   const { links } = openweights;
-  const [latest, ...earlier] = openweights.research;
+  const [, ...earlier] = openweights.research;
   return (
     <main id="main" className="scroll-mt-28 lg:scroll-mt-16">
       <section id="top" className="overflow-hidden">
@@ -76,6 +66,9 @@ export default function OpenWeights() {
               >
                 Get it on Google Play
               </a>
+              <Go href="/research/#openweights" className={link}>
+                Research
+              </Go>
               <Go href={links.repo} className={link}>
                 Source
               </Go>
@@ -87,7 +80,7 @@ export default function OpenWeights() {
           <div className="flex items-end justify-center gap-4 rounded-t-[1.75rem] bg-bench px-6 pt-10 sm:gap-6">
             <Phone
               src="/home/openweights-chat.png"
-              alt="OpenWeights on a phone with LFM2.5 1.2B loaded, ready for a first message"
+              alt="OpenWeights on a phone running LFM2.5 1.2B: asked to open experimentalmachines.org, it reads the page with its web tool and sums up what we make in three bullets, at 55 tokens per second"
               width={600}
               height={1222}
             />
@@ -113,41 +106,15 @@ export default function OpenWeights() {
       </Section>
 
       <Section id="research" title="Measured on real phones">
-        <div className="grid gap-12 lg:grid-cols-[1fr_1fr] lg:gap-16">
-          <article>
-            <p className="text-sm text-ink-soft">{latest.date}</p>
-            <h3 className="display mt-2 text-3xl leading-tight tracking-[-0.02em]">
-              <Go href={latest.href} className="hover:text-blue-deep">
-                {latest.title}
-              </Go>
-            </h3>
-            <p className={`${lede} mt-4 max-w-xl`}>{latest.line}</p>
-            <p className="mt-6">
-              <Go href={latest.href} className={`${link} font-medium`}>
-                Read the results
-              </Go>
-            </p>
-          </article>
-          <div className="rounded-[1.75rem] bg-bench p-6 sm:p-8">
-            <Bars
-              rows={pairings.map((p) => ({ label: p.label, value: p.cell.seconds, shown: `${p.cell.seconds.toFixed(1)} s` }))}
-              caption={`${qwen.name} ${qwen.quant}, the model OpenWeights ships, on a warm Snapdragon 8 Elite Gen 5: total time for the same ${pdTurns} conversation turns at their own reply lengths. CPU → NPU means prefill on the CPU, decode on the NPU. Shorter is faster.`}
-            />
-          </div>
+        <FeaturedStudy />
+        <div className="mt-6">
+          <ResearchList items={earlier.map((r) => ({ href: r.href, title: r.title, meta: r.date, line: r.line }))} />
         </div>
-        <ul className="mt-16 grid gap-x-8 gap-y-8 sm:grid-cols-3">
-          {earlier.map((r) => (
-            <li key={r.href} className="border-t border-rule pt-4">
-              <p className="text-sm text-ink-soft">{r.date}</p>
-              <p className="display mt-1 text-xl">
-                <Go href={r.href} className="hover:text-blue-deep">
-                  {r.title}
-                </Go>
-              </p>
-              <p className="mt-2 text-sm leading-6 text-ink-soft">{r.line}</p>
-            </li>
-          ))}
-        </ul>
+        <p className="mt-10">
+          <Go href="/research/" className="rounded-full bg-blue px-6 py-3 text-base font-medium text-white hover:bg-blue-deep">
+            All research
+          </Go>
+        </p>
       </Section>
 
       <Section id="source" title="Open source" tint>

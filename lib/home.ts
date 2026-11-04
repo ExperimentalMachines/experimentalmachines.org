@@ -16,7 +16,7 @@ export const links = {
   openweights: "/openweights",
   openweightsRepo: `${gh}/openweights`,
   openweightsIos: `${gh}/OpenWeights-iOS`,
-  openweightsLatency: "/openweights/latency/",
+  openweightsLatency: "/research/latency/",
   execupack: `${gh}/execupack`,
   execupackFindings: `${gh}/execupack/blob/main/docs/research/README.md`,
   execuserve: "/execuserve",
@@ -156,56 +156,46 @@ export const earlier: {
   },
 ];
 
-// Work with us: what we take on, each backed by a project on this page.
-export const work = [
-  {
-    title: "Put a model on phones",
-    body: "Name an open model, or the phone it has to run on. We build it for phone CPUs, GPUs and Qualcomm and MediaTek NPUs, and tell you which context windows fit.",
-    project: "ExecuPack",
-  },
-  {
-    title: "Run it inside your app",
-    body: "The model stays on the phone behind the OpenAI and Anthropic APIs, so your Android app calls it like a cloud model.",
-    project: "ExecuServe",
-  },
-  {
-    title: "Trace a problem to its cause",
-    body: "A crash, wrong output or a slow phone. We find the cause and take it upstream, as we did with LFM2's carried-over state and Android's temperature default.",
-    project: "ExecuTorch",
-  },
-];
-
 export type Member = {
   name: string;
-  role: string;
-  href?: string;
-  label?: string;
+  role: "Co-Founder" | "Core Contributor";
+  linkedin: string;
+  photo?: string;
 };
 
 export const team: Member[] = [
+  { name: "Alpha Romer Coma", role: "Co-Founder", linkedin: "https://www.linkedin.com/in/alpharomercoma/" },
+  { name: "John Andrew Balbarosa", role: "Co-Founder", linkedin: "https://www.linkedin.com/in/jbalbarosa/" },
+  { name: "Arjhine Ty", role: "Co-Founder", linkedin: "https://www.linkedin.com/in/arjhinety/" },
+  { name: "Xynil Jhed Lacap", role: "Co-Founder", linkedin: "https://www.linkedin.com/in/xy-lacap-76ba9029a/" },
+  { name: "JC Diamante", role: "Core Contributor", linkedin: "https://www.linkedin.com/in/jcdiamante/" },
+  { name: "Jules Gregory Agustin", role: "Core Contributor", linkedin: "https://www.linkedin.com/in/jules-gregory-agustin-694884284/" },
+];
+
+// Work with us: a door for what the visitor has, each ending at proof rather than a description of a service.
+export const work = [
   {
-    name: "Alpha Romer Coma",
-    role: "Co-Founder",
-    href: "https://www.linkedin.com/in/alpharomercoma/",
-    label: "LinkedIn",
-  },
-  { name: "John Andrew Balbarosa", role: "Co-Founder" },
-  {
-    name: "Arjhine Ty",
-    role: "Co-Founder",
-    href: "https://www.linkedin.com/in/arjhinety/",
-    label: "LinkedIn",
-  },
-  {
-    name: "Xynil Jhed Lacap",
-    role: "Co-Founder",
-    href: "https://github.com/mr-jones123",
-    label: "GitHub",
+    have: "You have a hunch.",
+    offer: "We'll test it on real phones and show the numbers, as we did for which processor should prefill and which should decode.",
+    label: "See the study",
+    href: "/research/prefill-decode/",
   },
   {
-    name: "JC Diamante",
-    role: "Core Contributor",
-    href: "https://github.com/Zeraphim",
-    label: "GitHub",
+    have: "You have a model.",
+    offer: "We'll build it for phone CPUs, GPUs and Qualcomm and MediaTek NPUs, and tell you which context windows fit.",
+    label: "See the builds",
+    href: "/executorch/",
+  },
+  {
+    have: "You have an Android app.",
+    offer: "We'll run the model on the phone behind the OpenAI and Anthropic APIs, so your app calls it like a cloud model.",
+    label: "See ExecuServe",
+    href: "/execuserve/",
+  },
+  {
+    have: "You want to build.",
+    offer: "Our apps and build tools are open source. Ship something with us and your name goes on this page.",
+    label: "See the code",
+    href: links.github,
   },
 ];

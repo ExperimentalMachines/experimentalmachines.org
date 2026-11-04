@@ -11,6 +11,9 @@ export const pdSource = { commit: "f9e131bb19d1a98d46a604047b442c4d78338edd", di
 // started cooler than the rest and is not compared. order: its place in the model's run.
 export type PdCell = {
   seconds: number;
+  prefillTokS: number;
+  decodeTokS: number;
+  startC: { cpu: number; gpu: number; npu: number };
   decodeShare: number;
   stalls: number;
   frozenSeconds: number;
@@ -55,6 +58,13 @@ export const pdModels: PdModel[] = [
       [
         {
           "seconds": 364.156,
+          "prefillTokS": 187.2,
+          "decodeTokS": 41.31,
+          "startC": {
+            "cpu": 100.8,
+            "gpu": 91.1,
+            "npu": 91.9
+          },
           "decodeShare": 0.82849,
           "stalls": 0,
           "frozenSeconds": 0,
@@ -67,6 +77,13 @@ export const pdModels: PdModel[] = [
         },
         {
           "seconds": 683.135,
+          "prefillTokS": 199.9,
+          "decodeTokS": 19.99,
+          "startC": {
+            "cpu": 79.9,
+            "gpu": 78.7,
+            "npu": 77.2
+          },
           "decodeShare": 0.91258,
           "stalls": 0,
           "frozenSeconds": 0,
@@ -79,6 +96,13 @@ export const pdModels: PdModel[] = [
         },
         {
           "seconds": 347.078,
+          "prefillTokS": 196.4,
+          "decodeTokS": 43.47,
+          "startC": {
+            "cpu": 90.7,
+            "gpu": 85.3,
+            "npu": 90.3
+          },
           "decodeShare": 0.82608,
           "stalls": 0,
           "frozenSeconds": 0,
@@ -93,6 +117,13 @@ export const pdModels: PdModel[] = [
       [
         {
           "seconds": 329.65,
+          "prefillTokS": 390.7,
+          "decodeTokS": 41.72,
+          "startC": {
+            "cpu": 96.5,
+            "gpu": 87.2,
+            "npu": 88
+          },
           "decodeShare": 0.90608,
           "stalls": 0,
           "frozenSeconds": 0,
@@ -105,6 +136,13 @@ export const pdModels: PdModel[] = [
         },
         {
           "seconds": 652.843,
+          "prefillTokS": 391.2,
+          "decodeTokS": 20.01,
+          "startC": {
+            "cpu": 82.6,
+            "gpu": 81,
+            "npu": 80.3
+          },
           "decodeShare": 0.95414,
           "stalls": 0,
           "frozenSeconds": 0,
@@ -117,6 +155,13 @@ export const pdModels: PdModel[] = [
         },
         {
           "seconds": 317.796,
+          "prefillTokS": 398.5,
+          "decodeTokS": 43.4,
+          "startC": {
+            "cpu": 95,
+            "gpu": 88.8,
+            "npu": 94.2
+          },
           "decodeShare": 0.9036,
           "stalls": 0,
           "frozenSeconds": 0,
@@ -131,6 +176,13 @@ export const pdModels: PdModel[] = [
       [
         {
           "seconds": 316.322,
+          "prefillTokS": 2756.1,
+          "decodeTokS": 40.04,
+          "startC": {
+            "cpu": 101.9,
+            "gpu": 93,
+            "npu": 93.8
+          },
           "decodeShare": 0.98383,
           "stalls": 0,
           "frozenSeconds": 0,
@@ -143,6 +195,13 @@ export const pdModels: PdModel[] = [
         },
         {
           "seconds": 628.593,
+          "prefillTokS": 2891.2,
+          "decodeTokS": 20,
+          "startC": {
+            "cpu": 83.4,
+            "gpu": 81.8,
+            "npu": 80.7
+          },
           "decodeShare": 0.99129,
           "stalls": 0,
           "frozenSeconds": 0,
@@ -155,6 +214,13 @@ export const pdModels: PdModel[] = [
         },
         {
           "seconds": 291.773,
+          "prefillTokS": 2815.8,
+          "decodeTokS": 43.33,
+          "startC": {
+            "cpu": 88.8,
+            "gpu": 83.7,
+            "npu": 88.8
+          },
           "decodeShare": 0.98566,
           "stalls": 0,
           "frozenSeconds": 0,
@@ -212,6 +278,13 @@ export const pdModels: PdModel[] = [
       [
         {
           "seconds": 316.725,
+          "prefillTokS": 249.8,
+          "decodeTokS": 49.59,
+          "startC": {
+            "cpu": 101.9,
+            "gpu": 91.9,
+            "npu": 92.6
+          },
           "decodeShare": 0.84403,
           "stalls": 0,
           "frozenSeconds": 0,
@@ -224,6 +297,13 @@ export const pdModels: PdModel[] = [
         },
         {
           "seconds": 603.234,
+          "prefillTokS": 281,
+          "decodeTokS": 23.72,
+          "startC": {
+            "cpu": 80.3,
+            "gpu": 78.7,
+            "npu": 77.6
+          },
           "decodeShare": 0.92655,
           "stalls": 0,
           "frozenSeconds": 0,
@@ -236,6 +316,13 @@ export const pdModels: PdModel[] = [
         },
         {
           "seconds": 324.288,
+          "prefillTokS": 277,
+          "decodeTokS": 47.41,
+          "startC": {
+            "cpu": 91.1,
+            "gpu": 85.7,
+            "npu": 90.3
+          },
           "decodeShare": 0.86213,
           "stalls": 0,
           "frozenSeconds": 0,
@@ -250,6 +337,13 @@ export const pdModels: PdModel[] = [
       [
         {
           "seconds": 276.558,
+          "prefillTokS": 412.8,
+          "decodeTokS": 53.82,
+          "startC": {
+            "cpu": 94.6,
+            "gpu": 85.3,
+            "npu": 85.7
+          },
           "decodeShare": 0.89061,
           "stalls": 0,
           "frozenSeconds": 0,
@@ -262,6 +356,13 @@ export const pdModels: PdModel[] = [
         },
         {
           "seconds": 594.183,
+          "prefillTokS": 404.8,
+          "decodeTokS": 23.52,
+          "startC": {
+            "cpu": 76,
+            "gpu": 74.8,
+            "npu": 73.4
+          },
           "decodeShare": 0.94853,
           "stalls": 0,
           "frozenSeconds": 0,
@@ -274,6 +375,13 @@ export const pdModels: PdModel[] = [
         },
         {
           "seconds": 310.118,
+          "prefillTokS": 412.2,
+          "decodeTokS": 47.39,
+          "startC": {
+            "cpu": 90.7,
+            "gpu": 85.7,
+            "npu": 89.9
+          },
           "decodeShare": 0.90208,
           "stalls": 0,
           "frozenSeconds": 0,
@@ -288,6 +396,13 @@ export const pdModels: PdModel[] = [
       [
         {
           "seconds": 254.076,
+          "prefillTokS": 3106.6,
+          "decodeTokS": 53.05,
+          "startC": {
+            "cpu": 98.8,
+            "gpu": 89.9,
+            "npu": 90.7
+          },
           "decodeShare": 0.98347,
           "stalls": 0,
           "frozenSeconds": 0,
@@ -300,6 +415,13 @@ export const pdModels: PdModel[] = [
         },
         {
           "seconds": 563.133,
+          "prefillTokS": 3293.6,
+          "decodeTokS": 23.72,
+          "startC": {
+            "cpu": 79.5,
+            "gpu": 77.9,
+            "npu": 77.2
+          },
           "decodeShare": 0.99254,
           "stalls": 0,
           "frozenSeconds": 0,
@@ -312,6 +434,13 @@ export const pdModels: PdModel[] = [
         },
         {
           "seconds": 287.519,
+          "prefillTokS": 3125,
+          "decodeTokS": 46.76,
+          "startC": {
+            "cpu": 89.2,
+            "gpu": 84.1,
+            "npu": 88.8
+          },
           "decodeShare": 0.98609,
           "stalls": 0,
           "frozenSeconds": 0,
@@ -369,6 +498,13 @@ export const pdModels: PdModel[] = [
       [
         {
           "seconds": 428.269,
+          "prefillTokS": 174.5,
+          "decodeTokS": 33.41,
+          "startC": {
+            "cpu": 102.7,
+            "gpu": 93.4,
+            "npu": 93.4
+          },
           "decodeShare": 0.84618,
           "stalls": 0,
           "frozenSeconds": 0,
@@ -381,6 +517,13 @@ export const pdModels: PdModel[] = [
         },
         {
           "seconds": 524.746,
+          "prefillTokS": 208.9,
+          "decodeTokS": 25.8,
+          "startC": {
+            "cpu": 82.6,
+            "gpu": 81.4,
+            "npu": 79.9
+          },
           "decodeShare": 0.89428,
           "stalls": 0,
           "frozenSeconds": 0,
@@ -393,6 +536,13 @@ export const pdModels: PdModel[] = [
         },
         {
           "seconds": 388.719,
+          "prefillTokS": 192,
+          "decodeTokS": 36.84,
+          "startC": {
+            "cpu": 95,
+            "gpu": 88.8,
+            "npu": 94.2
+          },
           "decodeShare": 0.84537,
           "stalls": 0,
           "frozenSeconds": 0,
@@ -407,6 +557,13 @@ export const pdModels: PdModel[] = [
       [
         {
           "seconds": 372.226,
+          "prefillTokS": 400.9,
+          "decodeTokS": 35.28,
+          "startC": {
+            "cpu": 101.9,
+            "gpu": 92.7,
+            "npu": 92.6
+          },
           "decodeShare": 0.92184,
           "stalls": 0,
           "frozenSeconds": 0,
@@ -419,6 +576,13 @@ export const pdModels: PdModel[] = [
         },
         {
           "seconds": 497.913,
+          "prefillTokS": 396.7,
+          "decodeTokS": 25.82,
+          "startC": {
+            "cpu": 85.3,
+            "gpu": 83.7,
+            "npu": 82.2
+          },
           "decodeShare": 0.94169,
           "stalls": 0,
           "frozenSeconds": 0,
@@ -431,6 +595,13 @@ export const pdModels: PdModel[] = [
         },
         {
           "seconds": 383.684,
+          "prefillTokS": 398.4,
+          "decodeTokS": 34.17,
+          "startC": {
+            "cpu": 96.5,
+            "gpu": 90.3,
+            "npu": 95.7
+          },
           "decodeShare": 0.92349,
           "stalls": 0,
           "frozenSeconds": 0,
@@ -445,6 +616,13 @@ export const pdModels: PdModel[] = [
       [
         {
           "seconds": 448.623,
+          "prefillTokS": 2158.1,
+          "decodeTokS": 27.33,
+          "startC": {
+            "cpu": 102.7,
+            "gpu": 93.8,
+            "npu": 94.2
+          },
           "decodeShare": 0.98753,
           "stalls": 20,
           "frozenSeconds": 71.26,
@@ -457,6 +635,13 @@ export const pdModels: PdModel[] = [
         },
         {
           "seconds": 473.649,
+          "prefillTokS": 2745.1,
+          "decodeTokS": 25.82,
+          "startC": {
+            "cpu": 84.9,
+            "gpu": 83.3,
+            "npu": 81.9
+          },
           "decodeShare": 0.9899,
           "stalls": 0,
           "frozenSeconds": 0,
@@ -469,6 +654,13 @@ export const pdModels: PdModel[] = [
         },
         {
           "seconds": 340.887,
+          "prefillTokS": 1941.6,
+          "decodeTokS": 36.15,
+          "startC": {
+            "cpu": 97.7,
+            "gpu": 91.1,
+            "npu": 96.5
+          },
           "decodeShare": 0.98257,
           "stalls": 0,
           "frozenSeconds": 0,
@@ -526,6 +718,13 @@ export const pdModels: PdModel[] = [
       [
         {
           "seconds": 303.504,
+          "prefillTokS": 275.5,
+          "decodeTokS": 49.93,
+          "startC": {
+            "cpu": 98.9,
+            "gpu": 82.9,
+            "npu": 84.1
+          },
           "decodeShare": 0.85433,
           "stalls": 1,
           "frozenSeconds": 0.666,
@@ -538,6 +737,13 @@ export const pdModels: PdModel[] = [
         },
         {
           "seconds": 400.206,
+          "prefillTokS": 274.5,
+          "decodeTokS": 36.41,
+          "startC": {
+            "cpu": 80.3,
+            "gpu": 79,
+            "npu": 76.8
+          },
           "decodeShare": 0.88851,
           "stalls": 0,
           "frozenSeconds": 0,
@@ -550,6 +756,13 @@ export const pdModels: PdModel[] = [
         },
         {
           "seconds": 362.062,
+          "prefillTokS": 274,
+          "decodeTokS": 40.77,
+          "startC": {
+            "cpu": 84.9,
+            "gpu": 80.2,
+            "npu": 85.3
+          },
           "decodeShare": 0.87696,
           "stalls": 0,
           "frozenSeconds": 0,
@@ -564,6 +777,13 @@ export const pdModels: PdModel[] = [
       [
         {
           "seconds": 283.198,
+          "prefillTokS": 482.2,
+          "decodeTokS": 50.24,
+          "startC": {
+            "cpu": 97.3,
+            "gpu": 87.2,
+            "npu": 87.2
+          },
           "decodeShare": 0.90996,
           "stalls": 0,
           "frozenSeconds": 0,
@@ -576,6 +796,13 @@ export const pdModels: PdModel[] = [
         },
         {
           "seconds": 381.101,
+          "prefillTokS": 482.2,
+          "decodeTokS": 36.38,
+          "startC": {
+            "cpu": 77.2,
+            "gpu": 78.3,
+            "npu": 73.6
+          },
           "decodeShare": 0.93366,
           "stalls": 0,
           "frozenSeconds": 0,
@@ -588,6 +815,13 @@ export const pdModels: PdModel[] = [
         },
         {
           "seconds": 341.47,
+          "prefillTokS": 484.2,
+          "decodeTokS": 40.96,
+          "startC": {
+            "cpu": 87.2,
+            "gpu": 82.6,
+            "npu": 87.6
+          },
           "decodeShare": 0.9256,
           "stalls": 0,
           "frozenSeconds": 0,
@@ -602,6 +836,13 @@ export const pdModels: PdModel[] = [
       [
         {
           "seconds": 260.995,
+          "prefillTokS": 3162.4,
+          "decodeTokS": 50.37,
+          "startC": {
+            "cpu": 92.3,
+            "gpu": 82.6,
+            "npu": 82.6
+          },
           "decodeShare": 0.98475,
           "stalls": 0,
           "frozenSeconds": 0,
@@ -614,6 +855,13 @@ export const pdModels: PdModel[] = [
         },
         {
           "seconds": 353.996,
+          "prefillTokS": 3294.1,
+          "decodeTokS": 36.99,
+          "startC": {
+            "cpu": 79.5,
+            "gpu": 78.7,
+            "npu": 76.8
+          },
           "decodeShare": 0.98869,
           "stalls": 0,
           "frozenSeconds": 0,
@@ -626,6 +874,13 @@ export const pdModels: PdModel[] = [
         },
         {
           "seconds": 321.699,
+          "prefillTokS": 2963.4,
+          "decodeTokS": 40.77,
+          "startC": {
+            "cpu": 87.6,
+            "gpu": 82.2,
+            "npu": 93.8
+          },
           "decodeShare": 0.98718,
           "stalls": 0,
           "frozenSeconds": 0,
@@ -683,6 +938,13 @@ export const pdModels: PdModel[] = [
       [
         {
           "seconds": 563.509,
+          "prefillTokS": 126.2,
+          "decodeTokS": 26.47,
+          "startC": {
+            "cpu": 95,
+            "gpu": 86.1,
+            "npu": 86.8
+          },
           "decodeShare": 0.83559,
           "stalls": 0,
           "frozenSeconds": 0,
@@ -695,6 +957,13 @@ export const pdModels: PdModel[] = [
         },
         {
           "seconds": 962.917,
+          "prefillTokS": 128.1,
+          "decodeTokS": 14.32,
+          "startC": {
+            "cpu": 72.6,
+            "gpu": 71.3,
+            "npu": 69.8
+          },
           "decodeShare": 0.90398,
           "stalls": 0,
           "frozenSeconds": 0,
@@ -707,6 +976,13 @@ export const pdModels: PdModel[] = [
         },
         {
           "seconds": 532.95,
+          "prefillTokS": 125.1,
+          "decodeTokS": 28.4,
+          "startC": {
+            "cpu": 93.4,
+            "gpu": 88,
+            "npu": 93
+          },
           "decodeShare": 0.82332,
           "stalls": 0,
           "frozenSeconds": 0,
@@ -721,6 +997,13 @@ export const pdModels: PdModel[] = [
       [
         {
           "seconds": 624.272,
+          "prefillTokS": 247.1,
+          "decodeTokS": 21.63,
+          "startC": {
+            "cpu": 102.4,
+            "gpu": 92.3,
+            "npu": 93
+          },
           "decodeShare": 0.9227,
           "stalls": 9,
           "frozenSeconds": 60.55,
@@ -733,6 +1016,13 @@ export const pdModels: PdModel[] = [
         },
         {
           "seconds": 918.187,
+          "prefillTokS": 242.8,
+          "decodeTokS": 14.32,
+          "startC": {
+            "cpu": 82.6,
+            "gpu": 81,
+            "npu": 79.5
+          },
           "decodeShare": 0.9475,
           "stalls": 0,
           "frozenSeconds": 0,
@@ -745,6 +1035,13 @@ export const pdModels: PdModel[] = [
         },
         {
           "seconds": 517.633,
+          "prefillTokS": 245.5,
+          "decodeTokS": 26.57,
+          "startC": {
+            "cpu": 95.8,
+            "gpu": 90,
+            "npu": 95
+          },
           "decodeShare": 0.90601,
           "stalls": 0,
           "frozenSeconds": 0,
@@ -759,6 +1056,13 @@ export const pdModels: PdModel[] = [
       [
         {
           "seconds": 524.061,
+          "prefillTokS": 1693.5,
+          "decodeTokS": 24.13,
+          "startC": {
+            "cpu": 103.1,
+            "gpu": 92.7,
+            "npu": 93
+          },
           "decodeShare": 0.98541,
           "stalls": 0,
           "frozenSeconds": 0,
@@ -771,6 +1075,13 @@ export const pdModels: PdModel[] = [
         },
         {
           "seconds": 877.128,
+          "prefillTokS": 1989.5,
+          "decodeTokS": 14.32,
+          "startC": {
+            "cpu": 82.6,
+            "gpu": 81,
+            "npu": 79.5
+          },
           "decodeShare": 0.99183,
           "stalls": 0,
           "frozenSeconds": 0,
@@ -783,6 +1094,13 @@ export const pdModels: PdModel[] = [
         },
         {
           "seconds": 446.863,
+          "prefillTokS": 1690.4,
+          "decodeTokS": 28.33,
+          "startC": {
+            "cpu": 93.4,
+            "gpu": 88,
+            "npu": 93.4
+          },
           "decodeShare": 0.98447,
           "stalls": 0,
           "frozenSeconds": 0,
@@ -840,6 +1158,13 @@ export const pdModels: PdModel[] = [
       [
         {
           "seconds": 845.099,
+          "prefillTokS": 120.5,
+          "decodeTokS": 16.66,
+          "startC": {
+            "cpu": 102.4,
+            "gpu": 93.8,
+            "npu": 93.4
+          },
           "decodeShare": 0.88523,
           "stalls": 24,
           "frozenSeconds": 174.965,
@@ -852,6 +1177,13 @@ export const pdModels: PdModel[] = [
         },
         {
           "seconds": 1022.479,
+          "prefillTokS": 135.5,
+          "decodeTokS": 13.33,
+          "startC": {
+            "cpu": 86.1,
+            "gpu": 84.9,
+            "npu": 82.6
+          },
           "decodeShare": 0.9144,
           "stalls": 0,
           "frozenSeconds": 0,
@@ -864,6 +1196,13 @@ export const pdModels: PdModel[] = [
         },
         {
           "seconds": 681.751,
+          "prefillTokS": 85.2,
+          "decodeTokS": 22.92,
+          "startC": {
+            "cpu": 95,
+            "gpu": 89.2,
+            "npu": 94.2
+          },
           "decodeShare": 0.79738,
           "stalls": 0,
           "frozenSeconds": 0,
@@ -878,6 +1217,13 @@ export const pdModels: PdModel[] = [
       [
         {
           "seconds": 725.553,
+          "prefillTokS": 222.5,
+          "decodeTokS": 18.55,
+          "startC": {
+            "cpu": 101.2,
+            "gpu": 93,
+            "npu": 92.3
+          },
           "decodeShare": 0.92591,
           "stalls": 18,
           "frozenSeconds": 110.185,
@@ -890,6 +1236,13 @@ export const pdModels: PdModel[] = [
         },
         {
           "seconds": 990.813,
+          "prefillTokS": 218.6,
+          "decodeTokS": 13.3,
+          "startC": {
+            "cpu": 85.3,
+            "gpu": 84.5,
+            "npu": 82.2
+          },
           "decodeShare": 0.94598,
           "stalls": 0,
           "frozenSeconds": 0,
@@ -902,6 +1255,13 @@ export const pdModels: PdModel[] = [
         },
         {
           "seconds": 641.775,
+          "prefillTokS": 220.6,
+          "decodeTokS": 21.21,
+          "startC": {
+            "cpu": 94.6,
+            "gpu": 88.4,
+            "npu": 94.6
+          },
           "decodeShare": 0.91545,
           "stalls": 0,
           "frozenSeconds": 0,
@@ -916,6 +1276,13 @@ export const pdModels: PdModel[] = [
       [
         {
           "seconds": 742.052,
+          "prefillTokS": 1629.7,
+          "decodeTokS": 16.98,
+          "startC": {
+            "cpu": 101.6,
+            "gpu": 92.6,
+            "npu": 92.3
+          },
           "decodeShare": 0.98908,
           "stalls": 26,
           "frozenSeconds": 168.075,
@@ -928,6 +1295,13 @@ export const pdModels: PdModel[] = [
         },
         {
           "seconds": 957.295,
+          "prefillTokS": 1946,
+          "decodeTokS": 13.12,
+          "startC": {
+            "cpu": 83.3,
+            "gpu": 82.2,
+            "npu": 79.9
+          },
           "decodeShare": 0.99209,
           "stalls": 0,
           "frozenSeconds": 0,
@@ -940,6 +1314,13 @@ export const pdModels: PdModel[] = [
         },
         {
           "seconds": 619.192,
+          "prefillTokS": 1559.7,
+          "decodeTokS": 20.37,
+          "startC": {
+            "cpu": 93.8,
+            "gpu": 88,
+            "npu": 93.4
+          },
           "decodeShare": 0.98785,
           "stalls": 0,
           "frozenSeconds": 0,
@@ -997,6 +1378,13 @@ export const pdModels: PdModel[] = [
       [
         {
           "seconds": 758.261,
+          "prefillTokS": 119.3,
+          "decodeTokS": 18.75,
+          "startC": {
+            "cpu": 103.9,
+            "gpu": 91.5,
+            "npu": 91.9
+          },
           "decodeShare": 0.87079,
           "stalls": 19,
           "frozenSeconds": 121.14,
@@ -1009,6 +1397,13 @@ export const pdModels: PdModel[] = [
         },
         {
           "seconds": 749.717,
+          "prefillTokS": 129.1,
+          "decodeTokS": 18.79,
+          "startC": {
+            "cpu": 83.3,
+            "gpu": 83,
+            "npu": 79.9
+          },
           "decodeShare": 0.8788,
           "stalls": 0,
           "frozenSeconds": 0,
@@ -1021,6 +1416,13 @@ export const pdModels: PdModel[] = [
         },
         {
           "seconds": 678.157,
+          "prefillTokS": 125.9,
+          "decodeTokS": 21.15,
+          "startC": {
+            "cpu": 94.2,
+            "gpu": 88.4,
+            "npu": 94.2
+          },
           "decodeShare": 0.86286,
           "stalls": 0,
           "frozenSeconds": 0,
@@ -1035,6 +1437,13 @@ export const pdModels: PdModel[] = [
       [
         {
           "seconds": 700.616,
+          "prefillTokS": 221.7,
+          "decodeTokS": 19.11,
+          "startC": {
+            "cpu": 102.7,
+            "gpu": 93.8,
+            "npu": 93
+          },
           "decodeShare": 0.9243,
           "stalls": 16,
           "frozenSeconds": 112.585,
@@ -1047,6 +1456,13 @@ export const pdModels: PdModel[] = [
         },
         {
           "seconds": 696.019,
+          "prefillTokS": 222.8,
+          "decodeTokS": 19.24,
+          "startC": {
+            "cpu": 86.8,
+            "gpu": 88.8,
+            "npu": 83.4
+          },
           "decodeShare": 0.92456,
           "stalls": 0,
           "frozenSeconds": 0,
@@ -1059,6 +1475,13 @@ export const pdModels: PdModel[] = [
         },
         {
           "seconds": 640.133,
+          "prefillTokS": 221.7,
+          "decodeTokS": 21.08,
+          "startC": {
+            "cpu": 95.4,
+            "gpu": 89.2,
+            "npu": 95
+          },
           "decodeShare": 0.91717,
           "stalls": 0,
           "frozenSeconds": 0,
@@ -1073,6 +1496,13 @@ export const pdModels: PdModel[] = [
       [
         {
           "seconds": 595.292,
+          "prefillTokS": 1157.9,
+          "decodeTokS": 21.16,
+          "startC": {
+            "cpu": 102.4,
+            "gpu": 93,
+            "npu": 92.3
+          },
           "decodeShare": 0.98277,
           "stalls": 8,
           "frozenSeconds": 57.616,
@@ -1085,6 +1515,13 @@ export const pdModels: PdModel[] = [
         },
         {
           "seconds": 667.431,
+          "prefillTokS": 1444.4,
+          "decodeTokS": 18.78,
+          "startC": {
+            "cpu": 84.5,
+            "gpu": 84.1,
+            "npu": 81.4
+          },
           "decodeShare": 0.98731,
           "stalls": 0,
           "frozenSeconds": 0,
@@ -1097,6 +1534,13 @@ export const pdModels: PdModel[] = [
         },
         {
           "seconds": 597.509,
+          "prefillTokS": 1047.8,
+          "decodeTokS": 21.11,
+          "startC": {
+            "cpu": 95.4,
+            "gpu": 88.8,
+            "npu": 98.1
+          },
           "decodeShare": 0.98129,
           "stalls": 0,
           "frozenSeconds": 0,
@@ -1154,6 +1598,13 @@ export const pdModels: PdModel[] = [
       [
         {
           "seconds": 995.341,
+          "prefillTokS": 73.7,
+          "decodeTokS": 14.42,
+          "startC": {
+            "cpu": 102.7,
+            "gpu": 93.1,
+            "npu": 93.4
+          },
           "decodeShare": 0.84335,
           "stalls": 8,
           "frozenSeconds": 63.419,
@@ -1166,6 +1617,13 @@ export const pdModels: PdModel[] = [
         },
         {
           "seconds": 1313.121,
+          "prefillTokS": 81.3,
+          "decodeTokS": 10.34,
+          "startC": {
+            "cpu": 77.9,
+            "gpu": 77.9,
+            "npu": 75.6
+          },
           "decodeShare": 0.8915,
           "stalls": 0,
           "frozenSeconds": 0,
@@ -1178,6 +1636,13 @@ export const pdModels: PdModel[] = [
         },
         {
           "seconds": 960.015,
+          "prefillTokS": 49.6,
+          "decodeTokS": 16.64,
+          "startC": {
+            "cpu": 96.1,
+            "gpu": 90.3,
+            "npu": 95.4
+          },
           "decodeShare": 0.75804,
           "stalls": 0,
           "frozenSeconds": 0,
@@ -1192,6 +1657,13 @@ export const pdModels: PdModel[] = [
       [
         {
           "seconds": 930.824,
+          "prefillTokS": 151,
+          "decodeTokS": 14.18,
+          "startC": {
+            "cpu": 102.7,
+            "gpu": 92.7,
+            "npu": 93.4
+          },
           "decodeShare": 0.9171,
           "stalls": 14,
           "frozenSeconds": 93.92,
@@ -1204,6 +1676,13 @@ export const pdModels: PdModel[] = [
         },
         {
           "seconds": 1246.86,
+          "prefillTokS": 147.5,
+          "decodeTokS": 10.36,
+          "startC": {
+            "cpu": 83.8,
+            "gpu": 82.6,
+            "npu": 80.6
+          },
           "decodeShare": 0.93747,
           "stalls": 0,
           "frozenSeconds": 0,
@@ -1216,6 +1695,13 @@ export const pdModels: PdModel[] = [
         },
         {
           "seconds": 817.01,
+          "prefillTokS": 150.8,
+          "decodeTokS": 16.37,
+          "startC": {
+            "cpu": 93,
+            "gpu": 88,
+            "npu": 93.4
+          },
           "decodeShare": 0.90535,
           "stalls": 0,
           "frozenSeconds": 0,
@@ -1230,6 +1716,13 @@ export const pdModels: PdModel[] = [
       [
         {
           "seconds": 864.192,
+          "prefillTokS": 863.6,
+          "decodeTokS": 14.24,
+          "startC": {
+            "cpu": 103.1,
+            "gpu": 93.5,
+            "npu": 93.8
+          },
           "decodeShare": 0.98376,
           "stalls": 9,
           "frozenSeconds": 61.525,
@@ -1242,6 +1735,13 @@ export const pdModels: PdModel[] = [
         },
         {
           "seconds": 1156.516,
+          "prefillTokS": 1133.3,
+          "decodeTokS": 10.57,
+          "startC": {
+            "cpu": 86.1,
+            "gpu": 84.5,
+            "npu": 82.6
+          },
           "decodeShare": 0.99011,
           "stalls": 0,
           "frozenSeconds": 0,
@@ -1254,6 +1754,13 @@ export const pdModels: PdModel[] = [
         },
         {
           "seconds": 792.818,
+          "prefillTokS": 858.9,
+          "decodeTokS": 15.53,
+          "startC": {
+            "cpu": 94.6,
+            "gpu": 88.4,
+            "npu": 93.8
+          },
           "decodeShare": 0.98309,
           "stalls": 0,
           "frozenSeconds": 0,
@@ -1313,6 +1820,13 @@ export const pdModels: PdModel[] = [
       [
         {
           "seconds": 1371.575,
+          "prefillTokS": 48.9,
+          "decodeTokS": 11,
+          "startC": {
+            "cpu": 102.3,
+            "gpu": 92.7,
+            "npu": 93
+          },
           "decodeShare": 0.82572,
           "stalls": 6,
           "frozenSeconds": 64.45,
@@ -1325,6 +1839,13 @@ export const pdModels: PdModel[] = [
         },
         {
           "seconds": 3076.534,
+          "prefillTokS": 53.1,
+          "decodeTokS": 4.36,
+          "startC": {
+            "cpu": 78,
+            "gpu": 76.7,
+            "npu": 74.8
+          },
           "decodeShare": 0.92802,
           "stalls": 0,
           "frozenSeconds": 0,
@@ -1337,6 +1858,13 @@ export const pdModels: PdModel[] = [
         },
         {
           "seconds": 1162.824,
+          "prefillTokS": 40.9,
+          "decodeTokS": 14.22,
+          "startC": {
+            "cpu": 95.4,
+            "gpu": 89.2,
+            "npu": 94.2
+          },
           "decodeShare": 0.75367,
           "stalls": 0,
           "frozenSeconds": 0,
@@ -1351,6 +1879,13 @@ export const pdModels: PdModel[] = [
       [
         {
           "seconds": 1406.343,
+          "prefillTokS": 104.6,
+          "decodeTokS": 9.64,
+          "startC": {
+            "cpu": 101.9,
+            "gpu": 93.4,
+            "npu": 93.4
+          },
           "decodeShare": 0.91965,
           "stalls": 26,
           "frozenSeconds": 256.925,
@@ -1363,6 +1898,13 @@ export const pdModels: PdModel[] = [
         },
         {
           "seconds": 2939.407,
+          "prefillTokS": 102.4,
+          "decodeTokS": 4.41,
+          "startC": {
+            "cpu": 75.7,
+            "gpu": 74.8,
+            "npu": 72.9
+          },
           "decodeShare": 0.96115,
           "stalls": 0,
           "frozenSeconds": 0,
@@ -1375,6 +1917,13 @@ export const pdModels: PdModel[] = [
         },
         {
           "seconds": 1232.859,
+          "prefillTokS": 104,
+          "decodeTokS": 11.14,
+          "startC": {
+            "cpu": 90.3,
+            "gpu": 85.7,
+            "npu": 88.4
+          },
           "decodeShare": 0.90756,
           "stalls": 0,
           "frozenSeconds": 0,
@@ -1389,6 +1938,13 @@ export const pdModels: PdModel[] = [
       [
         {
           "seconds": 1398.185,
+          "prefillTokS": 614.5,
+          "decodeTokS": 9.04,
+          "startC": {
+            "cpu": 103.1,
+            "gpu": 93.5,
+            "npu": 93.8
+          },
           "decodeShare": 0.98568,
           "stalls": 24,
           "frozenSeconds": 255.797,
@@ -1401,6 +1957,13 @@ export const pdModels: PdModel[] = [
         },
         {
           "seconds": 2859.75,
+          "prefillTokS": 970.8,
+          "decodeTokS": 4.38,
+          "startC": {
+            "cpu": 74.1,
+            "gpu": 73.2,
+            "npu": 70.9
+          },
           "decodeShare": 0.99521,
           "stalls": 0,
           "frozenSeconds": 0,
@@ -1413,6 +1976,13 @@ export const pdModels: PdModel[] = [
         },
         {
           "seconds": 1121.898,
+          "prefillTokS": 660.4,
+          "decodeTokS": 11.29,
+          "startC": {
+            "cpu": 93,
+            "gpu": 88,
+            "npu": 91.9
+          },
           "decodeShare": 0.9842,
           "stalls": 0,
           "frozenSeconds": 0,

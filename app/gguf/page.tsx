@@ -38,7 +38,16 @@ export default function Gguf() {
       <section id="top">
         <div className="mx-auto grid max-w-7xl gap-12 px-4 py-14 sm:px-6 sm:py-20 lg:grid-cols-[1.1fr_1fr] lg:gap-16">
           <div>
-            <h1 className="display text-balance text-5xl font-medium leading-[1.02] tracking-[-0.035em] sm:text-6xl">
+            <nav aria-label="Breadcrumb">
+              <ol className="flex flex-wrap items-center gap-2 text-sm text-ink-soft">
+                <li>
+                  <a href="/research/" className="hover:text-ink">
+                    Research
+                  </a>
+                </li>
+              </ol>
+            </nav>
+            <h1 className="display mt-8 text-balance text-5xl font-medium leading-[1.02] tracking-[-0.035em] sm:text-6xl">
               GGUF, from a datacenter GPU to a phone.
             </h1>
             <p className={`${lede} mt-6 max-w-xl`}>

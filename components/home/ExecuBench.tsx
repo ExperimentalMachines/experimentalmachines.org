@@ -55,7 +55,11 @@ export default function ExecuBench() {
         <div className="mt-20 border-t border-rule pt-8">
           <h3 className="text-base font-medium">Where we started</h3>
           <p className="mt-1 text-sm leading-6 text-ink-soft">
-            Earlier research compared AI hardware across servers, laptops and phones. The reports stay published.
+            Earlier research compared AI hardware across servers, laptops and phones. The reports stay published, and{" "}
+            <Go href="/research/" className={link}>
+              all our research
+            </Go>{" "}
+            is in one place.
           </p>
           <ul className="mt-4 grid gap-x-8 sm:grid-cols-3">
             {earlier.map((e) => (

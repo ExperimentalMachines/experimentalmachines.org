@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import ApiTabs from "@/components/home/ApiTabs";
+import CodeBlock from "@/components/home/CodeBlock";
 import Go from "@/components/home/Go";
 import { h2, lede as ledeClass, link, ProjectLabel } from "@/components/home/ui";
 import { execuserve } from "@/lib/execuserve";
@@ -29,10 +31,8 @@ function Section({ id, title, lede, tint, children }: { id: string; title: strin
 }
 
 // The homepage's dark code card.
-const Code = ({ children }: { children: string }) => (
-  <pre className="overflow-x-auto rounded-2xl bg-[#0e1638] p-5 text-[0.82rem] leading-6 text-white sm:p-6">
-    <code>{children}</code>
-  </pre>
+const Code = ({ code, lang }: { code: string; lang: "python" | "shell" }) => (
+  <CodeBlock code={code} lang={lang} className="rounded-2xl bg-[#0e1638] p-5 sm:p-6" />
 );
 
 const status = projects.find((p) => p.id === "execuserve")!.status;
@@ -71,6 +71,9 @@ export default function ExecuServe() {
             <a href="#start" className={link}>
               Quick start
             </a>
+            <Go href="/research/" className={link}>
+              Research
+            </Go>
             <Go href="/execuserve/privacy/" className={link}>
               Privacy policy
             </Go>
@@ -138,20 +141,31 @@ export default function ExecuServe() {
       </Section>
 
       <Section id="start" title="Quick start" lede="An arm64 phone on Android 12 or later, adb on your computer, and an ExecuTorch export with its tokenizer." tint>
-        <div className="grid gap-6 lg:grid-cols-2">
-          {/* min-w-0, so a long command scrolls inside its card instead of widening the page. */}
-          <div className="min-w-0">
-            <p className="mb-3 text-sm text-ink-soft">From a clone of the repository, with the app installed:</p>
-            <Code>{execuserve.quickstart.shell}</Code>
-          </div>
-          <div className="min-w-0">
-            <p className="mb-3 text-sm text-ink-soft">Then any OpenAI client:</p>
-            <Code>{execuserve.quickstart.python}</Code>
-          </div>
-        </div>
+        <ApiTabs
+          panels={(["openai", "anthropic"] as const).map((id) => {
+            const q = execuserve.quickstart[id];
+            return {
+              id,
+              label: q.label,
+              body: (
+                <div className="grid gap-6 lg:grid-cols-2">
+                  {/* min-w-0, so a long command scrolls inside its card instead of widening the page. */}
+                  <div className="min-w-0">
+                    <p className="mb-3 text-sm text-ink-soft">From a clone of the repository, with the app installed:</p>
+                    <Code code={q.shell} lang="shell" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="mb-3 text-sm text-ink-soft">Then any {q.label} client:</p>
+                    <Code code={q.python} lang="python" />
+                  </div>
+                </div>
+              ),
+            };
+          })}
+        />
         <p className="mt-6 max-w-3xl leading-7 text-ink-soft">
-          The script pushes the model, starts the server, forwards the port over adb, and prints the base URL and key. Anthropic SDKs, Open WebUI, the codex
-          CLI and other apps on the same phone work too; the{" "}
+          The script pushes the model, starts the server, forwards the port over adb, and prints the base URL and key. Open WebUI, the codex CLI and other
+          apps on the same phone work too; the{" "}
           <Go href={l.readme} className={link}>
             README
           </Go>{" "}

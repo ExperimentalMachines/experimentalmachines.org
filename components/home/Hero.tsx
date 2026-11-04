@@ -1,9 +1,11 @@
+import Link from "next/link";
 import { projects } from "@/lib/home";
 
 function Phone({
   src,
   alt,
   label,
+  href,
   width,
   height,
   className = "",
@@ -11,14 +13,21 @@ function Phone({
   src: string;
   alt: string;
   label: string;
+  href: string;
   width: number;
   height: number;
   className?: string;
 }) {
   return (
-    <figure className={`flex w-[46%] max-w-[240px] flex-col items-center ${className}`}>
-      <figcaption className="mb-3 rounded-full bg-white/15 px-3 py-1 text-xs font-medium text-white">
-        {label}
+    <figure className={`group relative flex w-[46%] max-w-[240px] flex-col items-center ${className}`}>
+      <figcaption className="mb-3">
+        {/* Stretched over the figure, so the phone clicks through too while the link's name stays the product's. */}
+        <Link
+          href={href}
+          className="inline-flex rounded-full border border-white/50 bg-white/15 px-4 py-2 text-sm font-medium text-white after:absolute after:inset-0 group-hover:border-white group-hover:bg-white group-hover:text-blue-deep"
+        >
+          {label}
+        </Link>
       </figcaption>
       {/* eslint-disable-next-line @next/next/no-img-element -- a static export serves committed files */}
       <img
@@ -26,7 +35,7 @@ function Phone({
         alt={alt}
         width={width}
         height={height}
-        className="h-[300px] w-full rounded-t-[1.6rem] border-x-[5px] border-t-[5px] border-white bg-white object-cover object-top sm:h-[380px]"
+        className="aspect-[600/1120] w-full rounded-t-[1.6rem] border-x-[5px] border-t-[5px] border-white bg-white object-cover object-top"
       />
     </figure>
   );
@@ -60,6 +69,12 @@ export default function Hero() {
                 >
                   See what we build
                 </a>
+                <Link
+                  href="/research/"
+                  className="rounded-full border border-white/40 px-6 py-3 text-base font-medium text-white hover:border-white"
+                >
+                  Read our research
+                </Link>
                 <a
                   href="#contact"
                   className="rounded-full border border-white/40 px-6 py-3 text-base font-medium text-white hover:border-white"
@@ -71,16 +86,18 @@ export default function Hero() {
             <div className="flex items-end justify-center gap-4 sm:gap-6 lg:order-1 lg:justify-start">
               <Phone
                 src="/home/openweights-chat.png"
-                alt="OpenWeights on a phone with LFM2.5 1.2B loaded, ready for a first message"
+                alt="OpenWeights on a phone running LFM2.5 1.2B: asked to open experimentalmachines.org, it reads the page with its web tool and sums up what we make in three bullets, at 55 tokens per second"
                 label="OpenWeights"
+                href="/openweights/"
                 width={600}
                 height={1222}
-                className="mb-[-2rem]"
+                className="sm:mb-[-2rem]"
               />
               <Phone
                 src="/home/execuserve-serving.png"
                 alt="ExecuServe on a phone, serving: qwen3-1.7b ready in memory with its prefill and decode speed"
                 label="ExecuServe"
+                href="/execuserve/"
                 width={600}
                 height={1181}
               />

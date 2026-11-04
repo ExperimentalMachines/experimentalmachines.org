@@ -1,15 +1,10 @@
+import ApiTabs from "@/components/home/ApiTabs";
 import Bars from "@/components/home/Bars";
+import CodeBlock from "@/components/home/CodeBlock";
 import Go from "@/components/home/Go";
 import { h2, lede, link, ProjectLabel } from "@/components/home/ui";
+import { execuserve } from "@/lib/execuserve";
 import { links } from "@/lib/home";
-
-const code = `from openai import OpenAI
-
-client = OpenAI()  # reads OPENAI_BASE_URL and OPENAI_API_KEY
-reply = client.chat.completions.create(
-    model="qwen3-1.7b",
-    messages=[{"role": "user", "content": "Hello"}],
-)`;
 
 export default function ExecuServe() {
   return (
@@ -62,13 +57,36 @@ export default function ExecuServe() {
 
         <div className="mt-6 grid gap-6 lg:grid-cols-[1.25fr_1fr]">
           <div className="min-w-0 rounded-[1.75rem] bg-[#0e1638] p-6 text-white sm:p-8">
-            <p className="text-sm leading-6 text-white/70">
-              Call it with the OpenAI SDK you already use: set OPENAI_BASE_URL to the address the app shows, and
-              OPENAI_API_KEY to its key.
-            </p>
-            <pre className="mt-4 overflow-x-auto text-[0.82rem] leading-6">
-              <code>{code}</code>
-            </pre>
+            <ApiTabs
+              tone="dark"
+              panels={[
+                {
+                  id: "openai",
+                  label: execuserve.quickstart.openai.label,
+                  body: (
+                    <>
+                      <p className="text-sm leading-6 text-white/70">
+                        Call it with the OpenAI SDK you already use: set OPENAI_BASE_URL to the address the app shows, and OPENAI_API_KEY to its key.
+                      </p>
+                      <CodeBlock code={execuserve.quickstart.openai.python} lang="python" className="mt-4" />
+                    </>
+                  ),
+                },
+                {
+                  id: "anthropic",
+                  label: execuserve.quickstart.anthropic.label,
+                  body: (
+                    <>
+                      <p className="text-sm leading-6 text-white/70">
+                        Call it with the Anthropic SDK you already use: set ANTHROPIC_BASE_URL to the address the app shows, without the /v1, and
+                        ANTHROPIC_API_KEY to its key.
+                      </p>
+                      <CodeBlock code={execuserve.quickstart.anthropic.python} lang="python" className="mt-4" />
+                    </>
+                  ),
+                },
+              ]}
+            />
           </div>
           <div className="flex flex-col rounded-[1.75rem] bg-bench p-6 sm:p-8">
             <p className="text-sm font-medium">Time to the first token, ~700-token prompt</p>

@@ -1,4 +1,4 @@
-// The prefill/decode matrix on a Snapdragon 8 Elite Gen 5, for /openweights/prefill-decode.
+// The prefill/decode matrix on a Snapdragon 8 Elite Gen 5, for /research/prefill-decode.
 // The cells are generated (lib/prefill-decode-data.ts, from scripts/build-prefill-decode-data.mjs).
 // The facts below come from the OpenWeights report (docs/research/snapdragon-pd-matrix.md, sections
 // "All nine pairings at reply length" and "Why the CPU's reply gets stuck"), its result files and logs,

@@ -35,3 +35,8 @@ export function ProjectLabel({
     </p>
   );
 }
+
+// A card's title link: blue and underlined so it reads as a link, and stretched over the whole card
+// (the card is `group relative`), so the card clicks anywhere while a screen reader hears only the title.
+export const cardLink =
+  "text-blue-deep underline decoration-blue/30 after:absolute after:inset-0 group-hover:decoration-blue focus-visible:outline-none focus-visible:after:outline-2 focus-visible:after:outline-offset-4 focus-visible:after:outline-blue";

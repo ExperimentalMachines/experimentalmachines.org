@@ -54,17 +54,36 @@ export const execuserve = {
     { check: "Qwen3-1.7B decode on the same phone, CPU / GPU / NPU", result: "54 / 42 / 25 tokens per second" },
     { check: "MediaTek NPU, LFM2.5-1.2B, Dimensity", result: "NPU prefill, CPU decode at 39 to 43 tokens per second" },
   ],
+  // Run as written against the server (:jvm:devserver) with each SDK. The Anthropic SDK adds /v1 itself,
+  // so its base URL has none, and it requires max_tokens where OpenAI's does not.
   quickstart: {
-    shell: `tools/execuserve --model ~/models/Qwen3-1.7B-8da4w-gptq-2k.pte
+    openai: {
+      label: "OpenAI",
+      shell: `tools/execuserve --model ~/models/Qwen3-1.7B-8da4w-gptq-2k.pte
 export OPENAI_BASE_URL=http://127.0.0.1:8080/v1
 export OPENAI_API_KEY=<the key it prints>`,
-    python: `from openai import OpenAI
+      python: `from openai import OpenAI
 
-client = OpenAI()
+client = OpenAI()  # reads OPENAI_BASE_URL and OPENAI_API_KEY
 reply = client.chat.completions.create(
     model="qwen3-1.7b",
     messages=[{"role": "user", "content": "Hello"}],
 )`,
+    },
+    anthropic: {
+      label: "Anthropic",
+      shell: `tools/execuserve --model ~/models/Qwen3-1.7B-8da4w-gptq-2k.pte
+export ANTHROPIC_BASE_URL=http://127.0.0.1:8080
+export ANTHROPIC_API_KEY=<the key it prints>`,
+      python: `from anthropic import Anthropic
+
+client = Anthropic()  # reads ANTHROPIC_BASE_URL and ANTHROPIC_API_KEY
+reply = client.messages.create(
+    model="qwen3-1.7b",
+    max_tokens=200,
+    messages=[{"role": "user", "content": "Hello"}],
+)`,
+    },
   },
   endpoints: [
     { path: "POST /v1/chat/completions", what: "Streaming, tools and tool calls, reasoning, usage with cached tokens" },

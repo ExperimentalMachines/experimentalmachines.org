@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Generates lib/prefill-decode-data.ts from OpenWeights' raw results (tools/snapdragon/results/
 // 2026-10-24-sm8850/results-r12.jsonl to results-r15.jsonl at a given commit), so the
-// /openweights/prefill-decode page never retypes a number.
+// /research/prefill-decode page never retypes a number.
 //
 //   OPENWEIGHTS=../../mobile-inference node scripts/build-prefill-decode-data.mjs [ref]
 //
@@ -94,6 +94,12 @@ const out = models.map((m) => {
       }
       return {
         seconds: round(sum(rs.map((r) => r.turn_ms)) / 1000, 3),
+        // Totals over totals, not a mean of per-turn rates, so long turns weigh as much as they took.
+        prefillTokS: round((sum(rs.map((r) => r.new_tokens)) / sum(rs.map((r) => r.prompt_ms))) * 1000, 1),
+        decodeTokS: round((sum(rs.map((r) => r.decode_steps)) / sum(rs.map((r) => r.decode_ms))) * 1000, 2),
+        // Kept beside the rates because the same processor's rate differs between pairings, and the
+        // temperature it started each turn at is the reading that differs with it.
+        startC: Object.fromEntries(["cpu", "gpu", "npu"].map((k) => [k, round(median(rs.map((r) => r[`before_${k}_c`])), 1)])),
         // The share of that time spent writing the reply.
         decodeShare: round(sum(rs.map((r) => r.decode_ms)) / sum(rs.map((r) => r.turn_ms)), 5),
         // Steps over 500 ms on a CPU-decode cell are stalls; on a GPU-decode cell they are the
@@ -181,6 +187,9 @@ export const pdSource = { commit: "${commit}", dir: "${DIR}" };
 // started cooler than the rest and is not compared. order: its place in the model's run.
 export type PdCell = {
   seconds: number;
+  prefillTokS: number;
+  decodeTokS: number;
+  startC: { cpu: number; gpu: number; npu: number };
   decodeShare: number;
   stalls: number;
   frozenSeconds: number;

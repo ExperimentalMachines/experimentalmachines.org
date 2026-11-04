@@ -28,6 +28,7 @@ const places: ResearchItem[] = [
     meta: "ExecuPack",
     line: "Every model ExecuPack has published, per accelerator, against everything ExecuTorch can export for Android",
   },
+  { href: "/research/", title: "Research", meta: "Research", line: "Every study, with its committed results: OpenWeights on real phones, ASICs and GGUF" },
   { href: "/asic/", title: "ASIC research", meta: "Research", line: "Training and serving models on TPU, Trainium, Inferentia and Gaudi, against GPUs" },
   { href: "/gguf/", title: "GGUF research", meta: "Research", line: "The model file llama.cpp runs, measured from a datacenter GPU to a phone" },
 ];

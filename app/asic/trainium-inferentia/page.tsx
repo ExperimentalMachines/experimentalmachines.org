@@ -37,6 +37,12 @@ export default function Asic() {
           <nav aria-label="Breadcrumb">
             <ol className="flex flex-wrap items-center gap-2 text-sm text-ink-soft">
               <li>
+                <a href="/research/" className="hover:text-ink">
+                  Research
+                </a>
+              </li>
+              <li aria-hidden>/</li>
+              <li>
                 <a href="/asic/" className="hover:text-ink">
                   ASIC research
                 </a>

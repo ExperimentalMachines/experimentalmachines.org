@@ -6,7 +6,8 @@ import { links } from "@/lib/home";
 // scroll. On the homepage (`home`) its links scroll to the sections; every other
 // page in the organisation's look (components/home/HomeShell.tsx) links back to
 // them, and a project's own pages name it as `current`, which links that project
-// to its page and marks it.
+// to its page and marks it. Research is first and in stronger type because it is a place of its own
+// rather than a homepage section, and first keeps it in view in the row that scrolls on phones.
 const sections = [
   { id: "openweights", label: "OpenWeights" },
   { id: "execuserve", label: "ExecuServe" },
@@ -15,12 +16,22 @@ const sections = [
   { id: "people", label: "People" },
 ];
 
-export default function HomeHeader({ home = false, current }: { home?: boolean; current?: "openweights" | "execuserve" }) {
-  const items = sections.map((s) => ({
-    ...s,
-    href: home ? `#${s.id}` : s.id === current ? `/${s.id}/` : `/#${s.id}`,
-    here: s.id === current,
-  }));
+export default function HomeHeader({ home = false, current }: { home?: boolean; current?: "openweights" | "execuserve" | "research" }) {
+  const items = [
+    { id: "research", label: "Research", href: "/research/", here: current === "research", strong: true },
+    ...sections.map((s) => ({
+      ...s,
+      href: home ? `#${s.id}` : s.id === current ? `/${s.id}/` : `/#${s.id}`,
+      here: s.id === current,
+      strong: false,
+    })),
+  ];
+  const look = (s: { here: boolean; strong: boolean }) =>
+    s.here
+      ? "font-medium text-white underline decoration-white/60 decoration-2 underline-offset-[6px]"
+      : s.strong
+        ? "font-medium text-white hover:underline hover:underline-offset-[6px]"
+        : "hover:text-white";
   return (
     <header className="on-blue sticky top-0 z-50 bg-blue text-white">
       <a
@@ -41,7 +52,7 @@ export default function HomeHeader({ home = false, current }: { home?: boolean; 
               key={s.id}
               href={s.href}
               aria-current={s.here ? "page" : undefined}
-              className={s.here ? "font-medium text-white" : "hover:text-white"}
+              className={look(s)}
             >
               {s.label}
             </a>
@@ -59,7 +70,7 @@ export default function HomeHeader({ home = false, current }: { home?: boolean; 
           >
             {/* eslint-disable-next-line @next/next/no-img-element -- a static export serves committed files */}
             <img src="/brand/ei-mark-white.svg" alt="" width={35} height={14} className="h-3.5 w-auto" />
-            <span className="hidden sm:inline">{sibling.name}</span>
+            <span className="hidden sm:inline lg:hidden xl:inline">{sibling.name}</span>
           </a>
           <a
             href={home ? "#contact" : "/#contact"}
@@ -78,7 +89,7 @@ export default function HomeHeader({ home = false, current }: { home?: boolean; 
               key={s.id}
               href={s.href}
               aria-current={s.here ? "page" : undefined}
-              className={`inline-flex min-h-11 shrink-0 items-center ${s.here ? "font-medium text-white" : "hover:text-white"}`}
+              className={`inline-flex min-h-11 shrink-0 items-center ${look(s)}`}
             >
               {s.label}
             </a>

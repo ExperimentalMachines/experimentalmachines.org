@@ -6,6 +6,7 @@ import Hero from "@/components/home/Hero";
 import HomeFooter from "@/components/home/HomeFooter";
 import HomeHeader from "@/components/home/HomeHeader";
 import OpenWeights from "@/components/home/OpenWeights";
+import Research from "@/components/home/Research";
 import Team from "@/components/home/Team";
 import Upstream from "@/components/home/Upstream";
 import { site } from "@/lib/content";
@@ -13,7 +14,7 @@ import { inter, interTight } from "@/lib/fonts";
 import { links } from "@/lib/home";
 
 const description =
-  "A software and machine-learning organisation building on ExecuTorch: OpenWeights and ExecuServe run open models on phones, ExecuPack builds them for phone chips, and we contribute fixes upstream.";
+  "A software and machine-learning organisation building on ExecuTorch: OpenWeights and ExecuServe run open models on phones, ExecuPack builds them for phone chips, we publish what we measure, and we contribute fixes upstream.";
 
 // The layout's Open Graph and Twitter blocks are replaced whole, not merged,
 // so they are restated here with the new description.
@@ -44,7 +45,7 @@ const jsonLd = {
   sameAs: [links.github, links.huggingface],
 };
 
-// The story, top to bottom: what we make, the two apps people use, the models
+// The story, top to bottom: what we make, what we measured, the two apps people use, the models
 // underneath them, what goes back to ExecuTorch, what comes next, and who we are.
 export default function Home() {
   return (
@@ -56,6 +57,7 @@ export default function Home() {
       <HomeHeader home />
       <main id="main" className="scroll-mt-28 lg:scroll-mt-16">
         <Hero />
+        <Research />
         <OpenWeights />
         <ExecuServe />
         <ExecuPack />

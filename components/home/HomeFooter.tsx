@@ -23,7 +23,10 @@ export default function HomeFooter() {
           </p>
         </div>
         <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm text-ink-soft">
-          {/* The research areas, which have no section on the homepage. */}
+          {/* The ASIC and GGUF research have no section on the homepage. */}
+          <Link href="/research/" className="font-medium text-ink hover:text-blue-deep">
+            Research
+          </Link>
           <Link href="/asic/" className="hover:text-ink">
             ASIC research
           </Link>
