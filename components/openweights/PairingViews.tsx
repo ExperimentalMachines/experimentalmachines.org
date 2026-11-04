@@ -151,18 +151,22 @@ function TimeGrid({ m }: { m: PdModel }) {
   );
 }
 
+// Two lines, because "2,158 / 27.3*" on one line needs a cell about 102 px wide, and a matrix three
+// across is held to 86 px cells at every desktop width by the article's own cap. The second line's
+// leading keeps a warm cell as tall as TimeGrid's, so the matrices keep their size when the Show switch
+// changes; a cool start would add a line here, and no cell is one today. Both rates are the same size
+// and weight: decode is most of the wait, so it is not the lesser figure.
 function RateGrid({ m }: { m: PdModel }) {
   return (
     <Grid m={m} caption="prefill and decode rates for every pairing">
       {(c, fastest) => (
         <>
           <Corner m={m} c={c} fastest={fastest} order={false} />
-          <span className={`block whitespace-nowrap pr-2 text-xs sm:text-[13px] ${c.coolStart ? "" : "font-medium"}`}>
+          <span className={`block whitespace-nowrap ${c.coolStart ? "" : "font-medium"}`}>
             {grouped(c.prefillTokS)}
             <span className="sr-only"> new tokens per second prefill, </span>
-            <span aria-hidden className={fastest ? "text-white/70" : "text-ink-soft"}>
-              {" / "}
-            </span>
+          </span>
+          <span className={`block whitespace-nowrap leading-4 ${c.coolStart ? "" : "font-medium"}`}>
             {c.decodeTokS.toFixed(1)}
             <span className="sr-only"> tokens per second decode</span>
             {stuck(c) && <Star what="including the time decode was stuck" />}
@@ -395,7 +399,7 @@ export default function PairingViews() {
     ),
     "rates:matrices": (
       <Legend
-        line="Each pairing's prefill / decode rate, in tokens per second. Prefill counts new tokens only."
+        line="Prefill rate on top, decode rate below, in tokens per second. Prefill counts new tokens only."
         keys={[
           ...axes,
           <>
@@ -442,7 +446,7 @@ export default function PairingViews() {
 
       <div className="mt-10">
         {form === "matrices" ? (
-          <div className={`grid gap-x-12 gap-y-14 xl:grid-cols-3 ${show === "time" ? "md:grid-cols-2" : "lg:grid-cols-2"}`}>
+          <div className="grid gap-x-12 gap-y-14 md:grid-cols-2 xl:grid-cols-3">
             {pdModels.map((m) => (show === "time" ? <TimeGrid key={key(m)} m={m} /> : <RateGrid key={key(m)} m={m} />))}
           </div>
         ) : show === "time" ? (
