@@ -1,5 +1,6 @@
-import Post, { Figure, Findings, Note, postMetadata, Row, Rows, Section, Table } from "@/components/research/Post";
-import { copilotCells, copilotHarness, copilotLinks } from "@/lib/hardware-studies";
+import { Interval, PairBars, Scorecard, Stack } from "@/components/research/Compare";
+import Post, { Figure, Findings, More, Note, postMetadata, Row, Rows, Section, Table } from "@/components/research/Post";
+import { copilotCells, copilotContrasts, copilotHarness, copilotLinks, copilotWait } from "@/lib/hardware-studies";
 
 const href = "/research/local-copilot/";
 
@@ -49,24 +50,69 @@ export default function LocalCopilot() {
       <Section id="results" title="The results">
         <Figure
           id="scorecard"
-          title="The ten configurations the study registered"
-          note="Passed: the task's checks pass on the agent's checkout. Median run in seconds, capped at 600 s. Cost per completed task: agent time at $0.89 an hour on the rented 4090, idle and loading excluded; credits at $0.01 on hosted plans, leaving out each plan's monthly price."
+          title="The ten setups the study registered"
+          lede="Hosted setups finished more, in about a minute. Quick did not mean finished: gpt-oss-20b on the 4090 had the shortest median run and finished 10 of 24."
+          note="Finished: the task's checks pass on the agent's checkout. Runs are capped at 600 s. Cost: agent time at $0.89 an hour on the rented 4090, idle and loading excluded; credits at $0.01 on hosted plans, leaving out each plan's monthly price. Electricity on the MacBook Air was not measured."
         >
+          <Scorecard
+            a="Hosted Copilot"
+            b="Served locally"
+            rows={copilotCells.map((c) => ({
+              name: c.name,
+              first: c.name.startsWith("Copilot"),
+              passed: c.passed,
+              of: 24,
+              wall: c.wall,
+              cost: c.cost.startsWith("$") ? parseFloat(c.cost.slice(1)) : null,
+              costShown: c.cost.startsWith("$") ? c.cost : "not measured",
+            }))}
+          />
+        </Figure>
+
+        <Figure
+          id="gaps"
+          title="How far each setup sits from Copilot Pro+ on Auto"
+          lede="Gap in tasks finished, in percentage points, with its 95% interval. Left of zero finished less than Pro+ on Auto. The shaded band is the study's 10-point margin."
+          note="Declared means the study declares a difference after the Holm correction across the secondary contrasts. Gemma 4 on the RTX 4090 clears the margin but its corrected p is 0.108, so no difference is declared."
+        >
+          <Interval a="Hosted Copilot" b="Served locally" from={-80} to={40} band={10} rows={copilotContrasts} />
+        </Figure>
+
+        <Figure
+          id="wait"
+          title="Where the wait goes"
+          lede="Share of each setup's agent time. On the rented 4090, a third or more goes to the network and proxy. On the Air, nearly all of it goes to prefill and decode. Hosted model time is one number."
+        >
+          <Stack parts={["Prefill", "Decode", "Network and proxy", "Tools and CLI"]} unsplit="Model, hosted and not split" rows={copilotWait} />
+        </Figure>
+
+        <Figure
+          id="harness"
+          title="Same models, two agents"
+          lede="Checked after the study on the same GGUF files, llama.cpp build, server flags, tasks and checks, both agents on the same 4090. Tasks finished of 24, with the median run. Exploratory, and outside every contrast."
+        >
+          <PairBars
+            a="Copilot CLI"
+            b="pi"
+            shortA="Copilot CLI"
+            shortB="pi"
+            shared
+            rows={copilotHarness.map(([model, cli, pi]) => {
+              const reading = (s: string) => ({ value: parseInt(s, 10), shown: s });
+              return { label: model, a: reading(cli), b: reading(pi) };
+            })}
+          />
+        </Figure>
+
+        <More id="numbers" title="Every number" summary="The ten setups and the two-agent check as tables">
           <Table
             label="The ten registered configurations"
             head={["Configuration", "Passed of 24", "Share", "Median run", "Per completed task"]}
             right={[1, 2, 3, 4]}
             rows={copilotCells.map((c) => [c.name, c.passed, pct(c.passed), `${c.wall.toFixed(1)} s`, c.cost])}
           />
-        </Figure>
-
-        <Figure
-          id="harness"
-          title="Same models, two agents"
-          lede="Checked after the study on the same GGUF files, llama.cpp build, server flags, tasks and checks, both agents on the same 4090. Passed of 24, and median minutes per run. Exploratory, and outside every contrast."
-        >
           <Table label="Same models, two agents" head={["Model", "Copilot CLI", "pi"]} right={[1, 2]} rows={copilotHarness} />
-        </Figure>
+        </More>
       </Section>
 
       <Section id="method" title="How we ran it">
@@ -76,8 +122,8 @@ export default function LocalCopilot() {
           <Row label="Scoring">The task&apos;s own acceptance test, the repository&apos;s existing tests and a tamper check, run outside the agent&apos;s copy.</Row>
           <Row label="Local">llama-server from llama.cpp at commit c1d0e7a, on a rented RTX 4090 and on a 24 GB MacBook Air M5.</Row>
           <Row label="Runs">
-            754 scored runs: 240 in the ten registered configurations and 514 in exploratory ones. The core rules were committed before October scoring. Later changes are logged in the protocol, and a few came after the outcomes they relate to, including
-            the choice of the 24-task analysis set; they are marked there.
+            754 scored runs: 240 in the ten registered configurations and 514 in exploratory ones. The core rules were committed before October scoring. Later changes are logged in
+            the protocol, and a few came after the outcomes they relate to, including the choice of the 24-task analysis set; they are marked there.
           </Row>
           <Row label="Statistics">Task-paired bootstrap and permutation for the primary contrast, with the Holm correction on the secondary ones.</Row>
         </Rows>
@@ -91,12 +137,12 @@ export default function LocalCopilot() {
             attribute a gap to hardware alone.
           </Row>
           <Row label="One run each">
-            The registered analysis is one run per task and configuration, at temperature 0 with no fixed seed, so its interval is across tasks and does not establish repeatability. In the exploratory co-located setup, a second Copilot CLI run of Qwen3.6
-            moved from 12 to 9 of 24.
+            The registered analysis is one run per task and configuration, at temperature 0 with no fixed seed, so its interval is across tasks and does not establish
+            repeatability. In the exploratory co-located setup, a second Copilot CLI run of Qwen3.6 moved from 12 to 9 of 24.
           </Row>
           <Row label="A rented 4090">
-            It was reached over the network. For Qwen3.6, 57% of the summed time went to the network, proxy and HTTP, a median of 284.6 s a run. The study estimates a desk 4090 at 176.4 s a run, assuming the agent acts the same, which is not evidence that its
-            capped runs would have finished.
+            It was reached over the network. For Qwen3.6, 57% of the summed time went to the network, proxy and HTTP, a median of 284.6 s a run. The study estimates a desk 4090 at
+            176.4 s a run, assuming the agent acts the same, which is not evidence that its capped runs would have finished.
           </Row>
           <Row label="Reasoning off">
             Qwen3.6 and Gemma 4 ran with reasoning off and gpt-oss-20b at low effort, while the hosted models ran as GitHub serves them. That may understate the open models: Mellum

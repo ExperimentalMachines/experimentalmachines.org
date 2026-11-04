@@ -18,11 +18,7 @@ function Chart({ viz, accent, mark, compact }: { viz: Viz; accent: string; mark:
     return (
       <div className="grid h-full w-full gap-1" style={{ gridTemplateColumns: `repeat(${viz.cols}, minmax(0, 1fr))`, gridAutoRows: "1fr" }}>
         {viz.cells.map((c, i) => (
-          <span
-            key={i}
-            className="rounded-[3px]"
-            style={{ backgroundColor: c.on ? accent : `color-mix(in srgb, white ${Math.round(8 + 22 * c.level)}%, transparent)` }}
-          />
+          <span key={i} className="rounded-[3px]" style={{ backgroundColor: c.on ? accent : `color-mix(in srgb, white ${Math.round(8 + 22 * c.level)}%, transparent)` }} />
         ))}
       </div>
     );
@@ -76,11 +72,7 @@ function Chart({ viz, accent, mark, compact }: { viz: Viz; accent: string; mark:
       {viz.groups.map((g, i) => (
         <span key={i} className="flex h-full flex-1 items-end gap-px">
           {g.map((c, j) => (
-            <span
-              key={j}
-              className="flex-1 rounded-t-[2px]"
-              style={{ height: `${(c.value / top) * 100}%`, backgroundColor: c.on ? accent : mark }}
-            />
+            <span key={j} className="flex-1 rounded-t-[2px]" style={{ height: `${(c.value / top) * 100}%`, backgroundColor: c.on ? accent : mark }} />
           ))}
         </span>
       ))}
@@ -125,18 +117,18 @@ export function Banner({ s }: { s: Study }) {
   );
 }
 
-const Meta = ({ s }: { s: Study }) => (
-  <p className="text-sm text-ink-soft">{s.meta ?? `${s.project}, ${s.date}`}</p>
-);
+const Meta = ({ s }: { s: Study }) => <p className="text-sm text-ink-soft">{s.meta ?? `${s.project}, ${s.date}`}</p>;
 
 // The whole card clicks: the title's link is stretched over it, so a screen reader hears only the title.
-export function StudyCard({ s }: { s: Study }) {
+export function StudyCard({ s, wide }: { s: Study; wide?: boolean }) {
   return (
-    <li className="group relative flex flex-col overflow-hidden rounded-[1.25rem] border border-rule bg-white transition-colors hover:border-ink">
+    <li
+      className={`group relative flex flex-col overflow-hidden rounded-[1.25rem] border border-rule bg-white transition-colors hover:border-ink ${wide ? "lg:col-span-3 lg:grid lg:grid-cols-2" : ""}`}
+    >
       <div className="overflow-hidden">
         <Cover s={s} />
       </div>
-      <div className="p-5 sm:p-6">
+      <div className={`p-5 sm:p-6 ${wide ? "lg:self-center" : ""}`}>
         <Meta s={s} />
         <p className="display mt-2 text-xl leading-snug">
           <Go href={s.href} className={`${cardLink} underline-offset-4 after:rounded-[1.25rem]`}>
@@ -207,8 +199,9 @@ export function StudyFeature({ s, label }: { s: Study; label?: string }) {
 export function StudyGrid({ items, children }: { items: Study[]; children?: React.ReactNode }) {
   return (
     <ul className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-      {items.map((s) => (
-        <StudyCard key={s.href} s={s} />
+      {items.map((s, i) => (
+        // A last card alone on a three-across row spreads across it, so the row has no blanks.
+        <StudyCard key={s.href} s={s} wide={items.length % 3 === 1 && i === items.length - 1} />
       ))}
       {children}
     </ul>

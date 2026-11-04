@@ -1,0 +1,660 @@
+// Charts for a post that sets two machines against each other. Color follows the machine: the first named is
+// always cobalt and the second orange, a pair checked for colorblind separation. Text stays in ink, and every bar
+// carries its machine's name beside its value, so no reading depends on color alone. These are plain HTML rather
+// than a scaled SVG, so the type stays readable at phone width. The Every number table on each post has the rest.
+
+const seriesA = "#2b44e6";
+const seriesB = "#d9480f";
+
+export const ChartCard = ({ children }: { children: React.ReactNode }) => <div className="rounded-[1.5rem] bg-bench p-5 sm:p-6">{children}</div>;
+
+const Swatch = ({ color }: { color: string }) => <span aria-hidden className="inline-block h-2.5 w-2.5 shrink-0 rounded-sm" style={{ backgroundColor: color }} />;
+
+function Key({ a, b }: { a: string; b: string }) {
+  return (
+    <p className="flex flex-wrap gap-x-5 gap-y-1 text-sm">
+      <span className="inline-flex items-center gap-2">
+        <Swatch color={seriesA} />
+        {a}
+      </span>
+      <span className="inline-flex items-center gap-2">
+        <Swatch color={seriesB} />
+        {b}
+      </span>
+    </p>
+  );
+}
+
+export type DuelRow = {
+  label: string;
+  // Who leads; a tie draws no bar.
+  who: "a" | "b" | "tie";
+  ratio?: number;
+  shown: string;
+  detail?: string;
+  // The other machine could not run it at all, so the bar is full length and striped, not measured.
+  blocked?: boolean;
+};
+
+// Who leads each test and by how much. A bar grows away from the center toward the machine that won. Lengths are on
+// a log scale, so 2× one way is as long as 2× the other.
+export function Duel({ a, b, groups, max }: { a: string; b: string; groups: { title?: string; rows: DuelRow[] }[]; max: number }) {
+  const room = "4.5rem";
+  const length = (r: DuelRow) => (r.blocked ? 1 : Math.log(r.ratio ?? 1) / Math.log(max));
+  return (
+    <ChartCard>
+      <div className="grid grid-cols-2 border-b border-rule pb-3 text-sm font-medium md:ml-[17rem]">
+        <span className="flex items-center justify-end gap-2 pr-3">
+          {a} leads
+          <Swatch color={seriesA} />
+        </span>
+        <span className="flex items-center gap-2 pl-3">
+          <Swatch color={seriesB} />
+          {b} leads
+        </span>
+      </div>
+      {groups.map((g, i) => (
+        <div key={g.title ?? i} className="mt-4">
+          {g.title && <p className="mb-1 text-sm font-medium">{g.title}</p>}
+          <ul>
+            {g.rows.map((r) => {
+              const bar = {
+                width: `calc((100% - ${room}) * ${length(r)})`,
+                backgroundColor: r.who === "a" ? seriesA : seriesB,
+              };
+              const stripes = r.blocked ? { backgroundImage: "repeating-linear-gradient(135deg, rgba(255,255,255,.45) 0 3px, transparent 3px 7px)" } : {};
+              return (
+                <li key={r.label} className="grid items-center gap-x-4 rounded py-1.5 transition-colors hover:bg-white md:grid-cols-[16rem_minmax(0,1fr)]">
+                  <div>
+                    <p className="text-sm leading-5">{r.label}</p>
+                    {r.detail && <p className="text-xs leading-5 text-ink-soft">{r.detail}</p>}
+                  </div>
+                  <div className="mt-1 grid grid-cols-2 md:mt-0">
+                    <div className="flex h-5 items-center justify-end gap-1.5 border-r border-ink/25 pr-px text-xs tabular-nums">
+                      {r.who === "a" && (
+                        <>
+                          <span className="whitespace-nowrap font-medium">{r.shown}</span>
+                          <span className="h-2.5 rounded-l" style={{ ...bar, ...stripes }} />
+                        </>
+                      )}
+                      {r.who === "tie" && <span className="whitespace-nowrap pr-1 text-ink-soft">{r.shown}</span>}
+                    </div>
+                    <div className="flex h-5 items-center gap-1.5 pl-px text-xs tabular-nums">
+                      {r.who === "b" && (
+                        <>
+                          <span className="h-2.5 rounded-r" style={{ ...bar, ...stripes }} />
+                          <span className="whitespace-nowrap font-medium">{r.shown}</span>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      ))}
+    </ChartCard>
+  );
+}
+
+export type Reading = { value: number; low?: number; shown: string } | null;
+export type PairRow = { label: string; detail?: string; a: Reading; b: Reading; missing?: string; lead?: string };
+
+// Two machines on the same test. Each row has its own scale where the units differ between rows; `shared` puts them
+// on one scale where they do not. Where a result is a range, the bar is solid to the low end and faint up to the high end.
+export function PairBars({ a, b, shortA, shortB, rows, shared }: { a: string; b: string; shortA: string; shortB: string; rows: PairRow[]; shared?: boolean }) {
+  const all = Math.max(...rows.flatMap((r) => [r.a?.value ?? 0, r.b?.value ?? 0]));
+  return (
+    <ChartCard>
+      <Key a={a} b={b} />
+      <ul className="mt-4 divide-y divide-rule">
+        {rows.map((r) => {
+          const top = shared ? all : Math.max(r.a?.value ?? 0, r.b?.value ?? 0);
+          return (
+            <li key={r.label} className="grid gap-x-4 gap-y-1.5 py-3 first:pt-0 last:pb-0 md:grid-cols-[16rem_minmax(0,1fr)]">
+              <div>
+                <p className="text-sm leading-5">{r.label}</p>
+                {r.detail && <p className="text-xs leading-5 text-ink-soft">{r.detail}</p>}
+                {r.lead && <p className="mt-0.5 text-xs font-medium leading-5">{r.lead}</p>}
+              </div>
+              <div className="space-y-1">
+                <Bar reading={r.a} top={top} color={seriesA} name={shortA} missing={r.missing} />
+                <Bar reading={r.b} top={top} color={seriesB} name={shortB} missing={r.missing} />
+              </div>
+            </li>
+          );
+        })}
+      </ul>
+    </ChartCard>
+  );
+}
+
+function Bar({ reading, top, color, name, missing }: { reading: Reading; top: number; color: string; name: string; missing?: string }) {
+  if (!reading) {
+    return (
+      <p className="flex h-5 items-center gap-1.5 text-xs text-ink-soft">
+        {name}: {missing ?? "not measured"}
+      </p>
+    );
+  }
+  const room = "11rem";
+  const full = reading.value / top;
+  const solid = (reading.low ?? reading.value) / reading.value;
+  return (
+    <div className="flex h-5 items-center gap-1.5 text-xs tabular-nums">
+      <span
+        className="relative h-2.5 rounded-r"
+        style={{ width: `calc((100% - ${room}) * ${full})`, minWidth: "2px", backgroundColor: `color-mix(in srgb, ${color} 35%, transparent)` }}
+      >
+        <span className="absolute inset-y-0 left-0 rounded-r" style={{ width: `${solid * 100}%`, backgroundColor: color }} />
+      </span>
+      <span className="whitespace-nowrap">
+        <span className="font-medium">{name}</span> {reading.shown}
+      </span>
+    </div>
+  );
+}
+
+// One measure as the load rises, on a log scale of load. Hover a column for its numbers. Colors keep their order
+// from chart to chart, so a line stays one color across a post. End labels are pushed apart where lines converge.
+const lineColors = [seriesA, seriesB, "#008f7a", "#6741d9", "#d6336c"];
+
+export function Lines({
+  series,
+  x,
+  step,
+  unit,
+  xLabel,
+  summary,
+  digits = 0,
+}: {
+  series: { name: string; ys: number[]; color?: number }[];
+  x: number[];
+  step: number;
+  unit: string;
+  xLabel: string;
+  summary: string;
+  digits?: number;
+}) {
+  const [W, H, L, R, T, B] = [720, 330, 62, 128, 30, 46];
+  const all = series.flatMap((s) => s.ys);
+  const top = Math.ceil(Math.max(...all) / step) * step;
+  const xp = (i: number) => L + ((Math.log2(x[i]) - Math.log2(x[0])) / (Math.log2(x.at(-1)!) - Math.log2(x[0]))) * (W - L - R);
+  const yp = (v: number) => H - B - (v / top) * (H - T - B);
+  const path = (ys: number[]) => ys.map((v, i) => `${i ? "L" : "M"}${xp(i).toFixed(1)} ${yp(v).toFixed(1)}`).join(" ");
+  const ticks = Array.from({ length: top / step + 1 }, (_, i) => i * step);
+  const n = (v: number) => v.toLocaleString("en-US", { maximumFractionDigits: digits });
+  const colorOf = (s: { color?: number }, i: number) => lineColors[s.color ?? i];
+  // Walk the end labels from the top of the chart down, keeping each 16 units below the one before.
+  const ends = series.map((s, i) => ({ name: s.name, y: yp(s.ys.at(-1)!), i })).sort((a, b) => a.y - b.y);
+  ends.forEach((e, k) => {
+    if (k && e.y - ends[k - 1].y < 16) e.y = ends[k - 1].y + 16;
+  });
+  const boxH = 12 + series.length * 18;
+  return (
+    <ChartCard>
+      <p className="flex flex-wrap gap-x-5 gap-y-1 text-sm">
+        {series.map((s, i) => (
+          <span key={s.name} className="inline-flex items-center gap-2">
+            <Swatch color={colorOf(s, i)} />
+            {s.name}
+          </span>
+        ))}
+      </p>
+      <div role="region" aria-label={`${summary}, scrolls sideways on small screens`} tabIndex={0} className="mt-3 overflow-x-auto">
+        <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label={summary} className="mx-auto w-full min-w-[34rem] max-w-3xl">
+          {ticks.map((v) => (
+            <g key={v} fontSize={12}>
+              <line x1={L} x2={W - R} y1={yp(v)} y2={yp(v)} stroke="var(--color-rule)" />
+              <text x={L - 8} y={yp(v) + 4} textAnchor="end" fill="var(--color-ink-soft)">
+                {n(v)}
+              </text>
+            </g>
+          ))}
+          <text x={L - 8} y={T - 14} textAnchor="end" fontSize={12} fill="var(--color-ink-soft)">
+            {unit}
+          </text>
+          {series.map((s, i) => (
+            <path key={s.name} d={path(s.ys)} fill="none" stroke={colorOf(s, i)} strokeWidth={2} strokeLinejoin="round" />
+          ))}
+          {ends.map((e) => (
+            <text key={e.name} x={W - R + 8} y={e.y + 4} fontSize={13} fontWeight={500} fill="var(--color-ink)">
+              {e.name}
+            </text>
+          ))}
+          {x.map((c, i) => {
+            const before = i ? xp(i - 1) : xp(i);
+            const after = i < x.length - 1 ? xp(i + 1) : xp(i);
+            const bx = i > x.length / 2 ? xp(i) - 190 : xp(i) + 10;
+            return (
+              <g key={c} className="group" fontSize={12}>
+                <rect x={(before + xp(i)) / 2} y={T} width={(after - before) / 2} height={H - T - B} fill="transparent" />
+                <line
+                  x1={xp(i)}
+                  x2={xp(i)}
+                  y1={T}
+                  y2={H - B}
+                  stroke="var(--color-ink-soft)"
+                  strokeDasharray="3 4"
+                  className="pointer-events-none opacity-0 group-hover:opacity-100"
+                />
+                {series.map((s, j) => (
+                  <circle key={s.name} cx={xp(i)} cy={yp(s.ys[i])} r={4} fill={colorOf(s, j)} stroke="var(--color-bench)" strokeWidth={2} />
+                ))}
+                <text x={xp(i)} y={H - B + 18} textAnchor="middle" fill="var(--color-ink-soft)">
+                  {c}
+                </text>
+                <g className="pointer-events-none opacity-0 group-hover:opacity-100">
+                  <rect x={bx} y={T + 4} width={180} height={boxH} rx={6} fill="#ffffff" stroke="var(--color-rule)" />
+                  {series.map((s, j) => (
+                    <text key={s.name} x={bx + 10} y={T + 22 + j * 18} fill="var(--color-ink)">
+                      {s.name} {n(s.ys[i])}
+                    </text>
+                  ))}
+                </g>
+              </g>
+            );
+          })}
+          <text x={L} y={H - 6} fontSize={12} fill="var(--color-ink-soft)">
+            {xLabel}
+          </text>
+        </svg>
+      </div>
+    </ChartCard>
+  );
+}
+
+// A count of whole things, drawn as that many squares, because "how many fit" is the point.
+export function Seats({ rows, caption }: { rows: { name: string; count: number; shown: string; first?: boolean }[]; caption: string }) {
+  return (
+    <ChartCard>
+      <p className="text-sm">{caption}</p>
+      <ul className="mt-4 space-y-4">
+        {rows.map((r) => (
+          <li key={r.name}>
+            <p className="text-sm">
+              <span className="font-medium">{r.name}</span> <span className="tabular-nums">{r.shown}</span>
+            </p>
+            <div aria-hidden className="mt-1.5 flex flex-wrap gap-1">
+              {Array.from({ length: Math.ceil(r.count) }, (_, i) => {
+                const part = Math.min(r.count - i, 1);
+                return (
+                  <span key={i} className="relative h-5 w-5 overflow-hidden rounded-[3px] bg-ink/10">
+                    <span className="absolute inset-y-0 left-0" style={{ width: `${part * 100}%`, backgroundColor: r.first ? seriesA : seriesB }} />
+                  </span>
+                );
+              })}
+            </div>
+          </li>
+        ))}
+      </ul>
+    </ChartCard>
+  );
+}
+
+// Two machines' shares on one percent scale, as dots, because a bar cut off above zero would overstate the gap.
+export function Dots({ a, b, rows, from, to }: { a: string; b: string; rows: { label: string; a: number; b: number }[]; from: number; to: number }) {
+  const at = (v: number) => `${((v - from) / (to - from)) * 100}%`;
+  const ticks = Array.from({ length: (to - from) / 5 + 1 }, (_, i) => from + i * 5);
+  return (
+    <ChartCard>
+      <Key a={a} b={b} />
+      <div className="mt-4 grid gap-x-4 md:grid-cols-[16rem_minmax(0,1fr)]">
+        <div />
+        <div className="relative h-5 text-xs text-ink-soft">
+          {ticks.map((t) => (
+            <span key={t} className="absolute -translate-x-1/2 tabular-nums" style={{ left: at(t) }}>
+              {t}%
+            </span>
+          ))}
+        </div>
+      </div>
+      <ul>
+        {rows.map((r) => (
+          <li key={r.label} className="grid items-center gap-x-4 py-2 md:grid-cols-[16rem_minmax(0,1fr)]">
+            <div>
+              <p className="text-sm leading-5">{r.label}</p>
+              <p className="text-xs leading-5 tabular-nums text-ink-soft">
+                {a} {r.a}%, {b} {r.b}%
+              </p>
+            </div>
+            <div className="relative mt-1 h-5 md:mt-0">
+              <span className="absolute inset-x-0 top-1/2 h-px bg-rule" />
+              <span
+                className="absolute top-1/2 h-0.5 -translate-y-1/2 bg-ink/25"
+                style={{ left: at(Math.min(r.a, r.b)), width: `${(Math.abs(r.a - r.b) / (to - from)) * 100}%` }}
+              />
+              {[
+                [r.a, seriesA],
+                [r.b, seriesB],
+              ].map(([v, c]) => (
+                <span
+                  key={String(c)}
+                  className="absolute top-1/2 h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-bench"
+                  style={{ left: at(v as number), backgroundColor: c as string }}
+                />
+              ))}
+            </div>
+          </li>
+        ))}
+      </ul>
+    </ChartCard>
+  );
+}
+
+// Which processor does each job best on each machine. The pick is solid and the other is faint.
+export function Picks({
+  machines,
+}: {
+  machines: { name: string; first?: boolean; jobs: { job: string; options: { name: string; value: number; shown: string; pick?: boolean }[] }[] }[];
+}) {
+  return (
+    <div className="grid gap-4 md:grid-cols-2">
+      {machines.map((m) => {
+        const color = m.first ? seriesA : seriesB;
+        return (
+          <ChartCard key={m.name}>
+            <p className="inline-flex items-center gap-2 text-sm font-medium">
+              <Swatch color={color} />
+              {m.name}
+            </p>
+            {m.jobs.map((j) => {
+              const top = Math.max(...j.options.map((o) => o.value));
+              return (
+                <div key={j.job} className="mt-4">
+                  <p className="text-sm">{j.job}</p>
+                  <ul className="mt-1 space-y-1">
+                    {j.options.map((o) => (
+                      <li key={o.name} className="flex h-5 items-center gap-1.5 text-xs tabular-nums">
+                        <span className="w-20 shrink-0 text-ink-soft">{o.name}</span>
+                        <span
+                          className="h-2.5 rounded-r"
+                          style={{
+                            width: `calc((100% - 13rem) * ${o.value / top})`,
+                            minWidth: "2px",
+                            backgroundColor: o.pick ? color : `color-mix(in srgb, ${color} 30%, transparent)`,
+                          }}
+                        />
+                        <span className={`whitespace-nowrap ${o.pick ? "font-medium" : ""}`}>
+                          {o.shown}
+                          {o.pick ? ", the pick" : ""}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              );
+            })}
+          </ChartCard>
+        );
+      })}
+    </div>
+  );
+}
+
+// One row per setup, with what it finished, how long it took and what it cost, on aligned scales down each column.
+export function Scorecard({
+  a,
+  b,
+  rows,
+}: {
+  a: string;
+  b: string;
+  rows: { name: string; first?: boolean; passed: number; of: number; wall: number; cost: number | null; costShown: string }[];
+}) {
+  const topWall = Math.max(...rows.map((r) => r.wall));
+  const topCost = Math.max(...rows.map((r) => r.cost ?? 0));
+  const cell = (f: number, shown: string, color: string, strong?: boolean) => (
+    <span className="flex h-5 items-center gap-1.5 text-xs tabular-nums">
+      <span className="h-2.5 rounded-r" style={{ width: `calc((100% - 4.25rem) * ${f})`, minWidth: "2px", backgroundColor: color }} />
+      <span className={`whitespace-nowrap ${strong ? "font-medium" : ""}`}>{shown}</span>
+    </span>
+  );
+  const heads = "text-xs text-ink-soft";
+  return (
+    <ChartCard>
+      <Key a={a} b={b} />
+      <div className="mt-4 hidden grid-cols-[15rem_repeat(3,minmax(0,1fr))] gap-x-4 border-b border-rule pb-2 md:grid">
+        <span />
+        <span className={heads}>Tasks finished, of 24</span>
+        <span className={heads}>Median run</span>
+        <span className={heads}>Cost per finished task</span>
+      </div>
+      <ul>
+        {rows.map((r) => {
+          const color = r.first ? seriesA : seriesB;
+          return (
+            <li key={r.name} className="grid gap-x-4 border-b border-rule/70 py-2.5 last:border-0 md:grid-cols-[15rem_repeat(3,minmax(0,1fr))] md:items-center md:py-1.5">
+              <p className="text-sm leading-5">{r.name}</p>
+              <div className="mt-1 grid grid-cols-[6rem_minmax(0,1fr)] items-center md:mt-0 md:block">
+                <span className={`${heads} md:hidden`}>Finished</span>
+                {cell(r.passed / r.of, `${r.passed} of ${r.of}`, color, true)}
+              </div>
+              <div className="grid grid-cols-[6rem_minmax(0,1fr)] items-center md:block">
+                <span className={`${heads} md:hidden`}>Median run</span>
+                {cell(r.wall / topWall, `${r.wall.toFixed(0)} s`, color)}
+              </div>
+              <div className="grid grid-cols-[6rem_minmax(0,1fr)] items-center md:block">
+                <span className={`${heads} md:hidden`}>Per task</span>
+                {r.cost === null ? <span className="flex h-5 items-center text-xs text-ink-soft">{r.costShown}</span> : cell(r.cost / topCost, r.costShown, color)}
+              </div>
+            </li>
+          );
+        })}
+      </ul>
+    </ChartCard>
+  );
+}
+
+// A gap with its 95% interval, against a baseline at zero. The dot is the estimate and the line is the interval.
+export function Interval({
+  a,
+  b,
+  rows,
+  from,
+  to,
+  band,
+}: {
+  a: string;
+  b: string;
+  rows: { label: string; first?: boolean; gap: number; low: number; high: number; verdict: string }[];
+  from: number;
+  to: number;
+  band: number;
+}) {
+  const at = (v: number) => `${((v - from) / (to - from)) * 100}%`;
+  const ticks: number[] = [];
+  for (let v = from; v <= to; v += 20) ticks.push(v);
+  const signed = (v: number) => (v > 0 ? `+${v}` : v < 0 ? `−${-v}` : "0");
+  return (
+    <ChartCard>
+      <Key a={a} b={b} />
+      <div className="mt-4 grid gap-x-4 md:grid-cols-[15rem_minmax(0,1fr)_11rem]">
+        <span />
+        <div className="relative h-5 text-xs text-ink-soft">
+          {ticks.map((t) => (
+            <span key={t} className="absolute -translate-x-1/2 tabular-nums" style={{ left: at(t) }}>
+              {signed(t)}
+            </span>
+          ))}
+        </div>
+      </div>
+      <ul>
+        {rows.map((r) => {
+          const color = r.first ? seriesA : seriesB;
+          return (
+            <li key={r.label} className="grid items-center gap-x-4 py-1.5 md:grid-cols-[15rem_minmax(0,1fr)_11rem]">
+              <p className="text-sm leading-5">{r.label}</p>
+              <div className="relative mt-1 h-6 md:mt-0">
+                <span className="absolute inset-y-0 bg-ink/5" style={{ left: at(-band), width: `${(2 * band * 100) / (to - from)}%` }} />
+                <span className="absolute inset-y-0 w-px bg-ink/30" style={{ left: at(0) }} />
+                <span
+                  className="absolute top-1/2 h-0.5 -translate-y-1/2"
+                  style={{ left: at(r.low), width: `${((r.high - r.low) * 100) / (to - from)}%`, backgroundColor: color }}
+                />
+                <span
+                  className="absolute top-1/2 h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-bench"
+                  style={{ left: at(r.gap), backgroundColor: color }}
+                />
+              </div>
+              <p className="text-xs leading-5 tabular-nums">
+                <span className="font-medium">{signed(r.gap)}</span> <span className="text-ink-soft">{r.verdict}</span>
+              </p>
+            </li>
+          );
+        })}
+      </ul>
+    </ChartCard>
+  );
+}
+
+// Where a run's time goes, each setup filling the same width.
+const stackColors = ["#6741d9", "#008f7a", "#e0a100", "#d6336c"];
+
+export function Stack({ parts, rows, unsplit }: { parts: string[]; rows: { label: string; shares: (number | null)[]; unsplit?: number }[]; unsplit: string }) {
+  const lower = (x: string) => x.charAt(0).toLowerCase() + x.slice(1);
+  return (
+    <ChartCard>
+      <p className="flex flex-wrap gap-x-5 gap-y-1 text-sm">
+        {parts.map((p, i) => (
+          <span key={p} className="inline-flex items-center gap-2">
+            <Swatch color={stackColors[i]} />
+            {p}
+          </span>
+        ))}
+        <span className="inline-flex items-center gap-2">
+          <Swatch color="#868e96" />
+          {unsplit}
+        </span>
+      </p>
+      <ul className="mt-4 space-y-3">
+        {rows.map((r) => {
+          const total = r.shares.reduce<number>((sum, x) => sum + (x ?? 0), r.unsplit ?? 0);
+          const words = [...(r.unsplit ? [`${lower(unsplit)} ${r.unsplit}%`] : []), ...parts.flatMap((p, i) => (r.shares[i] === null ? [] : [`${lower(p)} ${r.shares[i]}%`]))];
+          return (
+            <li key={r.label} className="grid gap-x-4 gap-y-1 md:grid-cols-[15rem_minmax(0,1fr)] md:items-center">
+              <p className="text-sm leading-5">{r.label}</p>
+              <div>
+                <div className="flex h-3 gap-0.5 overflow-hidden rounded">
+                  {r.unsplit ? <span className="h-full" style={{ width: `${(r.unsplit / total) * 100}%`, backgroundColor: "#868e96" }} /> : null}
+                  {r.shares.map((x, i) => (x === null ? null : <span key={i} className="h-full" style={{ width: `${(x / total) * 100}%`, backgroundColor: stackColors[i] }} />))}
+                </div>
+                <p className="mt-1 text-xs leading-5 tabular-nums text-ink-soft">{words.join(", ")}</p>
+              </div>
+            </li>
+          );
+        })}
+      </ul>
+    </ChartCard>
+  );
+}
+
+// Rows on one scale, solid to a typical value and faint to a worse one, with one row picked out. Grouped by load.
+export function Ranges({
+  groups,
+  solid,
+  faint,
+}: {
+  groups: { title: string; rows: { label: string; low: number; high: number; shown: string; on?: boolean; note?: string }[] }[];
+  solid: string;
+  faint: string;
+}) {
+  const top = Math.max(...groups.flatMap((g) => g.rows.map((r) => r.high)));
+  const other = "#868e96";
+  return (
+    <ChartCard>
+      <p className="flex flex-wrap gap-x-5 gap-y-1 text-sm">
+        <span className="inline-flex items-center gap-2">
+          <Swatch color={seriesA} />
+          The setup we recommend
+        </span>
+        <span className="inline-flex items-center gap-2">
+          <Swatch color={other} />
+          The others
+        </span>
+        <span className="text-ink-soft">
+          Solid to {solid}, faint to {faint}
+        </span>
+      </p>
+      {groups.map((g) => (
+        <div key={g.title} className="mt-5">
+          <p className="text-sm font-medium">{g.title}</p>
+          <ul className="mt-1.5 space-y-1">
+            {g.rows.map((r) => {
+              const color = r.on ? seriesA : other;
+              return (
+                <li key={r.label} className="grid items-center gap-x-3 sm:grid-cols-[9rem_minmax(0,1fr)]">
+                  <span className={`text-xs leading-5 ${r.on ? "font-medium" : ""}`}>{r.label}</span>
+                  <span className="flex h-5 items-center gap-1.5 text-xs tabular-nums">
+                    <span
+                      className="relative h-2.5 rounded-r"
+                      style={{ width: `calc((100% - 12rem) * ${r.high / top})`, minWidth: "3px", backgroundColor: `color-mix(in srgb, ${color} 35%, transparent)` }}
+                    >
+                      <span className="absolute inset-y-0 left-0 rounded-r" style={{ width: `${(r.low / r.high) * 100}%`, backgroundColor: color }} />
+                    </span>
+                    <span className={`whitespace-nowrap ${r.on ? "font-medium" : ""}`}>
+                      {r.shown}
+                      {r.note ? <span className="font-normal text-ink-soft"> {r.note}</span> : null}
+                    </span>
+                  </span>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      ))}
+    </ChartCard>
+  );
+}
+
+export type AlignedCell = { value: number; low?: number; shown: string } | null;
+
+// One row per setting with several measures beside it, each column on its own scale.
+export function Aligned({ head, rows, label }: { head: string[]; label: string; rows: { label: string; on?: boolean; cells: AlignedCell[] }[] }) {
+  const tops = head.map((_, c) => Math.max(...rows.map((r) => r.cells[c]?.value ?? 0)));
+  const cols = { gridTemplateColumns: `minmax(8rem, 11rem) repeat(${head.length}, minmax(0, 1fr))` };
+  return (
+    <ChartCard>
+      <div className="mb-2 hidden gap-x-4 border-b border-rule pb-2 text-xs text-ink-soft md:grid" style={cols}>
+        <span>{label}</span>
+        {head.map((h) => (
+          <span key={h}>{h}</span>
+        ))}
+      </div>
+      <ul>
+        {rows.map((r) => (
+          <li key={r.label} className="border-b border-rule/70 py-2 last:border-0 md:py-1">
+            <div className="md:grid md:items-center md:gap-x-4" style={cols}>
+              <p className={`text-sm leading-5 ${r.on ? "font-medium" : ""}`}>{r.label}</p>
+              {r.cells.map((cell, c) => (
+                <div key={head[c]} className="mt-1 grid grid-cols-[6.5rem_minmax(0,1fr)] items-center md:mt-0 md:block">
+                  <span className="text-xs text-ink-soft md:hidden">{head[c]}</span>
+                  {cell ? (
+                    <span className="flex h-5 items-center gap-1.5 text-xs tabular-nums">
+                      <span
+                        className="relative h-2.5 rounded-r"
+                        style={{
+                          width: `calc((100% - 5.5rem) * ${cell.value / tops[c]})`,
+                          minWidth: "3px",
+                          backgroundColor: `color-mix(in srgb, ${seriesA} ${cell.low === undefined ? 100 : 35}%, transparent)`,
+                        }}
+                      >
+                        {cell.low !== undefined && (
+                          <span className="absolute inset-y-0 left-0 rounded-r" style={{ width: `${(cell.low / cell.value) * 100}%`, backgroundColor: seriesA }} />
+                        )}
+                      </span>
+                      <span className="whitespace-nowrap">{cell.shown}</span>
+                    </span>
+                  ) : (
+                    <span className="flex h-5 items-center text-xs text-ink-soft">not run</span>
+                  )}
+                </div>
+              ))}
+            </div>
+          </li>
+        ))}
+      </ul>
+    </ChartCard>
+  );
+}

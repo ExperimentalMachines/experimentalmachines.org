@@ -210,7 +210,7 @@ export default function Window() {
             <Row label="A phone that dozes">It throttles instrumentation two to five times with wild variance, so the local runner now wakes the phone and holds it awake.</Row>
             <Row label="Two 2.6B conditions">
               Its own template makes it reason before answering, so under the suite&apos;s 640-token cap 16 of 30 GSM8K and 26 of 30 IFEval replies never reached an answer: those
-              rows are cap-censored and kept for their BFCL calls, memory and speed. The rerun at a 2048 cap, GSM8K and IFEval only, is the model&apos;s real score: 23 to 28 of 30
+              rows are cap-censored and kept for their BFCL calls, memory and speed. The rerun at a 2048 cap, GSM8K and IFEval only, gave it room to answer: 23 to 28 of 30
               and 18 to 21 of 30 on every phone and window, with its same-file repeat moving grades by 2 and its BFCL calls unchanged.
             </Row>
             <Row label="Qwen3 32k on 12 GB phones">

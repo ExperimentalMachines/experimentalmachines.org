@@ -1,5 +1,6 @@
-import Post, { Figure, Findings, postMetadata, Row, Rows, Section, Table } from "@/components/research/Post";
-import { phoneLinks, phoneMatmul, phoneTable } from "@/lib/hardware-studies";
+import { PairBars, Picks } from "@/components/research/Compare";
+import Post, { Figure, Findings, More, Note, postMetadata, Row, Rows, Section, Table } from "@/components/research/Post";
+import { phoneBars, phoneLinks, phoneMatmul, phoneTable } from "@/lib/hardware-studies";
 
 const href = "/research/8-elite-dimensity/";
 
@@ -41,12 +42,100 @@ export default function Phones() {
 
       <Section id="results" title="The results">
         <Figure
-          id="comparison"
-          title="Every test, side by side"
-          note="Ranges are from benchmarks run twice. LLM throughput is llama-bench with a 128-token prompt and 64 generated tokens."
+          id="lead"
+          title="The Snapdragon leads every test"
+          lede="NPU, CPU and GPU, with the same workloads on both chips. Each row has its own scale."
+          note="Where a result is a range, from benchmarks run twice, the bar is solid to the low end and faint to the high end. Multiples use the middle of each range."
         >
-          <Table label="The comparison" head={["Test", "Snapdragon 8 Elite", "Dimensity 9500s"]} min="44rem" rows={phoneTable} />
+          <PairBars
+            a="Snapdragon 8 Elite"
+            b="Dimensity 9500s"
+            shortA="8 Elite"
+            shortB="D9500s"
+            rows={phoneBars.map((r) => {
+              const mid = ([lo, hi]: [number, number]) => (lo + hi) / 2;
+              const x = mid(r.elite) / mid(r.dimensity);
+              const show = ([lo, hi]: [number, number], about?: boolean) =>
+                `${about ? "about " : ""}${lo === hi ? lo.toLocaleString("en-US") : `${lo.toLocaleString("en-US")} to ${hi.toLocaleString("en-US")}`}`;
+              return {
+                label: r.label,
+                detail: r.unit,
+                lead: `About ${x < 3 ? x.toFixed(1) : Math.round(x)}×`,
+                a: { value: r.elite[1], low: r.elite[0], shown: show(r.elite) },
+                b: { value: r.dimensity[1], low: r.dimensity[0], shown: show(r.dimensity, r.aboutDimensity) },
+              };
+            })}
+          />
         </Figure>
+
+        <Figure id="gain" title="What each GPU adds over its own CPU" lede="This compares each chip with itself, so it shows how much the GPU is worth on that phone.">
+          <PairBars
+            a="Snapdragon 8 Elite"
+            b="Dimensity 9500s"
+            shortA="8 Elite"
+            shortB="D9500s"
+            rows={[
+              { label: "Matmul, 4096³ f32", detail: "GPU as a multiple of the CPU", a: { value: 6.9, shown: "6.9×" }, b: { value: 1.69, shown: "1.69×" } },
+              {
+                label: "Transformer-layer training step",
+                detail: "GPU as a multiple of the CPU",
+                a: { value: 6.5, shown: "6.5×" },
+                b: { value: 1.4, low: 1.1, shown: "1.1× to 1.4×" },
+              },
+            ]}
+          />
+        </Figure>
+
+        <Figure id="recipe" title="The best recipe is opposite on each chip" lede="Which processor to use for each job, for Gemma 3 1B in tokens per second.">
+          <Picks
+            machines={[
+              {
+                name: "Snapdragon 8 Elite",
+                first: true,
+                jobs: [
+                  {
+                    job: "Prefill",
+                    options: [
+                      { name: "GPU, OpenCL", value: 720, shown: "717 to 723", pick: true },
+                      { name: "CPU", value: 172, shown: "171 to 173" },
+                    ],
+                  },
+                  {
+                    job: "Decode",
+                    options: [
+                      { name: "GPU, OpenCL", value: 42, shown: "41.5 to 42.5" },
+                      { name: "CPU", value: 63, shown: "62 to 64", pick: true },
+                    ],
+                  },
+                ],
+              },
+              {
+                name: "Dimensity 9500s",
+                jobs: [
+                  {
+                    job: "Prefill",
+                    options: [
+                      { name: "GPU, Vulkan", value: 39, shown: "about 39" },
+                      { name: "CPU", value: 66, shown: "58 to 74", pick: true },
+                    ],
+                  },
+                  {
+                    job: "Decode",
+                    options: [
+                      { name: "GPU, Vulkan", value: 27, shown: "about 27", pick: true },
+                      { name: "CPU", value: 26.5, shown: "22 to 31" },
+                    ],
+                  },
+                ],
+              },
+            ]}
+          />
+        </Figure>
+
+        <More id="comparison" title="Every test, side by side" summary="The full comparison as a table, including APIs and training">
+          <Table label="The comparison" head={["Test", "Snapdragon 8 Elite", "Dimensity 9500s"]} min="44rem" rows={phoneTable} />
+          <Note>Ranges are from benchmarks run twice. LLM throughput is llama-bench with a 128-token prompt and 64 generated tokens.</Note>
+        </More>
       </Section>
 
       <Section id="method" title="How we ran it">

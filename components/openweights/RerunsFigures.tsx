@@ -149,7 +149,7 @@ function Cuts({ show, hide }: Chart) {
   const x = (v: number) => M.l + (v / 60) * (W - M.l - M.r);
   const parts = [
     ["finished", OK, "finished"],
-    ["edge", WARN, "cut by the window: prompt plus reply reached the window size"],
+    ["edge", WARN, "cut by the window: prompt plus reply reached the window's limit"],
     ["cap", SOFT, "cut by the 2048-token reply cap"],
   ] as const;
   return (
@@ -662,7 +662,7 @@ export default function RerunsFigures() {
         </Panel>
         <Panel title="Where the long replies were cut">
           <Caption>
-            The 60 GSM8K and IFEval replies of each 2048-cap cell: finished, cut by the window (prompt plus reply reached the window size), or cut by the reply
+            The 60 GSM8K and IFEval replies of each 2048-cap cell: finished, cut by the window (prompt plus reply reached the window&apos;s limit), or cut by the reply
             cap.
           </Caption>
           <Hint />
@@ -687,7 +687,7 @@ export default function RerunsFigures() {
         <Panel title="Reply length at 2k and at 32k">
           <Caption>
             Dimensitys, 2048 cap, 60 replies per window, both panels on one scale. Each bar is a 128-token bin of prompt plus reply. At 2k, 14 replies end at
-            the window limit of 2048 tokens; at 32k, 10 of 60 reached the reply cap and the rest finished earlier.
+            the window limit, 2,047 tokens in all; at 32k, 10 of 60 reached the reply cap and the rest finished earlier.
           </Caption>
           <Hint />
           <Scroll label="Reply length at 2k and at 32k">

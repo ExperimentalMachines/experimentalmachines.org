@@ -4,7 +4,7 @@
 // cover cannot drift from the page it opens.
 
 import { ggufRecommended, ggufRows } from "@/lib/gguf";
-import { copilotCells, gpuKv, laptopGemma, phoneMatmul } from "@/lib/hardware-studies";
+import { copilotCells, gpuKv, laptopGemma, phoneMatmul, rtxCapacity } from "@/lib/hardware-studies";
 import { serving } from "@/lib/neuron";
 import { latencyModels } from "@/lib/openweights-latency";
 import { rerunsCaps } from "@/lib/openweights-reruns";
@@ -44,17 +44,19 @@ const npuWins = pdModels.filter((m) => ranked(m)[0].prefill === "NPU").length;
 // Latency: every model and chip pair, lit where ExecuTorch reached the first token sooner.
 const firstToken = latencyModels.flatMap((m) => m.et.map((p, i) => p.ttft < m.llama[i].ttft));
 
-// Reruns: each cell's GSM8K grade at the old and the new reply cap.
+// Reruns: each cell's IFEval grade at the old and the new reply cap, and the median gain between them.
 const grade = (s: string) => parseInt(s, 10);
-const shortCap = rerunsCaps.map((r) => grade(r.gsm8k_640));
-const longCap = rerunsCaps.map((r) => grade(r.gsm8k_2048));
+const ifevalShort = rerunsCaps.map((r) => grade(r.ifeval_640));
+const ifevalLong = rerunsCaps.map((r) => grade(r.ifeval_2048));
+const gains = rerunsCaps.map((r) => grade(r.ifeval_2048) / grade(r.ifeval_640)).sort((a, b) => a - b);
+const ifevalGain = (gains[Math.floor((gains.length - 1) / 2)] + gains[Math.ceil((gains.length - 1) / 2)]) / 2;
 
 // Window: resident memory after load on the Dimensitys, the phone that ran both windows of both.
 const resident = (model: string, window: string) => {
   const cell = windowCells.find((c) => c.model === model && c.window === window && c.phone.startsWith("D9500s") && c.rss_load !== "-")!;
   return parseInt(cell.rss_load, 10);
 };
-const gb = (mb: number) => `${(mb / 1024).toFixed(1)} GB`;
+const gb = (mb: number) => `${(mb / 1000).toFixed(1)} GB`;
 const memory = [
   { label: "LFM2.5 1.2B, 32k", value: resident("LFM2.5-1.2B-Instruct-8da4w", "32k") },
   { label: "Qwen3 1.7B, 2k", value: resident("Qwen3-1.7B-8da4w", "2k") },
@@ -79,6 +81,9 @@ const copilotBars = [
 ];
 
 const thousands = (x: number) => Math.round(x).toLocaleString("en-US");
+
+// One RTX 4090: the wait per turn as agents are added, with the load the study calls comfortable lit.
+const agentsOk = rtxCapacity.find((r) => r.agents === 8)!;
 
 export const studies: Study[] = [
   {
@@ -109,6 +114,16 @@ export const studies: Study[] = [
     },
   },
   {
+    href: "/research/one-rtx-4090/",
+    title: "How many coding agents can one RTX 4090 serve?",
+    date: "23 and 24 September 2026",
+    project: "Hardware",
+    line: "Qwen3.8-27B on one rented RTX 4090, through five engine setups, rising load and real coding agents.",
+    hook: `${agentsOk.agents} agents`,
+    hookLabel: `at a ${agentsOk.p50} s wait per turn on vLLM, with no errors. At 16, waits reach ${rtxCapacity.at(-1)!.p50} s`,
+    viz: { kind: "columns", groups: rtxCapacity.map((r) => [{ value: r.p50, on: r === agentsOk }]) },
+  },
+  {
     href: "/research/a100-quantization/",
     title: "A 2B model in ten GGUF formats on one A100",
     date: "12 September 2026",
@@ -130,13 +145,13 @@ export const studies: Study[] = [
   },
   {
     href: "/research/reruns/",
-    title: "What the reruns changed",
+    title: "A 640-token reply cap was cutting off the LFM2.5 2.6B",
     date: "7 September 2026",
     project: "OpenWeights",
-    line: "Every cell of the window matrix checked, and three things rerun the same day.",
-    hook: `${Math.min(...longCap)} to ${Math.max(...longCap)}`,
-    hookLabel: `of 30 on GSM8K with a longer reply cap, up from ${Math.min(...shortCap)} to ${Math.max(...shortCap)}`,
-    viz: { kind: "columns", groups: rerunsCaps.map((r) => [{ value: grade(r.gsm8k_640) }, { value: grade(r.gsm8k_2048), on: true }]) },
+    line: "The model reasons before it answers, so a 640-token cap cut it off. Raising only the cap lifted its scores on every phone. The same day's reruns also tested repeats of one file and a run that had died.",
+    hook: `About ${Math.round(ifevalGain)}×`,
+    hookLabel: `the median IFEval gain from raising the reply cap to 2048 tokens: ${Math.min(...ifevalLong)} to ${Math.max(...ifevalLong)} of 30, up from ${Math.min(...ifevalShort)} to ${Math.max(...ifevalShort)}`,
+    viz: { kind: "columns", groups: rerunsCaps.map((r) => [{ value: grade(r.ifeval_640) }, { value: grade(r.ifeval_2048), on: true }]) },
   },
   {
     href: "/research/latency/",
@@ -182,7 +197,7 @@ export const studies: Study[] = [
     title: "Apple M5 against Snapdragon X2 Elite",
     date: "27 July 2026",
     project: "Hardware",
-    line: "Two Arm laptops on AI work: CPU, GPU and NPU, inference and training, with the same llama.cpp release and byte-identical weights.",
+    line: "A MacBook Air against a Qualcomm reference board on AI work: CPU, GPU and NPU, inference and training, with the same llama.cpp release and byte-identical weights.",
     hook: `${(laptopGemma.m5Gpu / laptopGemma.x2Gpu).toFixed(1)}×`,
     hookLabel: `the X2 Elite's GPU prefill on the M5, Gemma 3 1B Q4_0. On the CPU, the X2 Elite leads by ${(laptopGemma.x2Cpu / laptopGemma.m5Cpu).toFixed(1)}×`,
     viz: {

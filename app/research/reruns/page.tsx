@@ -41,7 +41,7 @@ const verdicts = [
   { headline: "Repeats still disagree", line: "The Exynos 2400 repeat of the 1.2B matched its first run on 7 of 90 raw replies." },
   {
     headline: "Two memory guards, one 6 GB limit",
-    line: "The stopped runs' logs, from MIUI and from Samsung's Heimdall, both report a 6 GB threshold. The Pixel, with no such guard, finished.",
+    line: "The stopped runs' logs, from MIUI and from Samsung's Heimdall, both report a 6 GB threshold. The Pixel run finished all 90 prompts.",
   },
 ];
 
@@ -81,7 +81,7 @@ export default function Reruns() {
             </Row>
             <Row label="The kill rule">
               Samsung&apos;s Heimdall wrote &quot;Trigger Global kill before GC, Usage 8.67 GB, Threshold 6 GB&quot; on the S25 Ultra and S24+. MIUI on the Poco wrote &quot;used
-              too many pss resource, pss used 8653468kb, pss threshold 6291456kb&quot;. Different code, same number: on those two phones a process whose PSS passes 6 GB is stopped.
+              too many pss resource, pss used 8653468kb, pss threshold 6291456kb&quot;. Different code, same number: on those phones a process whose PSS passes 6 GB is stopped.
               The 32k Qwen3 export needs about 7 GB of KV cache before the first prompt; it measured 6.1 to 6.4 GB resident after load on the three runs that were stopped and 8.5
               GB on the Pixel run that finished.
             </Row>
@@ -286,8 +286,7 @@ export default function Reruns() {
           </Row>
           <Row label="Where the numbers come from">
             Grades, controls and memory figures are the rendered matrix&apos;s. The cut reasons and the reply-length histogram come from the graded JSON reports, which record
-            prompt and reply token counts per prompt; a reply is counted as cut by the window when prompt plus reply reached the window size, and as cut by the cap when the reply
-            alone reached 2048. Phone RAM is the manufacturer&apos;s figure for each device. Launch times and counts are from the run logs.
+            prompt and reply token counts per prompt; a reply is counted as cut by the window when prompt plus reply reached the window&apos;s last usable token, 2,047 at 2k, and as cut by the cap when the reply alone reached 2,047 tokens at the 2048 cap. Phone RAM is the manufacturer&apos;s figure for each device. Launch times and counts are from the run logs.
           </Row>
         </Rows>
         <More title="How long each run took" summary="Wall clock per run. Generation time alone for the 2.6B at 2048: 130 to 213 minutes per phone.">
