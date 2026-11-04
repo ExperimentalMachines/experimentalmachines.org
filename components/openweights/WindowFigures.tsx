@@ -619,7 +619,7 @@ export default function WindowFigures() {
       <div className="mt-8 grid items-start gap-6 xl:grid-cols-2">
         <Panel
           title="Memory after load"
-          caption="Resident memory of the test process right after each export loaded, Dimensity 9400, from the fixed-prompt probe. The picked model is drawn solid."
+          caption="Resident memory of the test process right after each export loaded, Dimensitys, from the fixed-prompt probe. The picked model is drawn solid."
         >
           <Scroll label="Memory after load">
             <MemoryChart model={model} pt={pt} />
@@ -627,7 +627,7 @@ export default function WindowFigures() {
         </Panel>
         <Panel
           title="Speed, paired probe"
-          caption="Each window's throughput as a ratio of the model's smallest window, same 929-token prompt, same turn against same turn, six pairs per file. Dot is the median, bar the range. Dimensity 9400 only."
+          caption="Each window's throughput as a ratio of the model's smallest window, same 929-token prompt, same turn against same turn, six pairs per file. Dot is the median, bar the range. Dimensitys only."
         >
           <Scroll label="Speed, paired probe">
             <SpeedChart model={model} pt={pt} />

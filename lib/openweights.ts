@@ -17,6 +17,50 @@ export const openweights = {
     { title: "An agent within limits you set", body: "Seventeen tools, and every tool call shows what it was given." },
     { title: "Private by construction", body: "No account, no analytics. Only model search, downloads and three switchable web tools go online." },
   ],
+  quickstart: [
+    { title: "Install it", body: "Get OpenWeights from Google Play. No account to create." },
+    { title: "Find a model", body: "Open Discover, then search Hugging Face or pick from Recommended." },
+    { title: "Check the fit", body: "Before you download, the app says whether the model will run on your phone." },
+    { title: "Start chatting", body: "Load it and ask. Every reply shows how fast it ran." },
+  ],
+  // Commands from ChatCommand in the app; the first four set how much the agent may do unasked.
+  commands: [
+    ["`/auto`", "Run tools directly, and pause for sensitive actions. The default"],
+    ["`/ask`", "Approve each tool before it runs"],
+    ["`/plan`", "Say what it would do, and run no tools"],
+    ["`/yolo`", "Skip Auto's network checks until the app closes"],
+    ["`/goal <task>`", "Work through a task on its own, and stop when it is done"],
+    ["`/deep-research <question>`", "Research a question and write up what it finds"],
+    ["`/compact`", "Summarize earlier turns to free up context now"],
+    ["`/retry`", "Ask the model for a different answer"],
+    ["`/new`", "Start a fresh conversation"],
+  ],
+  // Which tools start on comes from Tool.defaultsOn in core/tools, not the repository's README, which
+  // still says only web search does.
+  tools: [
+    ["Search the web", "Looks up anything recent, or anything it does not know", "Yes"],
+    ["Show pictures", "Finds pictures and short clips to view in the chat", "Yes"],
+    ["Open a page", "Reads the text of one public page", "Yes"],
+    ["Find, read and save files", "Work inside one folder you share, which you can revoke at any time", "No"],
+    ["Run a script", "Runs JavaScript in a sandbox with no network and no files", "No"],
+    ["Canvas", "Shows a saved website, document or slide deck inside the app", "No"],
+    ["Memory", "Keeps short facts across conversations, which you can see and edit", "No"],
+  ],
+  runtimes: [
+    ["Files", "GGUF", "`.pte`"],
+    ["Models", "Any architecture the build reads", "Qwen3, Qwen3.5, Qwen2.5, SmolLM2, SmolLM3, Llama 3.2, Phi-4-mini, Gemma 3, LFM2.5"],
+    ["Pictures", "Models with a projector", "LFM2.5-VL and Gemma 3"],
+    ["Runs on", "CPU, and Adreno GPUs where the driver works", "CPU, and the GPU for files exported for it"],
+    ["Context window", "You choose; the app suggests one", "Fixed when the model is exported"],
+  ],
+  docs: [
+    { label: "README", href: `${repo}#readme`, what: "Everything the app does, and how to build it" },
+    { label: "Architecture", href: `${repo}/blob/main/docs/ARCHITECTURE.md`, what: "How the modules fit, and how the two runtimes sit behind one engine" },
+    { label: "Research", href: "/research/", what: "Every study, with its results" },
+    { label: "Roadmap", href: `${repo}/blob/main/docs/ROADMAP.md`, what: "What is done, and why each part exists" },
+    { label: "Privacy policy", href: `${pages}/privacy.html`, what: "What stays on the phone and what leaves" },
+    { label: "Contributing", href: `${repo}/blob/main/CONTRIBUTING.md`, what: "Setting up, running the tests, what reviewers look for" },
+  ],
   links: {
     play: "https://play.google.com/store/apps/details?id=io.github.alpharomercoma.openweights",
     repo,
@@ -24,31 +68,4 @@ export const openweights = {
     ios: "https://github.com/ExperimentalMachines/OpenWeights-iOS",
     privacy: `${pages}/privacy.html`,
   },
-  // Newest first.
-  research: [
-    {
-      href: "/research/prefill-decode/",
-      title: "Prefill and decode on CPU, GPU and NPU",
-      date: "2 to 4 November 2026",
-      line: "Which processor should prefill and which should decode: nine models, every pairing, on a Snapdragon 8 Elite Gen 5.",
-    },
-    {
-      href: "/research/window/",
-      title: "Does the exported window matter?",
-      date: "7 September 2026",
-      line: "Whether the context window fixed at export, from 2k to 32k, changes anything but memory.",
-    },
-    {
-      href: "/research/reruns/",
-      title: "What the reruns changed",
-      date: "7 September 2026",
-      line: "Every cell of the window matrix checked, and three things rerun the same day.",
-    },
-    {
-      href: "/research/latency/",
-      title: "Five chips, two runtimes",
-      date: "3 and 4 September 2026",
-      line: "How fast five small models answer on five phone chips, in llama.cpp and in ExecuTorch.",
-    },
-  ],
 };

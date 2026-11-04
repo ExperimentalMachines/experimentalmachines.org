@@ -96,7 +96,7 @@ export const decision = [
   ["Preference optimisation without a reference model (ORPO)", "works"],
   ["Pretraining a small model from scratch", "works to about 400M parameters on one small instance"],
   ["Online RL of any kind (GRPO, PPO, RLVR)", "blocked"],
-  ["Cost-optimised 8B serving", "a single GPU was 1.8x to 4.6x cheaper per token here"],
+  ["Cost-optimised 8B serving", "a single GPU was 1.8× to 4.6× cheaper per token here"],
   ["Serving where capacity or data residency decides", "reasonable, inside the concurrency ceiling"],
   ["Architecture outside the exporter list", "a wall, not a tuning problem"],
 ] as const;

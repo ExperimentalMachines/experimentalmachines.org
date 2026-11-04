@@ -312,7 +312,7 @@ export const chipBackends: { key: "qnn" | "mtk" | "exynos"; name: string; source
     chips: [
       {
         id: "MT6991",
-        name: "Dimensity 9400",
+        name: "Dimensitys",
         kind: "phone",
         arch: "DX4",
         status: "ran",

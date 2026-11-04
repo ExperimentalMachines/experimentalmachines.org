@@ -1,5 +1,5 @@
-import Go from "@/components/home/Go";
-import { h2, lede, link } from "@/components/home/ui";
+import { Action, Actions, secondaryButton } from "@/components/home/Actions";
+import { h2, lede } from "@/components/home/ui";
 import { merged, upstream } from "@/lib/home";
 
 function MergeIcon() {
@@ -21,8 +21,7 @@ export default function Upstream() {
         <div className="grid gap-8 lg:grid-cols-[1fr_1fr] lg:items-end lg:gap-16">
           <h2 className={h2}>Fixes shared with ExecuTorch.</h2>
           <p className={`${lede} max-w-xl`}>
-            Running these models in our own apps turns up bugs in the runtime underneath. We report them to the
-            ExecuTorch team at PyTorch, and fix them where we can.
+            Our apps turn up bugs in the runtime underneath. We report them to the ExecuTorch team, and fix them where we can.
           </p>
         </div>
 
@@ -42,7 +41,9 @@ export default function Upstream() {
             </span>
             <span className="display mt-6 block max-w-xl text-2xl leading-snug sm:text-3xl">{merged.plain}</span>
             <span className="mt-4 block font-mono text-sm leading-6 text-ink-soft">{merged.title}</span>
-            <span className={`mt-auto block self-start pt-6 text-base ${link}`}>Read the pull request</span>
+            <span className="mt-auto self-start pt-6">
+              <span className={secondaryButton}>Read the pull request</span>
+            </span>
           </a>
 
           <ul className="flex flex-col divide-y divide-rule rounded-[1.75rem] bg-bench px-6 sm:px-8">
@@ -58,12 +59,10 @@ export default function Upstream() {
                   </span>
                 </p>
                 <p className="mt-4 text-base leading-7">{u.plain}</p>
-                <p className="mt-2 text-sm leading-6 text-ink-soft">
-                  {u.detail}{" "}
-                  <Go href={u.href} className={link}>
-                    On GitHub
-                  </Go>
-                </p>
+                <p className="mt-2 text-sm leading-6 text-ink-soft">{u.detail}</p>
+                <Actions className="mt-4">
+                  <Action href={u.href}>See it on GitHub</Action>
+                </Actions>
               </li>
             ))}
           </ul>

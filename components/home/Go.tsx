@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-// A link that opens other sites in a new tab and stays in-app for our own pages.
+// A link that opens other sites in a new tab and stays in-app for our own pages and anchors.
 export default function Go({
   href,
   className,
@@ -10,6 +10,13 @@ export default function Go({
   className?: string;
   children: React.ReactNode;
 }) {
+  if (href.startsWith("#")) {
+    return (
+      <a href={href} className={className}>
+        {children}
+      </a>
+    );
+  }
   if (href.startsWith("/")) {
     return (
       <Link href={href} className={className}>

@@ -15,18 +15,18 @@ export const rerunsLinks = {
   qwen3: `${hf}/Qwen3-1.7B-ExecuTorch`,
 };
 
-export type RerunsPhoneId = "D9400" | "8 Elite" | "Tensor G5" | "Exynos 2400";
+export type RerunsPhoneId = "D9500s" | "8 Elite" | "Tensor G5" | "Exynos 2400";
 
 // RAM is the manufacturer's figure for each device, in GB.
 export const rerunsPhones: { id: RerunsPhoneId; name: string; short: string; device: string; ram: number }[] = [
-  { id: "D9400", name: "Dimensity 9400", short: "Dimensity 9400", device: "Poco X8 Pro", ram: 12 },
+  { id: "D9500s", name: "Dimensitys", short: "Dimensitys", device: "Poco X8 Pro", ram: 12 },
   { id: "8 Elite", name: "Snapdragon 8 Elite", short: "8 Elite", device: "Galaxy S25 Ultra", ram: 12 },
   { id: "Tensor G5", name: "Tensor G5", short: "Tensor G5", device: "Pixel 10 Pro XL", ram: 16 },
   { id: "Exynos 2400", name: "Exynos 2400", short: "Exynos 2400", device: "Galaxy S24+", ram: 12 },
 ];
 
 // The order rows are drawn in.
-export const rerunsOrder: RerunsPhoneId[] = ["D9400", "8 Elite", "Tensor G5", "Exynos 2400"];
+export const rerunsOrder: RerunsPhoneId[] = ["D9500s", "8 Elite", "Tensor G5", "Exynos 2400"];
 
 // LFM2.5-2.6B, prompts passed out of 30 at the suite's 640-token reply cap and
 // at the 2048-token rerun, per phone and window.
@@ -40,8 +40,8 @@ export const rerunsCaps: {
 }[] = [
   { phone: "8 Elite", window: "32k", gsm8k_640: "13/30", ifeval_640: "5/30", gsm8k_2048: "24/30", ifeval_2048: "21/30" },
   { phone: "8 Elite", window: "4k", gsm8k_640: "13/30", ifeval_640: "5/30", gsm8k_2048: "25/30", ifeval_2048: "19/30" },
-  { phone: "D9400", window: "2k", gsm8k_2048: "24/30", ifeval_2048: "21/30", gsm8k_640: "15/30", ifeval_640: "4/30" },
-  { phone: "D9400", window: "32k", gsm8k_2048: "26/30", ifeval_2048: "21/30", gsm8k_640: "13/30", ifeval_640: "5/30" },
+  { phone: "D9500s", window: "2k", gsm8k_2048: "24/30", ifeval_2048: "21/30", gsm8k_640: "15/30", ifeval_640: "4/30" },
+  { phone: "D9500s", window: "32k", gsm8k_2048: "26/30", ifeval_2048: "21/30", gsm8k_640: "13/30", ifeval_640: "5/30" },
   { phone: "Exynos 2400", window: "32k", gsm8k_640: "18/30", ifeval_640: "3/30", gsm8k_2048: "27/30", ifeval_2048: "19/30" },
   { phone: "Exynos 2400", window: "4k", gsm8k_640: "10/30", ifeval_640: "5/30", gsm8k_2048: "25/30", ifeval_2048: "21/30" },
   { phone: "Tensor G5", window: "32k", gsm8k_640: "19/30", ifeval_640: "4/30", gsm8k_2048: "28/30", ifeval_2048: "18/30" },
@@ -53,15 +53,15 @@ export const rerunsCaps: {
 export const rerunsCuts: { phone: RerunsPhoneId; window: string; n: number; finished: number; edge: number; cap: number }[] = [
   { phone: "8 Elite", window: "32k", n: 60, finished: 45, edge: 0, cap: 15 },
   { phone: "8 Elite", window: "4k", n: 60, finished: 49, edge: 0, cap: 11 },
-  { phone: "D9400", window: "2k", n: 60, finished: 46, edge: 14, cap: 0 },
-  { phone: "D9400", window: "32k", n: 60, finished: 50, edge: 0, cap: 10 },
+  { phone: "D9500s", window: "2k", n: 60, finished: 46, edge: 14, cap: 0 },
+  { phone: "D9500s", window: "32k", n: 60, finished: 50, edge: 0, cap: 10 },
   { phone: "Exynos 2400", window: "32k", n: 60, finished: 50, edge: 0, cap: 10 },
   { phone: "Exynos 2400", window: "4k", n: 60, finished: 47, edge: 0, cap: 13 },
   { phone: "Tensor G5", window: "32k", n: 60, finished: 48, edge: 0, cap: 12 },
   { phone: "Tensor G5", window: "4k", n: 60, finished: 47, edge: 0, cap: 13 },
 ];
 
-// Dimensity 9400, 2048 cap: [reply tokens, prompt tokens, set, grade] for each
+// Dimensitys, 2048 cap: [reply tokens, prompt tokens, set, grade] for each
 // of the 60 replies at the 2k and the 32k window.
 export const rerunsLengths: Record<"2k" | "32k", [number, number, string, string][]> = {
   "2k": [
@@ -116,17 +116,17 @@ export const rerunsControls: {
   first: Grades;
   second: Grades;
 }[] = [
-  { model: "LFM2.5-1.2B", window: "16k", phone: "D9400", raw: 13, content: 20, calls: 23, nbfcl: 30, n: 90, first: { gsm8k: 13, ifeval: 20, bfcl: 27 }, second: { gsm8k: 14, ifeval: 16, bfcl: 28 } },
-  { model: "LFM2.5-1.2B", window: "32k", phone: "D9400", raw: 15, content: 18, calls: 25, nbfcl: 30, n: 90, first: { gsm8k: 12, ifeval: 18, bfcl: 27 }, second: { gsm8k: 12, ifeval: 15, bfcl: 27 } },
-  { model: "LFM2.5-2.6B", window: "2k", phone: "D9400", raw: 0, content: 29, calls: 24, nbfcl: 30, n: 90, first: { gsm8k: 15, ifeval: 4, bfcl: 24 }, second: { gsm8k: 13, ifeval: 6, bfcl: 24 } },
-  { model: "Qwen3-1.7B", window: "2k", phone: "D9400", raw: 31, content: 31, calls: 30, nbfcl: 30, n: 90, first: { gsm8k: 20, ifeval: 15, bfcl: 24 }, second: { gsm8k: 17, ifeval: 18, bfcl: 24 } },
+  { model: "LFM2.5-1.2B", window: "16k", phone: "D9500s", raw: 13, content: 20, calls: 23, nbfcl: 30, n: 90, first: { gsm8k: 13, ifeval: 20, bfcl: 27 }, second: { gsm8k: 14, ifeval: 16, bfcl: 28 } },
+  { model: "LFM2.5-1.2B", window: "32k", phone: "D9500s", raw: 15, content: 18, calls: 25, nbfcl: 30, n: 90, first: { gsm8k: 12, ifeval: 18, bfcl: 27 }, second: { gsm8k: 12, ifeval: 15, bfcl: 27 } },
+  { model: "LFM2.5-2.6B", window: "2k", phone: "D9500s", raw: 0, content: 29, calls: 24, nbfcl: 30, n: 90, first: { gsm8k: 15, ifeval: 4, bfcl: 24 }, second: { gsm8k: 13, ifeval: 6, bfcl: 24 } },
+  { model: "Qwen3-1.7B", window: "2k", phone: "D9500s", raw: 31, content: 31, calls: 30, nbfcl: 30, n: 90, first: { gsm8k: 20, ifeval: 15, bfcl: 24 }, second: { gsm8k: 17, ifeval: 18, bfcl: 24 } },
   { model: "LFM2.5-1.2B", window: "4k", phone: "Exynos 2400", raw: 7, content: 11, calls: 23, nbfcl: 30, n: 90, first: { gsm8k: 13, ifeval: 17, bfcl: 26 }, second: { gsm8k: 15, ifeval: 21, bfcl: 27 } },
 ];
 
 // Qwen3-1.7B at 32k: resident memory after load in MB, prompts completed of
 // 90, and what the log says stopped it.
 export const rerunsKills: { phone: RerunsPhoneId; device: string; ram: number; prompts: number; rss: number; cause: string }[] = [
-  { phone: "D9400", device: "Poco X8 Pro", ram: 12, prompts: 6, rss: 6188, cause: "MIUI ActivityManager, 6 GB PSS threshold (rerun: 7 prompts, 8.65 GB)" },
+  { phone: "D9500s", device: "Poco X8 Pro", ram: 12, prompts: 6, rss: 6188, cause: "MIUI ActivityManager, 6 GB PSS threshold (rerun: 7 prompts, 8.65 GB)" },
   { phone: "8 Elite", device: "Galaxy S25 Ultra", ram: 12, prompts: 12, rss: 6127, cause: "Samsung Heimdall, 6 GB threshold (8.67 GB used)" },
   { phone: "Exynos 2400", device: "Galaxy S24+", ram: 12, prompts: 7, rss: 6396, cause: "Samsung Heimdall, 6 GB threshold" },
   { phone: "Tensor G5", device: "Pixel 10 Pro XL", ram: 16, prompts: 90, rss: 8499, cause: "finished all 90" },
@@ -137,17 +137,17 @@ export const rerunsKills: { phone: RerunsPhoneId; device: string; ram: number; p
 // resident memory after load and at the end in MB ("-" where not logged).
 export type RerunsRun = { name: string; ttft: number; tpot: number; pre: number; dec: number; rss: string; rss_end: string };
 export const rerunsTiming: { kind: "cap" | "repeat"; label: string; phone: RerunsPhoneId; window: string; a: RerunsRun; b: RerunsRun }[] = [
-  { kind: "cap", label: "LFM2.5-2.6B", phone: "D9400", window: "2k", a: { name: "640 cap, 90 prompts", ttft: 882, tpot: 60.3, pre: 108, dec: 16.6, rss: "1979", rss_end: "1958" }, b: { name: "2048 cap, 60 prompts", ttft: 693, tpot: 62.8, pre: 105, dec: 15.9, rss: "1959", rss_end: "1783" } },
+  { kind: "cap", label: "LFM2.5-2.6B", phone: "D9500s", window: "2k", a: { name: "640 cap, 90 prompts", ttft: 882, tpot: 60.3, pre: 108, dec: 16.6, rss: "1979", rss_end: "1958" }, b: { name: "2048 cap, 60 prompts", ttft: 693, tpot: 62.8, pre: 105, dec: 15.9, rss: "1959", rss_end: "1783" } },
   { kind: "cap", label: "LFM2.5-2.6B", phone: "8 Elite", window: "4k", a: { name: "640 cap, 90 prompts", ttft: 1197, tpot: 55.4, pre: 72, dec: 18, rss: "2058", rss_end: "2194" }, b: { name: "2048 cap, 60 prompts", ttft: 866, tpot: 51.1, pre: 82, dec: 19.6, rss: "2055", rss_end: "2139" } },
   { kind: "cap", label: "LFM2.5-2.6B", phone: "Tensor G5", window: "4k", a: { name: "640 cap, 90 prompts", ttft: 1066, tpot: 92.2, pre: 88, dec: 10.8, rss: "2054", rss_end: "2221" }, b: { name: "2048 cap, 60 prompts", ttft: 776, tpot: 81.9, pre: 106, dec: 12.2, rss: "2055", rss_end: "2188" } },
   { kind: "cap", label: "LFM2.5-2.6B", phone: "Exynos 2400", window: "4k", a: { name: "640 cap, 90 prompts", ttft: 1142, tpot: 83.5, pre: 81, dec: 12, rss: "2136", rss_end: "2189" }, b: { name: "2048 cap, 60 prompts", ttft: 893, tpot: 87.1, pre: 84, dec: 11.5, rss: "2136", rss_end: "2187" } },
-  { kind: "cap", label: "LFM2.5-2.6B", phone: "D9400", window: "32k", a: { name: "640 cap, 90 prompts", ttft: 882, tpot: 59.7, pre: 109, dec: 16.8, rss: "2937", rss_end: "2185" }, b: { name: "2048 cap, 60 prompts", ttft: 621, tpot: 59.5, pre: 113, dec: 16.8, rss: "2922", rss_end: "2262" } },
+  { kind: "cap", label: "LFM2.5-2.6B", phone: "D9500s", window: "32k", a: { name: "640 cap, 90 prompts", ttft: 882, tpot: 59.7, pre: 109, dec: 16.8, rss: "2937", rss_end: "2185" }, b: { name: "2048 cap, 60 prompts", ttft: 621, tpot: 59.5, pre: 113, dec: 16.8, rss: "2922", rss_end: "2262" } },
   { kind: "cap", label: "LFM2.5-2.6B", phone: "8 Elite", window: "32k", a: { name: "640 cap, 90 prompts", ttft: 1096, tpot: 49.7, pre: 81, dec: 20.1, rss: "2950", rss_end: "3082" }, b: { name: "2048 cap, 60 prompts", ttft: 982, tpot: 54.5, pre: 80, dec: 18.4, rss: "2950", rss_end: "2626" } },
   { kind: "cap", label: "LFM2.5-2.6B", phone: "Tensor G5", window: "32k", a: { name: "640 cap, 90 prompts", ttft: 968, tpot: 81.1, pre: 101, dec: 12.3, rss: "2962", rss_end: "3120" }, b: { name: "2048 cap, 60 prompts", ttft: 842, tpot: 102.4, pre: 80, dec: 9.8, rss: "2962", rss_end: "3123" } },
   { kind: "cap", label: "LFM2.5-2.6B", phone: "Exynos 2400", window: "32k", a: { name: "640 cap, 90 prompts", ttft: 1085, tpot: 84.5, pre: 80, dec: 11.8, rss: "3032", rss_end: "3084" }, b: { name: "2048 cap, 60 prompts", ttft: 924, tpot: 87.8, pre: 82, dec: 11.4, rss: "3028", rss_end: "3080" } },
   { kind: "repeat", label: "LFM2.5-1.2B", phone: "Exynos 2400", window: "4k", a: { name: "first run", ttft: 460, tpot: 34, pre: 195, dec: 29.4, rss: "1126", rss_end: "1213" }, b: { name: "second run", ttft: 516, tpot: 37.5, pre: 180, dec: 26.7, rss: "1126", rss_end: "1217" } },
-  { kind: "repeat", label: "LFM2.5-1.2B", phone: "D9400", window: "16k", a: { name: "first run", ttft: 354, tpot: 25.9, pre: 262, dec: 38.6, rss: "-", rss_end: "993" }, b: { name: "second run", ttft: 368, tpot: 26.2, pre: 259, dec: 38.2, rss: "1416", rss_end: "1528" } },
-  { kind: "repeat", label: "LFM2.5-1.2B", phone: "D9400", window: "32k", a: { name: "first run", ttft: 366, tpot: 26.3, pre: 257, dec: 38, rss: "-", rss_end: "1903" }, b: { name: "second run", ttft: 392, tpot: 28.8, pre: 237, dec: 34.8, rss: "1798", rss_end: "1901" } },
-  { kind: "repeat", label: "LFM2.5-2.6B", phone: "D9400", window: "2k", a: { name: "first run", ttft: 882, tpot: 60.3, pre: 108, dec: 16.6, rss: "1979", rss_end: "1958" }, b: { name: "second run", ttft: 872, tpot: 59.6, pre: 110, dec: 16.8, rss: "1984", rss_end: "1871" } },
-  { kind: "repeat", label: "Qwen3-1.7B", phone: "D9400", window: "2k", a: { name: "first run", ttft: 532, tpot: 45.1, pre: 174, dec: 22.2, rss: "1758", rss_end: "1833" }, b: { name: "second run", ttft: 532, tpot: 45.7, pre: 174, dec: 21.9, rss: "1766", rss_end: "1900" } },
+  { kind: "repeat", label: "LFM2.5-1.2B", phone: "D9500s", window: "16k", a: { name: "first run", ttft: 354, tpot: 25.9, pre: 262, dec: 38.6, rss: "-", rss_end: "993" }, b: { name: "second run", ttft: 368, tpot: 26.2, pre: 259, dec: 38.2, rss: "1416", rss_end: "1528" } },
+  { kind: "repeat", label: "LFM2.5-1.2B", phone: "D9500s", window: "32k", a: { name: "first run", ttft: 366, tpot: 26.3, pre: 257, dec: 38, rss: "-", rss_end: "1903" }, b: { name: "second run", ttft: 392, tpot: 28.8, pre: 237, dec: 34.8, rss: "1798", rss_end: "1901" } },
+  { kind: "repeat", label: "LFM2.5-2.6B", phone: "D9500s", window: "2k", a: { name: "first run", ttft: 882, tpot: 60.3, pre: 108, dec: 16.6, rss: "1979", rss_end: "1958" }, b: { name: "second run", ttft: 872, tpot: 59.6, pre: 110, dec: 16.8, rss: "1984", rss_end: "1871" } },
+  { kind: "repeat", label: "Qwen3-1.7B", phone: "D9500s", window: "2k", a: { name: "first run", ttft: 532, tpot: 45.1, pre: 174, dec: 22.2, rss: "1758", rss_end: "1833" }, b: { name: "second run", ttft: 532, tpot: 45.7, pre: 174, dec: 21.9, rss: "1766", rss_end: "1900" } },
 ];

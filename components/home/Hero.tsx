@@ -86,11 +86,11 @@ export default function Hero() {
             <div className="flex items-end justify-center gap-4 sm:gap-6 lg:order-1 lg:justify-start">
               <Phone
                 src="/home/openweights-chat.png"
-                alt="OpenWeights on a phone running LFM2.5 1.2B: asked to open experimentalmachines.org, it reads the page with its web tool and sums up what we make in three bullets, at 55 tokens per second"
+                alt="OpenWeights on a phone running LFM2.5 1.2B: asked whether to pack an umbrella in Tokyo tomorrow, it searches the web and says there is a significant chance of rain, then works out that 500 US dollars is about 79,000 yen at 158 yen to the dollar, at about 60 tokens per second"
                 label="OpenWeights"
                 href="/openweights/"
                 width={600}
-                height={1222}
+                height={1212}
                 className="sm:mb-[-2rem]"
               />
               <Phone
@@ -108,19 +108,13 @@ export default function Hero() {
 
       <section id="projects" aria-label="Projects" className="scroll-mt-28 lg:scroll-mt-16">
         <div className="mx-auto max-w-7xl px-4 sm:px-6">
-          <ul className="grid gap-x-8 gap-y-8 py-12 sm:grid-cols-2 sm:py-14 lg:grid-cols-4">
+          <ul className="grid gap-x-8 gap-y-8 py-12 sm:grid-cols-3 sm:py-14">
             {projects.map((p) => (
               <li key={p.id}>
                 <a href={`#${p.id}`} className="group block border-t-2 border-blue pt-4">
-                  <span className="flex items-center justify-between gap-3">
+                  <span className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
                     <span className="display text-xl group-hover:text-blue-deep">{p.name}</span>
-                    <span
-                      className={`shrink-0 rounded-full border px-2.5 py-0.5 text-xs text-ink-soft ${
-                        p.id === "execubench" ? "border-dashed border-ink/30" : "border-rule"
-                      }`}
-                    >
-                      {p.status}
-                    </span>
+                    <span className="shrink-0 rounded-full border border-rule px-2.5 py-0.5 text-xs text-ink-soft">{p.status}</span>
                   </span>
                   <span className="mt-2 block text-sm leading-6 text-ink-soft">{p.line}</span>
                 </a>

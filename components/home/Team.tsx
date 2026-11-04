@@ -28,7 +28,7 @@ function Portrait({ m }: { m: Member }) {
 export default function Team() {
   return (
     <>
-      <section id="people" className="scroll-mt-28 lg:scroll-mt-16">
+      <section id="people" className="scroll-mt-28 bg-bench lg:scroll-mt-16">
         <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 sm:py-20">
           <h2 className="display max-w-3xl text-4xl font-normal leading-[1.05] tracking-[-0.03em] sm:text-5xl">
             Built by {words[team.length] ?? team.length} people.
@@ -109,7 +109,7 @@ export default function Team() {
             </p>
             <a
               href={`mailto:${site.email}`}
-              className="self-start rounded-full bg-white px-6 py-4 text-base font-medium text-blue-deep hover:bg-white/90 sm:text-lg lg:self-auto"
+              className="self-start rounded-full bg-white px-5 py-4 text-sm font-medium text-blue-deep hover:bg-white/90 min-[380px]:px-6 min-[380px]:text-base sm:text-lg lg:self-auto"
             >
               {site.email}
             </a>

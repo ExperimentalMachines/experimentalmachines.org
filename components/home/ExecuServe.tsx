@@ -1,6 +1,7 @@
 import ApiTabs from "@/components/home/ApiTabs";
 import Bars from "@/components/home/Bars";
 import CodeBlock from "@/components/home/CodeBlock";
+import { Action, Actions, PrimaryAction } from "@/components/home/Actions";
 import Go from "@/components/home/Go";
 import { h2, lede, link, ProjectLabel } from "@/components/home/ui";
 import { execuserve } from "@/lib/execuserve";
@@ -16,9 +17,7 @@ export default function ExecuServe() {
             <h2 className={`${h2} mt-6`}>Your phone is the server.</h2>
           </div>
           <p className={`${lede} max-w-xl`}>
-            ExecuServe turns an Android phone into a local AI server. It keeps compiled models loaded and answers the
-            OpenAI and Anthropic APIs, for apps on the phone or, if you allow it, on your network. It runs CPU and GPU
-            builds, and NPU builds made for the phone&apos;s own chip.
+            A local AI server on your Android phone, behind the OpenAI and Anthropic APIs.
           </p>
         </div>
 
@@ -107,22 +106,15 @@ export default function ExecuServe() {
                 }
               />
             </div>
-            <p className="mt-auto flex flex-wrap items-center gap-x-5 gap-y-3 pt-8 text-base">
-              <a
-                href={links.execuservePlay}
-                target="_blank"
-                rel="noreferrer"
-                className="rounded-full bg-[#c4381c] px-5 py-2.5 text-sm font-medium text-white hover:bg-[#a52f17]"
-              >
+            <Actions className="mt-auto pt-8">
+              <PrimaryAction href={links.execuservePlay} className="bg-[#c4381c] text-white hover:bg-[#a52f17]">
                 Get it on Google Play
-              </a>
-              <Go href={links.execuserve} className={link}>
-                About ExecuServe
-              </Go>
-              <Go href={links.execuserveRepo} className={link}>
-                <span className="sr-only">ExecuServe </span>Source
-              </Go>
-            </p>
+              </PrimaryAction>
+              <Action href={links.execuserve}>About ExecuServe</Action>
+              <Action href={links.execuserveRepo} context="ExecuServe">
+                Source
+              </Action>
+            </Actions>
           </div>
         </div>
       </div>

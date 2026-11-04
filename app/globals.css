@@ -64,6 +64,12 @@ body {
     font-family: var(--font-inter-tight), var(--font-inter), ui-sans-serif, sans-serif;
     letter-spacing: -0.015em;
   }
+
+  /* A research post is read, not skimmed: its secondary text is darker than the
+     rest of the site's, so a long paragraph or a table note does not read as grey. */
+  .home .post {
+    --color-ink-soft: #3d4460;
+  }
 }
 
 /* Focus rings on the homepage's cobalt hero are white to be seen. Unlayered,

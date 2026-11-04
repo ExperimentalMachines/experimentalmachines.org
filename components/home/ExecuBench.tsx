@@ -1,6 +1,6 @@
 import Go from "@/components/home/Go";
 import { h2, lede, link, ProjectLabel } from "@/components/home/ui";
-import { earlier, links } from "@/lib/home";
+import { links } from "@/lib/home";
 
 export default function ExecuBench() {
   return (
@@ -11,9 +11,7 @@ export default function ExecuBench() {
             <ProjectLabel name="ExecuBench" status="In development, no results yet" mark="/execubench/mark-small.svg" pending />
             <h2 className={`${h2} mt-6`}>Next: measurements on real phones.</h2>
             <p className={`${lede} mt-5 max-w-xl`}>
-              ExecuBench will measure the speed, memory, heat and answer quality of compiled models on real phones in
-              AWS Device Farm, and record what each phone reports about itself beside every number. Probing the phones
-              is done; the pilot is next.
+              It will measure speed, memory, heat and answer quality on real phones. Probing the phones is done; the pilot is next.
             </p>
             <p className="mt-6 flex flex-wrap gap-x-5 gap-y-2 text-base">
               <Go href={links.execubenchPlan} className={link}>
@@ -50,27 +48,6 @@ export default function ExecuBench() {
               </Go>
             </figcaption>
           </figure>
-        </div>
-
-        <div className="mt-20 border-t border-rule pt-8">
-          <h3 className="text-base font-medium">Where we started</h3>
-          <p className="mt-1 text-sm leading-6 text-ink-soft">
-            Earlier research compared AI hardware across servers, laptops and phones. The reports stay published, and{" "}
-            <Go href="/research/" className={link}>
-              all our research
-            </Go>{" "}
-            is in one place.
-          </p>
-          <ul className="mt-4 grid gap-x-8 sm:grid-cols-3">
-            {earlier.map((e) => (
-              <li key={e.id} id={e.id} className="scroll-mt-28 border-t border-rule sm:border-t-0 lg:scroll-mt-20">
-                <Go href={e.href} className="flex min-h-11 flex-col justify-center py-2 hover:text-blue-deep">
-                  <span className="text-sm font-medium">{e.title}</span>
-                  <span className="text-sm text-ink-soft">{e.text}</span>
-                </Go>
-              </li>
-            ))}
-          </ul>
         </div>
       </div>
     </section>

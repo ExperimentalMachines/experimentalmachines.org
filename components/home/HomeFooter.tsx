@@ -23,15 +23,11 @@ export default function HomeFooter() {
           </p>
         </div>
         <div className="flex flex-wrap gap-x-5 gap-y-2 text-sm text-ink-soft">
-          {/* The ASIC and GGUF research have no section on the homepage. */}
           <Link href="/research/" className="font-medium text-ink hover:text-blue-deep">
             Research
           </Link>
-          <Link href="/asic/" className="hover:text-ink">
-            ASIC research
-          </Link>
-          <Link href="/gguf/" className="hover:text-ink">
-            GGUF research
+          <Link href="/conferences/" className="font-medium text-ink hover:text-blue-deep">
+            Conferences
           </Link>
           <a href={links.github} target="_blank" rel="noreferrer" className="hover:text-ink">
             GitHub

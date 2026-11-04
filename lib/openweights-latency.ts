@@ -11,7 +11,7 @@ export const latencyLinks = {
 };
 
 export const latencyChips = [
-  { name: "Dimensity 9400", short: "D9400" },
+  { name: "Dimensitys", short: "D9500s" },
   { name: "Snapdragon 8 Gen 3", short: "8 Gen 3" },
   { name: "Snapdragon 8 Elite", short: "8 Elite" },
   { name: "Tensor G5", short: "Tensor G5" },

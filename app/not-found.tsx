@@ -1,9 +1,8 @@
 import type { Metadata } from "next";
 import HomeShell from "@/components/home/HomeShell";
-import ResearchList from "@/components/home/ResearchList";
+import ResearchList, { type ResearchItem } from "@/components/home/ResearchList";
 import { lede } from "@/components/home/ui";
 import { projects } from "@/lib/home";
-import type { ResearchItem } from "@/lib/research";
 
 // The page for any address the site does not have: the static export writes it
 // to 404.html, which GitHub Pages serves for every unknown URL. It renders in the
@@ -28,9 +27,8 @@ const places: ResearchItem[] = [
     meta: "ExecuPack",
     line: "Every model ExecuPack has published, per accelerator, against everything ExecuTorch can export for Android",
   },
-  { href: "/research/", title: "Research", meta: "Research", line: "Every study, with its committed results: OpenWeights on real phones, ASICs and GGUF" },
-  { href: "/asic/", title: "ASIC research", meta: "Research", line: "Training and serving models on TPU, Trainium, Inferentia and Gaudi, against GPUs" },
-  { href: "/gguf/", title: "GGUF research", meta: "Research", line: "The model file llama.cpp runs, measured from a datacenter GPU to a phone" },
+  { href: "/research/", title: "Research", meta: "Research", line: "Every study, with its committed results" },
+  { href: "/conferences/", title: "Conferences", meta: "Talks", line: "Our talks at PyTorch and GitHub events, with their listings, recordings and evidence" },
 ];
 
 export default function NotFound() {

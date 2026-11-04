@@ -1,63 +1,17 @@
-import type { Metadata } from "next";
 import Go from "@/components/home/Go";
-import { h2, lede, link } from "@/components/home/ui";
+import { link } from "@/components/home/ui";
 import WindowFigures from "@/components/openweights/WindowFigures";
-import { Facts, Findings } from "@/components/openweights/study";
-import {
-  windowCells,
-  windowConditions,
-  windowControl,
-  windowIdent,
-  windowLinks,
-  windowProbe,
-  windowRatio,
-  type WindowCell,
-} from "@/lib/openweights-window";
+import { Scroll, th, thNum } from "@/components/openweights/pd-parts";
+import Post, { Figure, Findings, More, Note, postMetadata, Row, Rows, Section } from "@/components/research/Post";
+import { windowCells, windowConditions, windowControl, windowIdent, windowLinks, windowProbe, windowRatio, type WindowCell } from "@/lib/openweights-window";
 
-const description =
-  "ExecuTorch fixes a model's context window when the model is exported. The same weights exported at 2k to 32k, on the same prompts and four phone chips: whether that choice changes anything but memory.";
+const href = "/research/window/";
 
-export const metadata: Metadata = {
-  title: "Does the exported window matter? OpenWeights",
-  description,
-  openGraph: { title: "Does the exported window matter?", description, url: "/research/window/" },
-};
-
-function Section({ id, title, tint, children }: { id: string; title: string; tint?: boolean; children: React.ReactNode }) {
-  return (
-    <section id={id} className={`scroll-mt-28 lg:scroll-mt-16 ${tint ? "bg-bench" : ""}`}>
-      <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 sm:py-24">
-        <h2 className={h2}>{title}</h2>
-        <div className="mt-10">{children}</div>
-      </div>
-    </section>
-  );
-}
-
-const Item = ({ lead, children }: { lead: string; children: React.ReactNode }) => (
-  <li>
-    <span className="font-medium text-ink">{lead}</span> {children}
-  </li>
+export const metadata = postMetadata(
+  href,
+  "ExecuTorch fixes a model's context window when the model is exported. The same weights exported at 2k to 32k, on the same prompts and four phone chips: whether that choice changes anything but memory.",
 );
 
-const List = ({ children }: { children: React.ReactNode }) => (
-  <ul className="max-w-3xl list-disc space-y-2 pl-5 leading-7 text-ink-soft marker:text-ink/30">{children}</ul>
-);
-
-// A table that scrolls sideways on narrow screens, focusable so the keyboard can scroll it.
-const Scroll = ({ label, children }: { label: string; children: React.ReactNode }) => (
-  <div
-    role="region"
-    aria-label={`${label}, scrolls sideways on small screens`}
-    tabIndex={0}
-    className="overflow-x-auto rounded-lg focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-blue"
-  >
-    {children}
-  </div>
-);
-
-const th = "pb-3 pr-4 text-left text-xs font-normal text-ink-soft";
-const thNum = "pb-3 pr-4 text-right text-xs font-normal text-ink-soft";
 const td = "py-2 pr-4 text-right";
 const tdL = "py-2 pr-4 text-left";
 const WARN = "text-[#b4452b]";
@@ -78,36 +32,18 @@ const verdicts = [
   { headline: "Answers: no consistent effect", line: "Grades moved between windows about as much as between two runs of the same file." },
   {
     headline: "Speed: close, except Qwen3 at 32k",
-    line: "Paired on the Dimensity 9400, LFM2.5's windows were within 2.4% of each other. Qwen3 at 32k was 5.9% slower to prefill and 4.7% to decode than at 2k.",
+    line: "Paired on the Dimensitys, LFM2.5's windows were within 2.4% of each other. Qwen3 at 32k was 5.9% slower to prefill and 4.7% to decode than at 2k.",
   },
   { headline: "Memory: the one real cost", line: "Qwen3-1.7B at 32k needs over 6 GB at load, and 12 GB phones kill it." },
   {
     headline: "2k is tight for a model that reasons",
     line: "At 2k, 14 of LFM2.5-2.6B's 60 GSM8K and IFEval replies ran into the window. Grades barely moved.",
   },
-  { headline: "Test the two ends first", line: "Run the smallest and largest window; add the middle ones only where those two differ or fail." },
+  {
+    headline: "Test the two ends first",
+    line: "Compute the KV cost first, run the smallest and largest window per model and chip, and add the middle ones only where those two differ or fail.",
+  },
 ];
-
-// One collapsible card per table group, as on the original page. A condition's
-// card carries its model, so picking that condition above the charts opens it.
-function Card({ title, detail, open, model, children }: { title: string; detail: string; open?: boolean; model?: string; children: React.ReactNode }) {
-  return (
-    <details open={open} data-model={model} className="group min-w-0 rounded-[1.5rem] bg-bench">
-      <summary className="flex cursor-pointer list-none flex-wrap items-baseline justify-between gap-x-3 gap-y-1 rounded-[1.5rem] px-5 py-4 sm:px-6 [&::-webkit-details-marker]:hidden">
-        <span className="font-medium">
-          {title} <span className="text-sm font-normal text-ink-soft">{detail}</span>
-        </span>
-        <span className="text-sm text-ink-soft">
-          <span className="group-open:hidden">Show</span>
-          <span className="hidden group-open:inline">Hide</span>
-        </span>
-      </summary>
-      <div className="space-y-4 px-5 pb-6 sm:px-6">{children}</div>
-    </details>
-  );
-}
-
-const Hint = ({ children }: { children: React.ReactNode }) => <p className="max-w-3xl text-sm leading-6 text-ink-soft">{children}</p>;
 
 function ConditionTables({ model, label, open }: { model: string; label: string; open: boolean }) {
   const cells = windowCells.filter((c) => c.model === model);
@@ -117,70 +53,70 @@ function ConditionTables({ model, label, open }: { model: string; label: string;
   const ctrl = windowControl.filter((r) => r.model === model);
   const id = windowIdent.filter((r) => r.model === model);
   return (
-    <Card title={label} detail={`${cells.length} cells, ${model}`} open={open} model={model}>
-      <p className="text-xs text-ink-soft">Scrolls sideways; the phone and window column stays put.</p>
-      <Scroll label={`${label} cells`}>
-        <table className="w-full min-w-[64rem] border-collapse whitespace-nowrap text-sm tabular-nums">
-          <thead>
-            <tr>
-              <th className={`${th} sticky left-0 bg-bench`}>Phone and window</th>
-              <th className={th}>File</th>
-              {["GSM8K", "IFEval", "BFCL", "Capped", "Prefill ms", "ms/token", "Prefill tok/s", "Decode tok/s", "Ran at", "RSS after load MB", "RSS at end MB"].map(
-                (h) => (
+    <More title={label} summary={`${cells.length} cells, ${model}`} open={open} model={model}>
+      <div>
+        <p className="text-xs text-ink-soft">Scrolls sideways; the phone and window column stays put.</p>
+        <Scroll label={`${label} cells`}>
+          <table className="w-full min-w-[64rem] border-collapse whitespace-nowrap text-sm tabular-nums">
+            <thead>
+              <tr>
+                <th className={`${th} sticky left-0 bg-white`}>Phone and window</th>
+                <th className={th}>File</th>
+                {["GSM8K", "IFEval", "BFCL", "Capped", "Prefill ms", "ms/token", "Prefill tok/s", "Decode tok/s", "Ran at", "RSS after load MB", "RSS at end MB"].map((h) => (
                   <th key={h} className={thNum}>
                     {h}
                   </th>
-                ),
-              )}
-            </tr>
-          </thead>
-          <tbody>
-            {cells.map((c, i) => {
-              const first = i === 0 || cells[i - 1].window !== c.window;
-              const lead = (
-                <>
-                  <td className={`${tdL} sticky left-0 bg-bench`}>
-                    {c.phone}, {c.window}
-                  </td>
-                  <td className={tdL}>{c.file}</td>
-                </>
-              );
-              return (
-                <tr key={`${c.phone} ${c.window}`} className={`border-rule ${first ? "border-t-2" : "border-t"}`}>
-                  {lead}
-                  {complete(c) ? (
-                    <>
-                      <td className={td}>{c.gsm8k}</td>
-                      <td className={td}>{c.ifeval}</td>
-                      <td className={td}>{c.bfcl}</td>
-                      <td className={td}>{c.capped}</td>
-                      <td className={td}>{c.prefill_ms}</td>
-                      <td className={td}>{c.ms_tok}</td>
-                      <td className={td}>{c.prefill_tps}</td>
-                      <td className={td}>{c.decode_tps}</td>
-                      <td className={td}>{c.ran_at}</td>
-                      <td className={`${td} ${c.rss_load === "-" ? "text-ink-soft" : ""}`}>{c.rss_load === "-" ? "not logged" : c.rss_load}</td>
-                      <td className={td}>{c.rss_end}</td>
-                    </>
-                  ) : (
-                    <>
-                      <td colSpan={8} className={`${tdL} ${WARN}`}>
-                        {c.gsm8k}
-                      </td>
-                      <td className={td}>{c.ran_at}</td>
-                      <td className={td}>{c.rss_load}</td>
-                      <td className={`${td} text-ink-soft`}>{c.rss_end}</td>
-                    </>
-                  )}
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </Scroll>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {cells.map((c, i) => {
+                const first = i === 0 || cells[i - 1].window !== c.window;
+                const lead = (
+                  <>
+                    <td className={`${tdL} sticky left-0 bg-white`}>
+                      {c.phone}, {c.window}
+                    </td>
+                    <td className={tdL}>{c.file}</td>
+                  </>
+                );
+                return (
+                  <tr key={`${c.phone} ${c.window}`} className={`border-rule ${first ? "border-t-2" : "border-t"}`}>
+                    {lead}
+                    {complete(c) ? (
+                      <>
+                        <td className={td}>{c.gsm8k}</td>
+                        <td className={td}>{c.ifeval}</td>
+                        <td className={td}>{c.bfcl}</td>
+                        <td className={td}>{c.capped}</td>
+                        <td className={td}>{c.prefill_ms}</td>
+                        <td className={td}>{c.ms_tok}</td>
+                        <td className={td}>{c.prefill_tps}</td>
+                        <td className={td}>{c.decode_tps}</td>
+                        <td className={td}>{c.ran_at}</td>
+                        <td className={`${td} ${c.rss_load === "-" ? "text-ink-soft" : ""}`}>{c.rss_load === "-" ? "not logged" : c.rss_load}</td>
+                        <td className={td}>{c.rss_end}</td>
+                      </>
+                    ) : (
+                      <>
+                        <td colSpan={8} className={`${tdL} ${WARN}`}>
+                          {c.gsm8k}
+                        </td>
+                        <td className={td}>{c.ran_at}</td>
+                        <td className={td}>{c.rss_load}</td>
+                        <td className={`${td} text-ink-soft`}>{c.rss_end}</td>
+                      </>
+                    )}
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </Scroll>
+      </div>
       {ctrl.length > 0 && (
-        <>
-          <Hint>Run-to-run control: the same file run twice on the same phone, replies byte-identical.</Hint>
+        <div>
+          <Note>Run-to-run control: the same file run twice on the same phone, replies byte-identical.</Note>
           <Scroll label={`${label} run-to-run control`}>
             <table className="w-full min-w-[30rem] border-collapse whitespace-nowrap text-sm tabular-nums">
               <thead>
@@ -201,14 +137,14 @@ function ConditionTables({ model, label, open }: { model: string; label: string;
               </tbody>
             </table>
           </Scroll>
-        </>
+        </div>
       )}
       {id.length > 0 && others.length > 0 && (
-        <>
-          <Hint>
-            Replies identical to the {largest}k export, per window: raw stream and shown content over the prompts both runs completed, parsed tool calls over
-            the BFCL prompts among them.
-          </Hint>
+        <div>
+          <Note>
+            Replies identical to the {largest}k export, per window: raw stream and shown content over the prompts both runs completed, parsed tool calls over the BFCL prompts among
+            them.
+          </Note>
           <Scroll label={`${label} identical replies`}>
             <table className="w-full min-w-[40rem] border-collapse whitespace-nowrap text-sm tabular-nums">
               <thead>
@@ -235,214 +171,162 @@ function ConditionTables({ model, label, open }: { model: string; label: string;
               </tbody>
             </table>
           </Scroll>
-        </>
+        </div>
       )}
-    </Card>
+    </More>
   );
 }
 
 export default function Window() {
   return (
-    <main id="main" className="scroll-mt-28 lg:scroll-mt-16">
-      <section id="top">
-        <div className="mx-auto max-w-7xl px-4 py-14 sm:px-6 sm:py-20">
-          <nav aria-label="Breadcrumb">
-            <ol className="flex flex-wrap items-center gap-2 text-sm text-ink-soft">
-              <li>
-                <a href="/research/" className="hover:text-ink">
-                  Research
-                </a>
-              </li>
-              <li aria-hidden>/</li>
-              <li>
-                <a href="/research/#openweights" className="hover:text-ink">
-                  OpenWeights
-                </a>
-              </li>
-            </ol>
-          </nav>
-          <p className="mt-8 text-sm text-ink-soft">7 September 2026</p>
-          <h1 className="display mt-2 max-w-4xl text-balance text-5xl font-medium leading-[1.02] tracking-[-0.035em] sm:text-6xl">
-            Does the exported window matter?
-          </h1>
-          <p className="display mt-4 text-2xl leading-tight text-ink-soft sm:text-3xl">ExecuTorch, 2k to 32k</p>
-          <p className={`${lede} mt-6 max-w-3xl`}>
-            ExecuTorch fixes a model&apos;s context window when the model is exported. This page asks whether that choice changes anything but memory.
-          </p>
-          <Facts
-            items={[
-              ["Exports", "The same weights at 2k to 32k"],
-              ["Graded on", "90 prompts: GSM8K, IFEval, BFCL"],
-              ["Ran", "3 models, 4 phones, 23.7 hours"],
-            ]}
-          />
-        </div>
-      </section>
-
-      <Section id="findings" title="Findings" tint>
+    <Post
+      href={href}
+      related={["/research/reruns/", "/research/latency/", "/research/prefill-decode/"]}
+      sources={[
+        { label: "The note", href: windowLinks.note },
+        { label: "The tables", href: windowLinks.tables },
+        { label: "Raw and graded reports", href: windowLinks.results },
+        { label: "Qwen3-1.7B exports on Hugging Face", href: windowLinks.qwen },
+        { label: "Source on GitHub", href: "https://github.com/ExperimentalMachines/openweights" },
+      ]}
+      sourcesNote="The LFM2.5-1.2B and LFM2.5-2.6B exports were also published on Hugging Face, each window a file."
+    >
+      <Section id="findings" title="What we found">
         <Findings items={verdicts} />
       </Section>
 
-      <Section id="figures" title="Every chart, one condition at a time">
-        <p className="mb-8 max-w-3xl leading-7 text-ink-soft">Pick a model or condition; every chart follows.</p>
-        <WindowFigures />
+      <Section id="results" title="The results">
+        <Figure id="figures" title="Every chart, one condition at a time" lede="Pick a model or condition; every chart follows.">
+          <WindowFigures />
+        </Figure>
+
+        <Figure id="notes" title="What else the matrix found">
+          <Rows>
+            <Row label="A missing start token">
+              Every compiled model this app had ever run was fed no start-of-text token: the ExecuTorch 1.4.0 runtime adds one only when asked and the app never asked. LFM2.5-1.2B
+              shrugs it off; LFM2.5-2.6B scored 0 of 30 on GSM8K on every chip until the engine wrote the token itself, and every 2.6B cell here is from the fixed build. The 1.2B
+              cells remain BOS-less as measured: comparable among themselves, and a description of that deployed configuration.
+            </Row>
+            <Row label="A phone that dozes">It throttles instrumentation two to five times with wild variance, so the local runner now wakes the phone and holds it awake.</Row>
+            <Row label="Two 2.6B conditions">
+              Its own template makes it reason before answering, so under the suite&apos;s 640-token cap 16 of 30 GSM8K and 26 of 30 IFEval replies never reached an answer: those
+              rows are cap-censored and kept for their BFCL calls, memory and speed. The rerun at a 2048 cap, GSM8K and IFEval only, is the model&apos;s real score: 23 to 28 of 30
+              and 18 to 21 of 30 on every phone and window, with its same-file repeat moving grades by 2 and its BFCL calls unchanged.
+            </Row>
+            <Row label="Qwen3 32k on 12 GB phones">
+              Samsung&apos;s Heimdall memory guard killed the test process on the Galaxy S25 Ultra and S24+ after 7 to 12 prompts (&quot;Trigger Global kill before GC, Usage 8.67
+              GB, Threshold 6 GB&quot; in the logcats). A rerun on the Poco with logcat attached died the same way after 7: MIUI&apos;s ActivityManager force-stopped it for
+              &quot;used too many pss resource, pss used 8.65 GB, threshold 6 GB&quot;. Only the 16 GB Pixel 10 Pro XL finished. Those cells are marked incomplete and carry no
+              grade or timing.
+            </Row>
+          </Rows>
+        </Figure>
+
+        <Figure
+          id="numbers"
+          title="Every number"
+          lede={
+            <>
+              The full matrix, as rendered from the graded reports by <code className="text-[0.9em]">window_report.py</code>.
+            </>
+          }
+          note="Prefill ms is the runtime's prefill of the whole prompt, the engine-side part of time to first token. ms/token is decode time over generated tokens; replies differ per cell, so it is not a paired comparison. Capped counts replies that ran to the token cap (640, or 384 for BFCL). RSS is resident memory right after load and at the end of the run."
+        >
+          <div className="grid gap-4">
+            {windowConditions.map((c, i) => (
+              <ConditionTables key={c.model} model={c.model} label={c.label} open={i === 0} />
+            ))}
+            <More title="Fixed-prompt speed probe" summary="Dimensitys, 12 files, 929-token prompt, 160-token cap, three turns per load, two interleaved passes">
+              <Note>
+                Phone cooled below 42 C and awake before each load. The second table pairs each turn with the same turn of the model&apos;s smallest window in the same pass.
+              </Note>
+              <Scroll label="Speed probe">
+                <table className="w-full min-w-[56rem] border-collapse whitespace-nowrap text-sm tabular-nums">
+                  <thead>
+                    <tr>
+                      <th className={th}>File</th>
+                      <th className={thNum}>Turns</th>
+                      <th className={th}>Prefill tok/s (median, min to max)</th>
+                      <th className={th}>Decode tok/s (median, min to max)</th>
+                      <th className={thNum}>Prefill ms, 929 tokens</th>
+                      <th className={thNum}>Resident after load MB</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {windowProbe.map((p) => (
+                      <tr key={p.file} className="border-t border-rule">
+                        <td className={tdL}>{p.file}</td>
+                        <td className={td}>{p.turns}</td>
+                        <td className={tdL}>{p.prefill}</td>
+                        <td className={tdL}>{p.decode}</td>
+                        <td className={td}>{p.prefill_ms}</td>
+                        <td className={td}>{p.rss}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </Scroll>
+              <Scroll label="Speed probe against the smallest window">
+                <table className="w-full min-w-[56rem] border-collapse whitespace-nowrap text-sm tabular-nums">
+                  <thead>
+                    <tr>
+                      <th className={th}>File</th>
+                      <th className={th}>Prefill vs smallest window (median ratio, min to max)</th>
+                      <th className={th}>Decode vs smallest window</th>
+                      <th className={thNum}>Paired turns</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {windowRatio.map((p) => (
+                      <tr key={p.file} className="border-t border-rule">
+                        <td className={tdL}>{p.file}</td>
+                        <td className={tdL}>{p.prefill}</td>
+                        <td className={tdL}>{p.decode}</td>
+                        <td className={td}>{p.turns}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </Scroll>
+            </More>
+          </div>
+        </Figure>
       </Section>
 
-      <Section id="notes" title="Notes" tint>
-        <List>
-          <Item lead="Two things the matrix found that it was not looking for.">
-            Every compiled model this app had ever run was fed no start-of-text token: the ExecuTorch 1.4.0 runtime adds one only when asked and the app never
-            asked. LFM2.5-1.2B shrugs it off; LFM2.5-2.6B scored 0 of 30 on GSM8K on every chip until the engine wrote the token itself, and every 2.6B cell
-            here is from the fixed build. The 1.2B cells remain BOS-less as measured: comparable among themselves, and a description of that deployed
-            configuration. And a phone that has dozed throttles instrumentation two to five times with wild variance, so the local runner now wakes the phone
-            and holds it awake.
-          </Item>
-          <Item lead="Two 2.6B conditions.">
-            Its own template makes it reason before answering, so under the suite&apos;s 640-token cap 16 of 30 GSM8K and 26 of 30 IFEval replies never
-            reached an answer: those rows are cap-censored and kept for their BFCL calls, memory and speed. The rerun at a 2048 cap, GSM8K and IFEval only, is
-            the model&apos;s real score: 23 to 28 of 30 and 18 to 21 of 30 on every phone and window, with its same-file repeat moving grades by 2 and its BFCL
-            calls unchanged.
-          </Item>
-          <Item lead="Qwen3 32k on 12 GB phones.">
-            Samsung&apos;s Heimdall memory guard killed the test process on the Galaxy S25 Ultra and S24+ after 7 to 12 prompts (&quot;Trigger Global kill
-            before GC, Usage 8.67 GB, Threshold 6 GB&quot; in the logcats). A rerun on the Poco with logcat attached died the same way after 7: MIUI&apos;s
-            ActivityManager force-stopped it for &quot;used too many pss resource, pss used 8.65 GB, threshold 6 GB&quot;. Only the 16 GB Pixel 10 Pro XL
-            finished. Those cells are marked incomplete and carry no grade or timing.
-          </Item>
-          <Item lead="Not matched conditions.">
-            The Dimensity 9400 ran in hand, cooled below 42 C before each probe load. The 8 Elite, Tensor G5 and Exynos 2400 ran racked on Firebase Test Lab,
-            where phones throttle within about 40 seconds, and had no paired probe: their suite timings are per-cell medians over different replies and do not
-            support a speed claim either way.
-          </Item>
-        </List>
-      </Section>
-
-      <Section id="numbers" title="Every number">
-        <p className="mb-8 max-w-3xl leading-7 text-ink-soft">
-          The full matrix, as rendered from the graded reports by <code className="text-[0.9em]">window_report.py</code>. Prefill ms is the runtime&apos;s
-          prefill of the whole prompt, the engine-side part of time to first token. ms/token is decode time over generated tokens; replies differ per cell, so
-          it is not a paired comparison. Capped counts replies that ran to the token cap (640, or 384 for BFCL). RSS is resident memory right after load and at
-          the end of the run.
-        </p>
-        <div className="grid gap-4">
-          {windowConditions.map((c, i) => (
-            <ConditionTables key={c.model} model={c.model} label={c.label} open={i === 0} />
-          ))}
-          <Card
-            title="Fixed-prompt speed probe"
-            detail="Dimensity 9400, 12 files, 929-token prompt, 160-token cap, three turns per load, two interleaved passes"
+      <Section id="method" title="How we ran it">
+        <Rows>
+          <Row label="Why">
+            To decide whether a full sweep of five windows, five models and four chips (about 50 device hours) was worth running. Five windows of LFM2.5-1.2B ran on the Dimensitys; the other model and phone pairs ran the smallest and largest window.
+          </Row>
+          <Row label="The size of it">The same weights exported at 2k to 32k. 3 models, 4 phones, 23.7 hours.</Row>
+          <Row label="Grading">
+            90 prompts per cell: 30 GSM8K (the last number in the reply must equal the reference), 30 IFEval (every instruction in the prompt must be satisfied, checked by the
+            benchmark&apos;s own code), 30 BFCL (exactly one call to the right function with the right arguments). Greedy decoding, thinking off, replies capped at 640 tokens (384
+            for BFCL). The 2.6B was also rerun at a 2048 cap.
+          </Row>
+          <Row label="Memory per token">LFM2.5 pays 25 to 33 KB per token of window; Qwen3-1.7B pays 224 KB, so its 32k export needs over 6 GB before the first prompt.</Row>
+          <Row label="Review">
+            Codex reviewed the method twice, before and after the data: same-file repeats, a paired speed probe separate from the task eval, a three-way identity metric counted
+            over BFCL only, memory after load, a second architecture, incomplete cells shown as such, and conclusions bounded by the observed run variation. All are in what you see
+            here.
+          </Row>
+        </Rows>
+        <More title="What was run, cell by cell" summary="Windows and repeats per model, the export recipe, and how long each took">
+          <Rows>
+            <Row label="LFM2.5-1.2B">Five windows on the Dimensitys, 16k and 32k twice; 4k and 32k on the cloud chips, 4k twice on the Exynos.</Row>
+            <Row label="LFM2.5-2.6B">
+              2k and 32k on the Dimensity, 2k twice; 4k and 32k on the cloud chips; then GSM8K and IFEval again at a 2048 cap on every one of those cells.
+            </Row>
+            <Row label="Qwen3-1.7B">2k and 32k everywhere, 2k twice on the Dimensity, 32k twice on the Dimensity to catch the kill.</Row>
+            <Row label="Exports">
+              Every file loaded at its own exported window. Exports use ExecuTorch 1.4.0&apos;s recipes: 8-bit dynamic activations, 4-bit weights in groups of 32, 8-bit embeddings,
+              fp32 KV cache, prefill chunk 2048.
+            </Row>
+          </Rows>
+          <Figure
+            title="How long it ran"
+            lede="Minutes the model spent generating, summed over every run in that cell; 23.7 hours in all. Loading, cooling and Test Lab queueing came on top. Run on 2026-09-07."
           >
-            <Hint>
-              Phone cooled below 42 C and awake before each load. The second table pairs each turn with the same turn of the model&apos;s smallest window in
-              the same pass.
-            </Hint>
-            <Scroll label="Speed probe">
-              <table className="w-full min-w-[56rem] border-collapse whitespace-nowrap text-sm tabular-nums">
-                <thead>
-                  <tr>
-                    <th className={th}>File</th>
-                    <th className={thNum}>Turns</th>
-                    <th className={th}>Prefill tok/s (median, min to max)</th>
-                    <th className={th}>Decode tok/s (median, min to max)</th>
-                    <th className={thNum}>Prefill ms, 929 tokens</th>
-                    <th className={thNum}>Resident after load MB</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {windowProbe.map((p) => (
-                    <tr key={p.file} className="border-t border-rule">
-                      <td className={tdL}>{p.file}</td>
-                      <td className={td}>{p.turns}</td>
-                      <td className={tdL}>{p.prefill}</td>
-                      <td className={tdL}>{p.decode}</td>
-                      <td className={td}>{p.prefill_ms}</td>
-                      <td className={td}>{p.rss}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </Scroll>
-            <Scroll label="Speed probe against the smallest window">
-              <table className="w-full min-w-[56rem] border-collapse whitespace-nowrap text-sm tabular-nums">
-                <thead>
-                  <tr>
-                    <th className={th}>File</th>
-                    <th className={th}>Prefill vs smallest window (median ratio, min to max)</th>
-                    <th className={th}>Decode vs smallest window</th>
-                    <th className={thNum}>Paired turns</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {windowRatio.map((p) => (
-                    <tr key={p.file} className="border-t border-rule">
-                      <td className={tdL}>{p.file}</td>
-                      <td className={tdL}>{p.prefill}</td>
-                      <td className={tdL}>{p.decode}</td>
-                      <td className={td}>{p.turns}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </Scroll>
-          </Card>
-        </div>
-      </Section>
-
-      <Section id="method" title="How it was run" tint>
-        <List>
-          <Item lead="Why.">
-            To decide whether a full sweep of five windows, five models and four chips (about 50 device hours) was worth running. Five windows of
-            LFM2.5-1.2B ran on the Dimensity 9400; the other model and phone pairs ran the smallest and largest window.
-          </Item>
-          <Item lead="Grading.">
-            90 prompts per cell: 30 GSM8K (the last number in the reply must equal the reference), 30 IFEval (every instruction in the prompt must be
-            satisfied, checked by the benchmark&apos;s own code), 30 BFCL (exactly one call to the right function with the right arguments). Greedy decoding,
-            thinking off, replies capped at 640 tokens (384 for BFCL). The 2.6B was also rerun at a 2048 cap.
-          </Item>
-          <Item lead="Memory per token of window.">
-            LFM2.5 pays 25 to 33 KB; Qwen3-1.7B pays 224 KB, so its 32k export needs over 6 GB before the first prompt.
-          </Item>
-          <Item lead="The screening rule this suggests.">
-            Compute the KV cost first, run the smallest and largest window per model and chip, and add middle windows only where those two diverge or fail.
-          </Item>
-          <Item lead="What was run.">
-            LFM2.5-1.2B: five windows on the Dimensity 9400, 16k and 32k twice; 4k and 32k on the cloud chips, 4k twice on the Exynos. LFM2.5-2.6B: 2k and 32k
-            on the Dimensity, 2k twice; 4k and 32k on the cloud chips; then GSM8K and IFEval again at a 2048 cap on every one of those cells. Qwen3-1.7B: 2k and
-            32k everywhere, 2k twice on the Dimensity, 32k twice on the Dimensity to catch the kill. Every file loaded at its own exported window. Exports use
-            ExecuTorch 1.4.0&apos;s recipes: 8-bit dynamic activations, 4-bit weights in groups of 32, 8-bit embeddings, fp32 KV cache, prefill chunk 2048.
-          </Item>
-          <Item lead="Review.">
-            Codex reviewed the method twice, before and after the data: same-file repeats, a paired speed probe separate from the task eval, a three-way
-            identity metric counted over BFCL only, memory after load, a second architecture, incomplete cells shown as such, and conclusions bounded by the
-            observed run variation. All are in what you see here.
-          </Item>
-          <Item lead="Where things are.">
-            The note:{" "}
-            <Go href={windowLinks.note} className={link}>
-              executorch-window-matrix.md
-            </Go>
-            . The tables:{" "}
-            <Go href={windowLinks.tables} className={link}>
-              window-matrix.md
-            </Go>
-            . Raw and graded reports:{" "}
-            <Go href={windowLinks.results} className={link}>
-              tools/eval/results
-            </Go>
-            . The exports, each window a file: LFM2.5-1.2B, LFM2.5-2.6B,{" "}
-            <Go href={windowLinks.qwen} className={link}>
-              Qwen3-1.7B
-            </Go>{" "}
-            on Hugging Face.
-          </Item>
-        </List>
-        <div className="mt-12 max-w-2xl">
-          <h3 className="display text-2xl">How long it ran</h3>
-          <p className="mt-1 text-sm text-ink-soft">
-            Minutes the model spent generating, summed over every run in that cell; 23.7 hours in all. Loading, cooling and Test Lab queueing came on top. Run
-            on 2026-09-07.
-          </p>
-          <div className="mt-4">
             <Scroll label="Minutes per cell">
               <table className="w-full min-w-[22rem] border-collapse whitespace-nowrap text-sm tabular-nums">
                 <thead>
@@ -469,26 +353,25 @@ export default function Window() {
                 </tbody>
               </table>
             </Scroll>
-          </div>
-        </div>
-        <p className="mt-12 flex flex-wrap gap-x-6 gap-y-3">
-          <Go href="/research/" className={link}>
-            All research
-          </Go>
-          <Go href="/openweights/" className={link}>
-            OpenWeights
-          </Go>
-          <Go href="/research/latency/" className={link}>
-            Five chips, two runtimes
-          </Go>
-          <Go href="/research/reruns/" className={link}>
-            What the reruns changed
-          </Go>
-          <Go href="https://github.com/ExperimentalMachines/openweights" className={link}>
-            Source on GitHub
-          </Go>
-        </p>
+          </Figure>
+        </More>
       </Section>
-    </main>
+
+      <Section id="limits" title="Limits">
+        <Rows>
+          <Row label="Not matched conditions">
+            The Dimensitys ran in hand, cooled below 42 C before each probe load. The 8 Elite, Tensor G5 and Exynos 2400 ran racked on Firebase Test Lab, where phones throttle
+            within about 40 seconds, and had no paired probe: their suite timings are per-cell medians over different replies and do not support a speed claim either way.
+          </Row>
+          <Row label="Follow-up">
+            The{" "}
+            <Go href="/research/reruns/" className={link}>
+              reruns
+            </Go>{" "}
+            checked every cell of this matrix the same day.
+          </Row>
+        </Rows>
+      </Section>
+    </Post>
   );
 }

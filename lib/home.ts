@@ -28,12 +28,11 @@ export const links = {
   exports: "/executorch",
 };
 
-// The four projects, in the order the page tells them.
+// The projects, in the order the page tells them. ExecuBench returns here and to the homepage when it has results.
 export const projects = [
   { id: "openweights", name: "OpenWeights", line: "Find open models on Hugging Face and chat with them on your phone", status: "On Google Play" },
   { id: "execuserve", name: "ExecuServe", line: "Turn your phone into a local AI server for your apps", status: "On Google Play" },
   { id: "execupack", name: "ExecuPack", line: "Open models built for phone CPUs, GPUs and NPUs", status: "On Hugging Face" },
-  { id: "execubench", name: "ExecuBench", line: "Measurements of those models on real phones", status: "In development" },
 ];
 
 // ExecuPack's published builds (generated from Hugging Face into
@@ -125,34 +124,6 @@ export const upstream = [
       "The exporter and the runner disagreed by one token about the prompt limit, so some prompts failed to prefill.",
     detail: "Our report and fix, opened October 10, 2026.",
     href: `${et}/pull/23679`,
-  },
-];
-
-// Earlier hardware research. The ids keep the /#server, /#laptop and /#phone
-// anchors that earlier versions of the site linked to.
-export const earlier: {
-  id: "server" | "laptop" | "phone";
-  title: string;
-  text: string;
-  href: string;
-}[] = [
-  {
-    id: "server",
-    title: "Server",
-    text: "MI300X, H200, Trainium and Inferentia2",
-    href: "/asic",
-  },
-  {
-    id: "laptop",
-    title: "Laptop",
-    text: "Apple M5 and Snapdragon X2 Elite",
-    href: "https://github.com/alpharomercoma/snapdragon-vs-m5",
-  },
-  {
-    id: "phone",
-    title: "Phone",
-    text: "Snapdragon 8 Elite and Dimensity",
-    href: "https://github.com/alpharomercoma/snapdragon-vs-mediatek",
   },
 ];
 

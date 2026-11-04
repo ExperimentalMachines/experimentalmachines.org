@@ -1,6 +1,6 @@
 // Small pieces the homepage's sections share.
 
-export const link = "text-ink underline decoration-rule underline-offset-4 hover:decoration-ink";
+export const link = "text-blue-deep underline decoration-blue/40 underline-offset-4 hover:decoration-blue";
 
 export const h2 = "display text-4xl font-normal leading-[1.05] tracking-[-0.03em] sm:text-5xl";
 

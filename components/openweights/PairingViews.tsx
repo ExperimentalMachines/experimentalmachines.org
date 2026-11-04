@@ -66,7 +66,7 @@ function Grid({ m, caption, children }: { m: PdModel; caption: string; children:
         <table className="w-full min-w-[19rem] table-fixed border-separate border-spacing-1 text-sm tabular-nums">
           <thead>
             <tr>
-              <th className="w-[16%] pb-1 text-left align-bottom text-[0.7rem] font-normal leading-4 text-ink-soft">
+              <th className="w-[18%] whitespace-nowrap pb-1 text-left align-bottom text-[0.7rem] font-normal leading-4 text-ink-soft">
                 prefill <span aria-hidden>↓</span>
                 <br />
                 decode <span aria-hidden>→</span>

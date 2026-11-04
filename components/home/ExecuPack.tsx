@@ -1,5 +1,5 @@
-import Go from "@/components/home/Go";
-import { h2, lede, link, ProjectLabel } from "@/components/home/ui";
+import { Action, Actions } from "@/components/home/Actions";
+import { h2, lede, ProjectLabel } from "@/components/home/ui";
 import Matrix from "@/components/home/Matrix";
 import { catalogueDate, links, repairs } from "@/lib/home";
 
@@ -13,8 +13,7 @@ export default function ExecuPack() {
             <h2 className={`${h2} mt-6`}>Models built for phone chips.</h2>
           </div>
           <p className={`${lede} max-w-xl`}>
-            ExecuPack turns open checkpoints on Hugging Face into ExecuTorch programs for phone CPUs and GPUs, and for
-            the NPUs in Qualcomm and MediaTek chips. Each one is published with its recipe, at several context windows.
+            Open models built for phone CPUs, GPUs, and Qualcomm and MediaTek NPUs.
           </p>
         </div>
 
@@ -43,17 +42,11 @@ export default function ExecuPack() {
                 </li>
               ))}
             </ul>
-            <p className="mt-auto flex flex-wrap gap-x-5 gap-y-2 pt-8 text-base">
-              <Go href={links.execupackFindings} className={link}>
-                Research log
-              </Go>
-              <Go href={links.huggingface} className={link}>
-                Hugging Face
-              </Go>
-              <Go href={links.exports} className={link}>
-                What ExecuTorch can export
-              </Go>
-            </p>
+            <Actions className="mt-auto pt-8">
+              <Action href={links.execupackFindings}>Research log</Action>
+              <Action href={links.huggingface}>Hugging Face</Action>
+              <Action href={links.exports}>What ExecuTorch can export</Action>
+            </Actions>
           </div>
         </div>
       </div>

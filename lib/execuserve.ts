@@ -9,38 +9,18 @@ export const execuserve = {
   links: {
     repo,
     readme: `${repo}#readme`,
+    issues: `${repo}/issues`,
     results: `${repo}/blob/main/docs/results/2026-09-29-poco-x8-pro-max.md`,
     executorch: "https://pytorch.org/executorch/",
   },
   points: [
-    {
-      title: "A server, not a chat app",
-      body: "The agents, SDKs and tools you already use call a model on your phone the way they call a cloud: OpenAI's Chat Completions, Completions and Responses, and Anthropic's Messages.",
-    },
-    {
-      title: "The KV cache belongs to the server",
-      body: "Clients resend the whole conversation, as both APIs expect; the server keeps the runtime's cache and the exact bytes of each reply, so follow-ups and tool loops still hit it.",
-    },
-    {
-      title: "Several models, one phone",
-      body: "Up to three resident, each with its own cache and endpoints, sharing one compute lane so they never halve each other's speed.",
-    },
-    {
-      title: "Built to stay up",
-      body: "A foreground service with the right locks, tested through forced deep Doze with the screen off. Where a phone maker's ROM can still stop it, the app names what to allow.",
-    },
-    {
-      title: "A browser chat inside",
-      body: "A small chat ships inside the server, so a laptop or tablet on your network can talk to the phone's models with nothing installed.",
-    },
-    {
-      title: "CPU, GPU and NPU",
-      body: "One app runs XNNPACK and Vulkan exports on any phone, and Qualcomm and MediaTek NPU exports on the chips they were compiled for. The catalog offers each phone only the files its own chip can load, and every model says which processor it runs on.",
-    },
-    {
-      title: "A multiplatform core",
-      body: "Everything but the runtime binding and the app shell is Kotlin Multiplatform and compiles for iOS on every build.",
-    },
+    { title: "A server, not a chat app", body: "Your agents, SDKs and tools call the phone the way they call a cloud." },
+    { title: "The KV cache belongs to the server", body: "Clients resend the conversation, and the server reuses its cache, so follow-ups stay fast." },
+    { title: "Several models, one phone", body: "Up to three resident, each with its own cache and endpoints." },
+    { title: "Built to stay up", body: "A foreground service, tested through deep Doze with the screen off." },
+    { title: "A browser chat inside", body: "A laptop on your network can talk to the phone with nothing installed." },
+    { title: "CPU, GPU and NPU", body: "The catalog offers each phone only the files its chip can load." },
+    { title: "Private by construction", body: "No account, no analytics, no crash reporter. Every request needs a key, loopback included." },
   ],
   measured: [
     { check: "Official OpenAI SDK suite", result: "16 of 16 pass" },
@@ -85,6 +65,28 @@ reply = client.messages.create(
 )`,
     },
   },
+  // From the repository's README, "Clients" and "Getting a model onto the phone".
+  clients: [
+    ["OpenAI SDKs, LangChain, Vercel AI SDK", "Base URL `http://<phone>:8080/v1`, plus the key"],
+    ["Anthropic SDKs and agents built on them", "Base URL `http://<phone>:8080`, with no `/v1`, plus the key"],
+    ["Open WebUI", "Settings, Connections, OpenAI API, with the URL `http://<phone>:8080/v1`"],
+    ["codex CLI", 'A provider with `wire_api = "responses"`'],
+    ["Another app on the same phone", "`http://127.0.0.1:8080/v1`, with a network security config allowing loopback"],
+  ],
+  getModel: [
+    ["In the app", "Library, then Browse the catalog, which lists the exports this phone can run"],
+    ["From your computer", "`tools/execuserve --model path/to/Model.pte` pushes it with its tokenizer and starts serving"],
+    ["Have the phone fetch it", "`tools/execuserve pull <hf-repo> <file.pte>` downloads and verifies it on the phone"],
+  ],
+  docs: [
+    { label: "README", href: `${repo}#readme`, what: "Everything the server does, and how to build it" },
+    { label: "Architecture", href: `${repo}/blob/main/docs/ARCHITECTURE.md`, what: "The design, the HTTP API in full, and edge cases" },
+    { label: "Testing on a phone", href: `${repo}/blob/main/docs/TESTING-ON-A-PHONE.md`, what: "From installing to a screen-off soak" },
+    { label: "Results", href: `${repo}/tree/main/docs/results`, what: "Measurements on real phones, with dates" },
+    { label: "Privacy policy", href: "/execuserve/privacy/", what: "What stays on the phone and what leaves" },
+    { label: "Contributing", href: `${repo}/blob/main/CONTRIBUTING.md`, what: "Setting up, the checks, what a change needs" },
+    { label: "Security", href: `${repo}/blob/main/SECURITY.md`, what: "Reporting a vulnerability, and what is in scope" },
+  ],
   endpoints: [
     { path: "POST /v1/chat/completions", what: "Streaming, tools and tool calls, reasoning, usage with cached tokens" },
     { path: "POST /v1/responses", what: "Items, function calls, typed stream events, previous_response_id" },

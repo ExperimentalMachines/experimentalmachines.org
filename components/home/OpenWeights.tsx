@@ -1,3 +1,4 @@
+import { Action, Actions, PrimaryAction } from "@/components/home/Actions";
 import Go from "@/components/home/Go";
 import { h2, lede, link, ProjectLabel } from "@/components/home/ui";
 import { links } from "@/lib/home";
@@ -16,8 +17,7 @@ export default function OpenWeights() {
           <ProjectLabel name="OpenWeights" status="On Google Play" mark="/home/openweights-icon.png" />
           <h2 className={`${h2} mt-6`}>Find a model. Run it here.</h2>
           <p className={`${lede} mt-5 max-w-xl`}>
-            OpenWeights searches Hugging Face for GGUF and ExecuTorch models, estimates whether one fits your phone
-            before you download it, and runs it on the device. No account.
+            Search Hugging Face, see whether a model fits your phone, and run it there. No account.
           </p>
 
           <figure className="mt-10 max-w-md">
@@ -66,28 +66,19 @@ export default function OpenWeights() {
             </figcaption>
           </figure>
 
-          <p className="mt-10 flex flex-wrap items-center gap-x-5 gap-y-3 text-base lg:mt-auto lg:pt-10">
-            <a
-              href={links.play}
-              target="_blank"
-              rel="noreferrer"
-              className="rounded-full bg-[#E0FF4F] px-5 py-2.5 text-sm font-medium text-[#052B42] hover:bg-[#d4f53a]"
-            >
+          <Actions className="mt-10 lg:mt-auto lg:pt-10">
+            <PrimaryAction href={links.play} className="bg-[#E0FF4F] text-[#052B42] hover:bg-[#d4f53a]">
               Get it on Google Play
-            </a>
-            <Go href={links.openweights} className={link}>
-              About OpenWeights
-            </Go>
-            <Go href="/research/#openweights" className={link}>
-              <span className="sr-only">OpenWeights </span>Research
-            </Go>
-            <Go href={links.openweightsRepo} className={link}>
-              <span className="sr-only">OpenWeights </span>Source
-            </Go>
-            <Go href={links.openweightsIos} className={link}>
-              iPhone, experimental
-            </Go>
-          </p>
+            </PrimaryAction>
+            <Action href={links.openweights}>About OpenWeights</Action>
+            <Action href="/research/" context="OpenWeights">
+              Research
+            </Action>
+            <Action href={links.openweightsRepo} context="OpenWeights">
+              Source
+            </Action>
+            <Action href={links.openweightsIos}>iPhone, experimental</Action>
+          </Actions>
         </div>
 
         <div className="grid gap-4 sm:grid-cols-[1.1fr_1fr] sm:items-end">

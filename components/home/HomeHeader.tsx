@@ -6,8 +6,8 @@ import { links } from "@/lib/home";
 // scroll. On the homepage (`home`) its links scroll to the sections; every other
 // page in the organisation's look (components/home/HomeShell.tsx) links back to
 // them, and a project's own pages name it as `current`, which links that project
-// to its page and marks it. Research is first and in stronger type because it is a place of its own
-// rather than a homepage section, and first keeps it in view in the row that scrolls on phones.
+// to its page and marks it. Research and Conferences are first and in stronger type because they are places
+// of their own rather than homepage sections, and first keeps them in view in the row that scrolls on phones.
 const sections = [
   { id: "openweights", label: "OpenWeights" },
   { id: "execuserve", label: "ExecuServe" },
@@ -16,9 +16,10 @@ const sections = [
   { id: "people", label: "People" },
 ];
 
-export default function HomeHeader({ home = false, current }: { home?: boolean; current?: "openweights" | "execuserve" | "research" }) {
+export default function HomeHeader({ home = false, current }: { home?: boolean; current?: "openweights" | "execuserve" | "research" | "conferences" }) {
   const items = [
     { id: "research", label: "Research", href: "/research/", here: current === "research", strong: true },
+    { id: "conferences", label: "Conferences", href: "/conferences/", here: current === "conferences", strong: true },
     ...sections.map((s) => ({
       ...s,
       href: home ? `#${s.id}` : s.id === current ? `/${s.id}/` : `/#${s.id}`,
@@ -46,7 +47,7 @@ export default function HomeHeader({ home = false, current }: { home?: boolean; 
           {/* eslint-disable-next-line @next/next/no-img-element -- a static export serves committed files */}
           <img src="/brand/em-mark-mono-dark.svg" alt="Experimental Machines" width={32} height={32} className="h-8 w-8" />
         </Link>
-        <div className="hidden items-center gap-5 whitespace-nowrap text-[0.95rem] text-white/85 lg:flex xl:gap-8">
+        <div className="hidden items-center gap-5 whitespace-nowrap text-[0.95rem] text-white/85 lg:flex xl:gap-6">
           {items.map((s) => (
             <a
               key={s.id}

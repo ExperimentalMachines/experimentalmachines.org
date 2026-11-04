@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
-import FeaturedStudy from "@/components/home/FeaturedStudy";
-import Go from "@/components/home/Go";
-import ResearchList from "@/components/home/ResearchList";
-import { h2, lede, link, ProjectLabel } from "@/components/home/ui";
+import { DocLinks, Points, ProductSection, RefTable, Steps } from "@/components/home/Docs";
+import { Action, Actions, PrimaryAction } from "@/components/home/Actions";
+import { lede, ProjectLabel } from "@/components/home/ui";
 import { openweights } from "@/lib/openweights";
 
 export const metadata: Metadata = {
@@ -16,17 +15,6 @@ export const metadata: Metadata = {
     images: ["/home/openweights-chat.png"],
   },
 };
-
-function Section({ id, title, tint, children }: { id: string; title: string; tint?: boolean; children: React.ReactNode }) {
-  return (
-    <section id={id} className={`scroll-mt-28 lg:scroll-mt-16 ${tint ? "bg-bench" : ""}`}>
-      <div className="mx-auto max-w-7xl px-4 py-20 sm:px-6 sm:py-28">
-        <h2 className={h2}>{title}</h2>
-        <div className="mt-12">{children}</div>
-      </div>
-    </section>
-  );
-}
 
 function Phone({ src, alt, width, height }: { src: string; alt: string; width: number; height: number }) {
   return (
@@ -43,7 +31,6 @@ function Phone({ src, alt, width, height }: { src: string; alt: string; width: n
 
 export default function OpenWeights() {
   const { links } = openweights;
-  const [, ...earlier] = openweights.research;
   return (
     <main id="main" className="scroll-mt-28 lg:scroll-mt-16">
       <section id="top" className="overflow-hidden">
@@ -57,32 +44,21 @@ export default function OpenWeights() {
               OpenWeights searches Hugging Face for GGUF and ExecuTorch models, estimates whether one fits your phone before you download it, and runs it on
               the device. Every token comes from your own hardware: no account, no cloud, no telemetry.
             </p>
-            <p className="mt-10 flex flex-wrap items-center gap-x-5 gap-y-3 text-base">
-              <a
-                href={links.play}
-                target="_blank"
-                rel="noreferrer"
-                className="rounded-full bg-[#E0FF4F] px-6 py-3 font-medium text-[#052B42] hover:bg-[#d4f53a]"
-              >
+            <Actions className="mt-10">
+              <PrimaryAction href={links.play} className="bg-[#E0FF4F] text-[#052B42] hover:bg-[#d4f53a]">
                 Get it on Google Play
-              </a>
-              <Go href="/research/#openweights" className={link}>
-                Research
-              </Go>
-              <Go href={links.repo} className={link}>
-                Source
-              </Go>
-              <Go href={links.ios} className={link}>
-                iPhone, experimental
-              </Go>
-            </p>
+              </PrimaryAction>
+              <Action href="#start">Quick start</Action>
+              <Action href="#docs">Documentation</Action>
+              <Action href="/research/">Research</Action>
+            </Actions>
           </div>
           <div className="flex items-end justify-center gap-4 rounded-t-[1.75rem] bg-bench px-6 pt-10 sm:gap-6">
             <Phone
               src="/home/openweights-chat.png"
-              alt="OpenWeights on a phone running LFM2.5 1.2B: asked to open experimentalmachines.org, it reads the page with its web tool and sums up what we make in three bullets, at 55 tokens per second"
+              alt="OpenWeights on a phone running LFM2.5 1.2B: asked whether to pack an umbrella in Tokyo tomorrow, it searches the web and says there is a significant chance of rain, then works out that 500 US dollars is about 79,000 yen at 158 yen to the dollar, at about 60 tokens per second"
               width={600}
-              height={1222}
+              height={1212}
             />
             <Phone
               src="/home/openweights-discover.png"
@@ -94,48 +70,43 @@ export default function OpenWeights() {
         </div>
       </section>
 
-      <Section id="features" title="What it does" tint>
-        <dl className="grid gap-x-12 gap-y-10 sm:grid-cols-2 lg:grid-cols-3">
-          {openweights.points.map((p) => (
-            <div key={p.title} className="border-t-2 border-blue pt-4">
-              <dt className="display text-xl">{p.title}</dt>
-              <dd className="mt-2 leading-7 text-ink-soft">{p.body}</dd>
-            </div>
-          ))}
-        </dl>
-      </Section>
+      <ProductSection id="features" title="What it does" tint>
+        <Points items={openweights.points} />
+      </ProductSection>
 
-      <Section id="research" title="Measured on real phones">
-        <FeaturedStudy />
-        <div className="mt-6">
-          <ResearchList items={earlier.map((r) => ({ href: r.href, title: r.title, meta: r.date, line: r.line }))} />
+      <ProductSection id="start" title="Quick start" lede={`${openweights.requirements}, with memory for the model you pick.`}>
+        <Steps items={openweights.quickstart} />
+      </ProductSection>
+
+      <ProductSection id="reference" title="Reference" tint>
+        <div className="space-y-12">
+          <RefTable title="Commands" note="Type one in the message box." head={["Command", "What it does"]} rows={openweights.commands} />
+          <RefTable
+            title="Tools"
+            note="The three that go online start on, and each has its own switch. The rest stay off until you turn them on."
+            head={["Tool", "What it does", "Goes online"]}
+            rows={openweights.tools}
+          />
+          <RefTable title="Two runtimes" note="The app picks by file format." head={["", "llama.cpp", "ExecuTorch"]} rows={openweights.runtimes} />
         </div>
-        <p className="mt-10">
-          <Go href="/research/" className="rounded-full bg-blue px-6 py-3 text-base font-medium text-white hover:bg-blue-deep">
-            All research
-          </Go>
-        </p>
-      </Section>
+      </ProductSection>
 
-      <Section id="source" title="Open source" tint>
+      <ProductSection id="docs" title="Documentation">
+        <DocLinks items={openweights.docs} />
+      </ProductSection>
+
+      <ProductSection id="source" title="Open source" tint>
         <div className="grid gap-8 lg:grid-cols-[1fr_1fr] lg:gap-16">
-          <p className={`${lede} max-w-xl`}>
-            Apache-2.0, on GitHub. {openweights.requirements}; an iPhone version is experimental. Models are published by third parties and their
-            licences are their own.
+          <p className="max-w-xl leading-7 text-ink-soft">
+            Apache-2.0, on GitHub. An iPhone version is experimental. Models are published by third parties and their licences are their own.
           </p>
-          <p className="flex flex-wrap items-start gap-x-6 gap-y-3 text-base lg:justify-end">
-            <Go href={links.repo} className={link}>
-              Source on GitHub
-            </Go>
-            <Go href={links.issues} className={link}>
-              Report a problem
-            </Go>
-            <Go href={links.privacy} className={link}>
-              Privacy policy
-            </Go>
-          </p>
+          <Actions className="items-start lg:justify-end">
+            <Action href={links.repo}>Source on GitHub</Action>
+            <Action href={links.ios}>iPhone, experimental</Action>
+            <Action href={links.issues}>Report a problem</Action>
+          </Actions>
         </div>
-      </Section>
+      </ProductSection>
     </main>
   );
 }

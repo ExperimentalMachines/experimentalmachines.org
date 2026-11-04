@@ -686,7 +686,7 @@ export default function RerunsFigures() {
         </Panel>
         <Panel title="Reply length at 2k and at 32k">
           <Caption>
-            Dimensity 9400, 2048 cap, 60 replies per window, both panels on one scale. Each bar is a 128-token bin of prompt plus reply. At 2k, 14 replies end at
+            Dimensitys, 2048 cap, 60 replies per window, both panels on one scale. Each bar is a 128-token bin of prompt plus reply. At 2k, 14 replies end at
             the window limit of 2048 tokens; at 32k, 10 of 60 reached the reply cap and the rest finished earlier.
           </Caption>
           <Hint />
@@ -755,7 +755,7 @@ export default function RerunsFigures() {
           <Caption>
             What to take from it: the capped rerun&apos;s lower TTFT is a prompt-mix effect, not a speed change. Its 60 GSM8K and IFEval prompts are shorter than
             the 30 BFCL prompts with their tool definitions, which the 640-cap rows include. TPOT, which does not depend on prompt length, agrees within 5% on
-            the Dimensity 9400 and Exynos 2400, differs by 8 to 11% on the 8 Elite and on the Tensor G5 at 4k, and by 26% on the Tensor G5 at 32k (81 then 102
+            the Dimensitys and Exynos 2400, differs by 8 to 11% on the 8 Elite and on the Tensor G5 at 4k, and by 26% on the Tensor G5 at 32k (81 then 102
             ms), the size of the launch-to-launch swing seen on that phone before. Of the five repeats, three agree within 4% on both figures; the 1.2B repeats
             at 32k on the Dimensity and at 4k on the Exynos were 7 to 12% slower the second time.
           </Caption>

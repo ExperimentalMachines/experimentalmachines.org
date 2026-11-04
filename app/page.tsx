@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import ExecuBench from "@/components/home/ExecuBench";
+import Conferences from "@/components/home/Conferences";
 import ExecuPack from "@/components/home/ExecuPack";
 import ExecuServe from "@/components/home/ExecuServe";
 import Hero from "@/components/home/Hero";
@@ -58,11 +58,11 @@ export default function Home() {
       <main id="main" className="scroll-mt-28 lg:scroll-mt-16">
         <Hero />
         <Research />
+        <Conferences />
         <OpenWeights />
         <ExecuServe />
         <ExecuPack />
         <Upstream />
-        <ExecuBench />
         <Team />
       </main>
       <HomeFooter />
