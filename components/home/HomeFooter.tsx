@@ -22,7 +22,7 @@ export default function HomeFooter() {
             , trains small models in the open.
           </p>
         </div>
-        <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm text-ink-soft">
+        <div className="flex flex-wrap gap-x-5 gap-y-2 text-sm text-ink-soft">
           {/* The ASIC and GGUF research have no section on the homepage. */}
           <Link href="/research/" className="font-medium text-ink hover:text-blue-deep">
             Research

@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import FeaturedStudy from "@/components/home/FeaturedStudy";
 import Go from "@/components/home/Go";
 import ResearchList from "@/components/home/ResearchList";
-import { h2, lede, link } from "@/components/home/ui";
+import { lede } from "@/components/home/ui";
 import { openweights } from "@/lib/openweights";
 import type { ResearchItem } from "@/lib/research";
 
@@ -15,17 +15,6 @@ export const metadata: Metadata = {
   openGraph: { title: "Research", description, url: "/research/" },
 };
 
-function Section({ id, title, tint, children }: { id: string; title: string; tint?: boolean; children: React.ReactNode }) {
-  return (
-    <section id={id} className={`scroll-mt-28 lg:scroll-mt-16 ${tint ? "bg-bench" : ""}`}>
-      <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 sm:py-24">
-        <h2 className={h2}>{title}</h2>
-        <div className="mt-10">{children}</div>
-      </div>
-    </section>
-  );
-}
-
 const [, ...earlier] = openweights.research;
 const studies: ResearchItem[] = earlier.map((r) => ({ href: r.href, title: r.title, meta: r.date, line: r.line }));
 
@@ -34,35 +23,37 @@ const areas: ResearchItem[] = [
   { href: "/gguf/", title: "GGUF research", meta: "Research area", line: "The model file llama.cpp runs, measured from a datacenter GPU to a phone." },
 ];
 
+// One column from the title to the last card: this page is a way into the studies, so nothing stands
+// between its title and them.
+const groupTitle = "display text-2xl tracking-[-0.02em] sm:text-3xl";
+
 export default function Research() {
   return (
-    <main id="main" className="scroll-mt-28 lg:scroll-mt-16">
-      <section id="top">
-        <div className="mx-auto max-w-7xl px-4 py-14 sm:px-6 sm:py-20">
-          <h1 className="display max-w-4xl text-balance text-5xl font-medium leading-[1.02] tracking-[-0.035em] sm:text-6xl">Research.</h1>
-          <p className={`${lede} mt-6 max-w-2xl`}>
-            What we measured, on which hardware, and how. Every study links to its committed results.
-          </p>
-        </div>
-      </section>
+    <main id="main" className="mx-auto max-w-7xl scroll-mt-28 px-4 pb-16 pt-12 sm:px-6 sm:pb-20 sm:pt-16 lg:scroll-mt-16">
+      <h1 className="display text-balance text-5xl font-medium leading-[1.02] tracking-[-0.035em] sm:text-6xl">Research.</h1>
+      <p className={`${lede} mt-4 max-w-4xl`}>What we measured, on which hardware, and how. Every study links to its committed results.</p>
 
-      <Section id="openweights" title="OpenWeights, on real phones">
-        <p className="mb-8 max-w-2xl leading-7 text-ink-soft">
-          Studies run for{" "}
-          <Go href="/openweights/" className={link}>
+      <section id="openweights" className="mt-10 scroll-mt-28 lg:scroll-mt-16">
+        <h2 className={groupTitle}>
+          <Go href="/openweights/" className="hover:text-blue-deep">
             OpenWeights
           </Go>
-          , our on-device app, newest first.
-        </p>
-        <FeaturedStudy />
+          , on real phones
+        </h2>
+        <div className="mt-5">
+          <FeaturedStudy />
+        </div>
         <div className="mt-6">
           <ResearchList items={studies} />
         </div>
-      </Section>
+      </section>
 
-      <Section id="areas" title="More research" tint>
-        <ResearchList items={areas} columns={2} />
-      </Section>
+      <section id="areas" className="mt-14 scroll-mt-28 lg:scroll-mt-16">
+        <h2 className={groupTitle}>More research</h2>
+        <div className="mt-5">
+          <ResearchList items={areas} columns={2} />
+        </div>
+      </section>
     </main>
   );
 }
