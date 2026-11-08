@@ -245,7 +245,7 @@ export default function PrefillDecode() {
                     "Soft throttle stays on. Every pairing compared here started in this state",
                     `Hottest processor ${Math.round(pdWarm.gateC[0])} to ${Math.round(pdWarm.gateC[1])} °C as each pairing started; the CPU up to ${Math.round(pdWarm.maxC.cpu)} °C during`,
                   ],
-                  ["Hard throttle on", "CPU cores paused, GPU and NPU slowed further, on top of the soft throttle", `XO thermistor reaches ${pdTrigger.onC} °C`],
+                  ["Hard throttle on", "CPU cores paused and the NPU slowed, on top of the soft throttle. The GPU's cap stayed at 578 MHz", `XO thermistor reaches ${pdTrigger.onC} °C`],
                   ["Hard throttle off, usually about a minute later", "Back to the soft throttle", `XO thermistor below ${pdTrigger.offC} °C`],
                   ["Idle again", "Soft throttle off within about 10 minutes, the one time this was timed", ""],
                 ]}
@@ -257,7 +257,8 @@ export default function PrefillDecode() {
                 </P>
                 <P>
                   The processors share heat: with only the CPU working, the NPU&apos;s sensors read {pdSpread.cpuOnlyNpuC} °C; with the NPU doing nearly all the work, the
-                  CPU&apos;s read {pdSpread.npuOnlyCpuC} °C (Llama 3.2 3B). The XO thermistor warms whichever processor works, so the hard throttle hits all three.
+                  CPU&apos;s read {pdSpread.npuOnlyCpuC} °C (Llama 3.2 3B). The XO thermistor warms whichever processor works. At the hard throttle, CPU cores pause and the NPU
+                  slows; no extra GPU decode slowdown was found.
                 </P>
               </div>
             </div>
@@ -285,7 +286,8 @@ export default function PrefillDecode() {
                 ])}
               />
               <Note>
-                The soft throttle&apos;s CPU and GPU figures compare the same 9 turns of Qwen3 4B on one phone, once with nothing capped and once capped. The NPU&apos;s
+                The soft throttle&apos;s CPU decode and GPU prefill figures compare nine matched Qwen3 4B turns on phone C. The GPU decode figures come from three repeated turn
+                positions on phone B, against one uncapped probe. The NPU&apos;s
                 hard-throttle figures compare the same turns run with and without it: two thirds on Qwen3 4B and Llama 3.2 3B, about half on Qwen3 1.7B.
               </Note>
             </div>
@@ -327,7 +329,7 @@ export default function PrefillDecode() {
                       <code>thermal-pause-3C</code>
                     </Row>
                     <Row label="GPU">
-                      Temperature zones <code>gpuss-*</code>, clock cap <code>thermal_pwrlevel</code>, further slowdown <code>kgsl</code>
+                      Temperature zones <code>gpuss-*</code>, clock cap <code>thermal_pwrlevel</code>, throttle switch <code>kgsl</code>
                     </Row>
                     <Row label="NPU">
                       Temperature zones <code>nsphvx-*</code> and <code>nsphmx-*</code>, slowdown <code>cdsp</code>
@@ -445,6 +447,10 @@ export default function PrefillDecode() {
                 Each wait can then cost milliseconds, hundreds of times per token: enough to turn milliseconds per token into seconds. This fits the code and the timings, but it
                 has not been proven.
               </P>
+              <P>
+                A later run on phone B recorded where the threads ran. During hard throttles the busy threads were on cores 0 and 1 in 99.7% of samples, against all 8 cores the
+                rest of the time: consistent with this account, though a sample shows only the last core a thread ran on.
+              </P>
             </div>
           </div>
 
@@ -467,12 +473,26 @@ export default function PrefillDecode() {
           </div>
 
           <div>
+            <H4>With 2 threads instead of 6</H4>
+            <div className="mt-3 space-y-4">
+              <P>
+                On phone B, after a discarded 6-thread warm-up, Qwen3 4B&apos;s GPU → CPU pairing completed once with 6 threads and once with 2. With 6 it hit the hard throttle 7
+                times. Its 36 steps over half a second added 372 s beyond that threshold, all in or at the edge of a hard throttle. With 2 the XO thermistor peaked at 76.3 °C,
+                under the 78 °C trip, so there was no hard throttle and no step over half a second, but decoding took 13.6% longer, the 6-thread run&apos;s stalls included.
+              </P>
+              <P>
+                This is one pair, and the 2-thread run started with a cooler CPU. No 2-thread run met a hard throttle, so whether 2 threads would get stuck inside one is not known.
+              </P>
+            </div>
+          </div>
+
+          <div>
             <H4>What could fix it</H4>
             <Table
               label="What could fix it"
               head={["Change", "Where", "Status"]}
               rows={[
-                ["Drop to 2 threads as soon as one decode step takes over half a second, then step back up", "App", "Not measured"],
+                ["Drop to 2 threads as soon as one decode step takes over half a second, then step back up", "App", "Switching during a hard throttle was not measured. In one pair, starting with 2 threads avoided it, but decoding took 13.6% longer, including the 6-thread stalls. The 2-thread run started with a cooler CPU"],
                 ["Make a waiting thread give up its core after a short check, instead of holding it", "llama.cpp", "Not measured; must not slow normal decode"],
                 ["Decode on the NPU during the hard throttle", "App", "Not measured; the NPU is slower then too"],
                 ["Read how many cores the app may use, before each step", "App", "Ruled out on this phone: the count stayed at 8 through a logged hard throttle"],
@@ -486,11 +506,12 @@ export default function PrefillDecode() {
         <Rows>
           <Row label="Phones">
             Four {pdPhone.soc} phones of the same kind (A to D), Android 16, root shell, on AC power in Qualcomm Device Cloud&apos;s rack, {pdPhone.dates}. Each model ran all nine
-            of its pairings on one phone, in one run, except Qwen3 4B&apos;s GPU → CPU, run again on phone D because it had started cool.
+            of its pairings on one phone, in one run, except Qwen3 4B&apos;s GPU → CPU, run again on phone D because it had started cool. The 2-thread run and the GPU&apos;s
+            throttle costs ran on phone B on 8 and 9 November.
           </Row>
           <Row label="Runtime">
             llama.cpp {pdPhone.llamacpp} with its CPU, OpenCL (GPU) and Hexagon (NPU) backends in one process. When prefill and decode run on different processors, the conversation
-            state is copied across every turn. The CPU used 6 threads.
+            state is copied across every turn. The matrix runs used 6 CPU threads; the later thread test compared 6 with 2.
           </Row>
           <Row label="Models">
             Qwen3 0.6B, 1.7B and 4B; Gemma 3 1B; Llama 3.2 1B and 3B; LFM2.5 1.2B and 2.6B. All in Q4_0, the 4-bit format all three backends speed up, and Qwen3 1.7B also in Q8_0,
@@ -511,8 +532,14 @@ export default function PrefillDecode() {
       <Section id="limits" title="Limits">
         <div id="tilt" className="scroll-mt-28 lg:scroll-mt-16">
           <Rows>
-            <Row label="Against the CPU">6 threads throughout. Fewer threads might avoid getting stuck in the hard throttle; that is not tested here.</Row>
-            <Row label="Against the GPU">One GPU backend, llama.cpp&apos;s OpenCL. Its slowdown on long conversations may be the backend, not the chip.</Row>
+            <Row label="Against the CPU">
+              The matrix uses 6 threads in every pairing. One later 2-thread run stayed out of the hard throttle; it is one pair, and 4 threads, the app&apos;s usual count on this
+              phone, was not tried.
+            </Row>
+            <Row label="Against the GPU">
+              One GPU backend, llama.cpp&apos;s OpenCL, capped at 578 MHz in every matrix pairing compared. In one uncapped three-turn probe, GPU decode also slowed at later
+              turns, so the logged cap and CPU pauses cannot fully explain it. This probe does not separate context length from other turn effects or identify the cause.
+            </Row>
             <Row label="The NPU">
               One llama.cpp build; newer builds change its NPU backend. NPU decode also uses the CPU for the output layer and the embedding lookup; how much of its time that takes
               was not measured.
