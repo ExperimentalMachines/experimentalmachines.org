@@ -20,7 +20,7 @@ export type PublishedRepo = {
   builds: PublishedBuild[];
 };
 
-export const publishedAsOf = "2026-10-31";
+export const publishedAsOf = "2026-11-09";
 
 export const publishedRepos: PublishedRepo[] = [
   {
@@ -313,6 +313,40 @@ export const publishedRepos: PublishedRepo[] = [
     ]
   },
   {
+    "id": "experimentalmachines/Phi-4-mini-instruct-3.8B-ExecuTorch",
+    "name": "Phi-4-mini-instruct-3.8B",
+    "family": "phi4_mini",
+    "source": "microsoft/Phi-4-mini-instruct",
+    "sha": "8fd57af4479cae3406b48cf45ad00acf97e969f0",
+    "lastModified": "2026-11-09",
+    "builds": [
+      {
+        "backend": "vulkan",
+        "chip": null,
+        "recipe": "8da4w GPTQ",
+        "windows": [
+          2048,
+          4096,
+          8192,
+          16384,
+          32768
+        ]
+      },
+      {
+        "backend": "xnnpack",
+        "chip": null,
+        "recipe": "8da4w GPTQ",
+        "windows": [
+          2048,
+          4096,
+          8192,
+          16384,
+          32768
+        ]
+      }
+    ]
+  },
+  {
     "id": "experimentalmachines/Qwen2.5-0.5B-Instruct-ExecuTorch",
     "name": "Qwen2.5-0.5B-Instruct",
     "family": "qwen2_5",
@@ -351,8 +385,8 @@ export const publishedRepos: PublishedRepo[] = [
     "name": "Qwen2.5-1.5B-Instruct",
     "family": "qwen2_5",
     "source": "Qwen/Qwen2.5-1.5B-Instruct",
-    "sha": "0a912670f4bf6039d0192cc420960039bff0d402",
-    "lastModified": "2026-10-03",
+    "sha": "da3df2185906187e1a7f4448e7df3d41b0cfda31",
+    "lastModified": "2026-11-09",
     "builds": [
       {
         "backend": "vulkan",
@@ -369,12 +403,13 @@ export const publishedRepos: PublishedRepo[] = [
       {
         "backend": "xnnpack",
         "chip": null,
-        "recipe": "8da4w",
+        "recipe": "8da4w GPTQ",
         "windows": [
           2048,
           4096,
           8192,
-          16384
+          16384,
+          32768
         ]
       }
     ]
@@ -615,6 +650,40 @@ export const publishedRepos: PublishedRepo[] = [
           4096
         ]
       },
+      {
+        "backend": "vulkan",
+        "chip": null,
+        "recipe": "8da4w",
+        "windows": [
+          2048,
+          4096,
+          8192,
+          16384,
+          32768
+        ]
+      },
+      {
+        "backend": "xnnpack",
+        "chip": null,
+        "recipe": "8da4w GPTQ",
+        "windows": [
+          2048,
+          4096,
+          8192,
+          16384,
+          32768
+        ]
+      }
+    ]
+  },
+  {
+    "id": "experimentalmachines/Qwen3-4B-Thinking-2507-ExecuTorch",
+    "name": "Qwen3-4B-Thinking-2507",
+    "family": "qwen3",
+    "source": "Qwen/Qwen3-4B-Thinking-2507",
+    "sha": "e8f944c7e32ddd4b242380324bc322432dc8e583",
+    "lastModified": "2026-11-09",
+    "builds": [
       {
         "backend": "vulkan",
         "chip": null,

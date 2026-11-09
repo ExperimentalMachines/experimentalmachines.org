@@ -339,7 +339,7 @@ export const runtimeNotes = {
   vulkanDevice:
     "Vulkan files have run through the apps on three GPUs: a Mali-G925 (Dimensity), an Adreno 750 (Snapdragon 8 Gen 3) and the Snapdragon 8 Elite Gen 5's. On the last, Qwen3-1.7B at 4k decodes at 42 tokens per second on the GPU against 54 on the CPU, and reads a 700-token prompt about twice as fast; on the Mali the CPU decodes two to four times faster.",
   gate:
-    "XNNPACK files marked 8da4w GPTQ or fp32 linears passed execupack's decision gate against the fp32 model before publishing. Qwen2.5-1.5B-Instruct's are the older round-to-nearest build, which fails that gate, and no int4 build of it passes; its fp32 file would be 6.2 GB.",
+    "XNNPACK files marked 8da4w GPTQ or fp32 linears passed execupack's decision gate against the fp32 model before publishing, with one exception: Phi-4-mini-instruct-3.8B's keep 7 of the 8 tool calls its fp32 model is sure of, under the gate's 90%, and were published past it on the operator's decision, which each report records (fp32 itself is near a tie on those rows, 0.40 to 0.78, and an all-int8 build that keeps all 8 is 1.4 times the size). Qwen3-4B-Thinking-2507's pass, but there the gate measures little: the model reasons before it decides, so its first token is the same on every row. A Vulkan file marked 8da4w GPTQ carries the same solved codes as the XNNPACK file of its window, which stands as its gate; a plain 8da4w Vulkan file is rounded to nearest and ungated.",
   nextRelease:
     "ExecuTorch 1.6.0 is at release candidate (rc1, tagged 2026-10-30). Exports stay on 1.5.1, the runtime both apps ship, until the apps move; execupack's LFM3 definition already exports and runs under 1.6.0.",
   lfm3:
