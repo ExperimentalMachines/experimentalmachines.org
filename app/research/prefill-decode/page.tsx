@@ -477,8 +477,11 @@ export default function PrefillDecode() {
                 heat, the app would keep {pdStall.app.normal} threads throughout.
               </P>
               <P>
-                With the pause set by hand, a single benchmark run with {pdStall.app.normal} threads finished no turn within 10 minutes. The app attaches a persistent thread pool to
-                each model context, which the benchmark does not, so the app itself was not measured.
+                With the pause set by hand on a fifth phone of the same kind (E), the app&apos;s own engine, which keeps its threads in a pool for the life of the model,
+                had its median decode rate fall to about a hundredth with {pdStall.app.normal} threads: 0.24 tokens a second against 23.1, in four
+                runs each, a token every 4.1 seconds on average. With 3 it decoded at 0.51; with 2 at 10.6, 46% of its unpaused rate with 2 threads. With the pause held
+                through a whole run, the engine at its usual {pdStall.app.normal} threads decoded about 95 times slower. These runs used Qwen3 4B, a 19-token prompt and a 64-token
+                reply; the thread pool was the app&apos;s, but its heat policy, which picks the thread count before each reply, was not in the loop.
               </P>
             </div>
           </div>
@@ -492,7 +495,11 @@ export default function PrefillDecode() {
                 under the 78 °C trip, so there was no hard throttle and no step over half a second, but decoding took 13.6% longer, the 6-thread run&apos;s stalls included.
               </P>
               <P>
-                This is one pair, and the 2-thread run started with a cooler CPU. Inside a hard throttle set by hand, 2 threads did not get stuck (above). Switching from 6 threads
+                This is one pair, and the 2-thread run started with a cooler CPU. A rerun on phone E started every run after the same cooling gate, in the order 6, 2, 2, 6.
+                The 6-thread run whose first turn began at a similar temperature to the 2-thread runs&apos; (48.0 against 48.4 and 48.6 °C on
+                the XO thermistor) hit the hard throttle 3 times, with 189 s beyond the half-second threshold; the
+                2-thread runs stayed under the trip but still took 24% longer to decode than it, stalls included. The first 6-thread run, the day&apos;s first and cooler, stayed
+                under the trip and decoded 61% faster than the 2-thread runs. Inside a hard throttle set by hand, 2 threads did not get stuck (above). Switching from 6 threads
                 to 2 whenever the throttle switches read on, with the throttle turned on and off every 15 seconds, decoded at 4.3 to 6.3 tokens a second during the throttle,
                 against 0.3 to 0.9 without switching, and finished the same work in 21% less time (median decode times). The rates during the throttle split each step by how much
                 of it the throttle covered, and the CPU&apos;s ceilings also differed between the two. It read the switches as root; whether an app can read them was not tested.
@@ -519,14 +526,14 @@ export default function PrefillDecode() {
       <Section id="method" title="How we ran it">
         <Rows>
           <Row label="Phones">
-            Four {pdPhone.soc} phones of the same kind (A to D), Android 16, root shell, on AC power in Qualcomm Device Cloud&apos;s rack, {pdPhone.dates}. Each model ran all nine
+            Five {pdPhone.soc} phones of the same kind (A to E), Android 16, root shell, on AC power in Qualcomm Device Cloud&apos;s rack, {pdPhone.dates}. Each model ran all nine
             of its pairings on one phone, in one run, except Qwen3 4B&apos;s GPU → CPU, run again on phone D because it had started cool. The 2-thread run and the GPU&apos;s
-            throttle costs ran on phone B on 8 and 9 November, and the throttles set by hand on phone B on 9 November.
+            throttle costs ran on phone B on 8 and 9 November, and the throttles set by hand on phone B on 9 November; the 2-thread rerun and the app&apos;s own engine on phone E the same day.
           </Row>
           <Row label="Runtime">
             llama.cpp {pdPhone.llamacpp} with its CPU, OpenCL (GPU) and Hexagon (NPU) backends in one process. When prefill and decode run on different processors, the conversation
             state is copied across every turn. The matrix runs used 6 CPU threads; later tests compared 6 with 2 in natural heat, and 6, 4, 3 and 2 with the hard throttle
-            set by hand.
+            set by hand, in the benchmark and in the app&apos;s own engine.
           </Row>
           <Row label="Models">
             Qwen3 0.6B, 1.7B and 4B; Gemma 3 1B; Llama 3.2 1B and 3B; LFM2.5 1.2B and 2.6B. All in Q4_0, the 4-bit format all three backends speed up, and Qwen3 1.7B also in Q8_0,
@@ -548,8 +555,8 @@ export default function PrefillDecode() {
         <div id="tilt" className="scroll-mt-28 lg:scroll-mt-16">
           <Rows>
             <Row label="Against the CPU">
-              The matrix uses 6 threads in every pairing. With the hard throttle set by hand, 6 and 4 threads got stuck and 2 did not, on repeated work in the benchmark rather
-              than the app; in natural heat, 2 threads against 6 is one pair.
+              The matrix uses 6 threads in every pairing. With the hard throttle set by hand, 6 and 4 threads got stuck and 2 did not, in the benchmark and in the app&apos;s
+              own engine, on short repeated work; in natural heat, 2 threads against 6 is one pair on phone B and one balanced set of four runs on phone E.
             </Row>
             <Row label="Against the GPU">
               One GPU backend, llama.cpp&apos;s OpenCL, capped at 578 MHz in every matrix pairing compared. In one uncapped three-turn probe, GPU decode also slowed at later
