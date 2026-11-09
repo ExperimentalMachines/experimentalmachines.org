@@ -71,7 +71,8 @@ export default function ModelFinder({
   const labelId = useId();
   const shown = only ? rows.filter((r) => r.cells[only].kind === "built") : rows;
   const count = (t: TargetKey) => rows.filter((r) => r.cells[t].kind === "built").length;
-  const dim = (t: TargetKey) => (only && only !== t ? "opacity-35" : "");
+  // The chosen target's column is tinted; the others keep full contrast, since they stay readable and clickable.
+  const mark = (t: TargetKey) => (only === t ? "bg-bench" : "");
   const pill = (on: boolean) => `inline-flex min-h-11 items-center gap-2 rounded-full border px-4 text-sm ${on ? "border-ink bg-ink text-white" : "border-rule bg-white hover:border-ink"}`;
   const n = (on: boolean) => `tabular-nums ${on ? "text-white/70" : "text-ink-soft"}`;
   return (
@@ -111,7 +112,7 @@ export default function ModelFinder({
                   Model
                 </th>
                 {targets.map((t) => (
-                  <th key={t.key} scope="col" className={`w-[18%] pb-3 pr-4 text-left font-normal transition-opacity ${dim(t.key)}`}>
+                  <th key={t.key} scope="col" className={`w-[18%] rounded-t-lg px-2 pb-3 pt-2 text-left font-normal ${mark(t.key)}`}>
                     <span className="block text-sm font-medium text-ink">{t.label}</span>
                     <span className="block">{t.detail}</span>
                   </th>
@@ -138,7 +139,7 @@ export default function ModelFinder({
                       <span className="mt-0.5 block text-xs text-ink-soft">Updated {r.updated}</span>
                     </th>
                     {targets.map((t) => (
-                      <td key={t.key} className={`py-2.5 pr-4 transition-opacity ${dim(t.key)}`}>
+                      <td key={t.key} className={`px-2 py-2.5 ${mark(t.key)}`}>
                         <Cell c={r.cells[t.key]} slots={slots} version={version} />
                       </td>
                     ))}

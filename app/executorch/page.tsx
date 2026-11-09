@@ -222,12 +222,12 @@ export default function ExecuPackPage() {
     {
       key: "xnnpack" as const,
       name: "XNNPACK",
-      body: "Runs on any arm64 Android phone, in both apps. Linear layers hold int4 weights solved with GPTQ, and activations are quantized to int8 as it runs. The file to start with on any phone.",
+      body: "Runs on any arm64 Android phone, in both apps. Linear layers hold int4 weights solved with GPTQ, except in two small models that keep fp32 ones, and activations are quantized to int8 as it runs. The file to start with on any phone.",
     },
     {
       key: "vulkan" as const,
       name: "Vulkan",
-      body: "Runs on any phone with Vulkan, in both apps, from the same int4 weights as the CPU file of its window. On a Snapdragon 8 Elite Gen 5 it reads a 700-token prompt about twice as fast as the CPU and writes slower, 42 tokens per second against 54 (Qwen3-1.7B at 4k); on a Mali GPU the CPU writes two to four times faster.",
+      body: "Runs on any phone with Vulkan, in both apps, from the same int4 weights as a CPU build of its window. Which is faster depends on the GPU. With Qwen3-0.6B at 2k on a Snapdragon 8 Elite Gen 5, the GPU read a 702-token prompt faster than the CPU and wrote faster after it, 61 to 64 tokens per second against 50 to 51, but slower after a 27-token prompt; on a Mali-G925 the CPU wrote 2.2 to 3.9 times faster.",
     },
     {
       key: "qnn" as const,
@@ -237,7 +237,7 @@ export default function ExecuPackPage() {
     {
       key: "mtk" as const,
       name: `NeuroPilot, ${mtkChip}`,
-      body: `Compiled for the ${mtkChip} (Dimensity 9400, 9500s) and loads only there, in ExecuServe, on MediaTek's recipe of 16-bit activations and 8-bit weights. LFM2.5-1.2B at 2k runs with the NPU reading the prompt and the CPU writing the reply.`,
+      body: `Compiled for the ${mtkChip} (Dimensity 9400, 9500s) and loads only there, in ExecuServe. The files keep 8-bit weights (A16W8), not the 4-bit ones of MediaTek's stock recipe, which measured 110 times further from fp32 on LFM2.5-1.2B. LFM2.5-1.2B at 2k runs with the NPU reading the prompt and the CPU writing the reply.`,
     },
   ];
 
@@ -314,7 +314,7 @@ export default function ExecuPackPage() {
         id="checks"
         tint
         title="Checked before it ships"
-        lede="A CPU file goes through every step below before it is published. A GPU file is built from the same weights as a gated CPU build of its window. NPU files follow Qualcomm's and MediaTek's own recipes and are checked for structure."
+        lede="The recipe for a CPU file, step by step. A GPU file is built from the same weights as a gated CPU build of its window. Where a published file differs from the recipe, the exceptions below say how and why. NPU files are quantized by Qualcomm's and MediaTek's own tools and checked for structure."
       >
         <Steps items={pipelineSteps} />
 
@@ -434,10 +434,15 @@ export default function ExecuPackPage() {
         </div>
       </ProductSection>
 
-      <ProductSection id="next" tint title="Still to build" lede={`Everything ExecuTorch ${executorchVersion} can export for these models that is not on Hugging Face yet.`}>
+      <ProductSection
+        id="next"
+        tint
+        title="Still to build"
+        lede={`Every target ExecuTorch ${executorchVersion} can build for these models that has no files on Hugging Face yet. On a target that has some, the missing windows are the empty blocks in the finder.`}
+      >
         <div className="space-y-12">
           {[
-            { title: "Missing from published models", items: missingOnPublished },
+            { title: "Targets missing from published models", items: missingOnPublished },
             { title: "Checkpoints with no repo yet", items: unpublished },
           ].map((group) => (
             <div key={group.title}>

@@ -370,7 +370,7 @@ export const pipelineSteps: { title: string; body: string }[] = [
   },
   {
     title: "Export",
-    body: "ExecuTorch builds one file per context window, from 2k to 32k tokens. A window's GPU file is built from the same solved weights as its CPU file.",
+    body: "ExecuTorch builds one file per context window, from 2k to 32k tokens. A window's GPU file is built from the same solved weights as a CPU build of that window.",
   },
   {
     title: "Run",
@@ -417,7 +417,7 @@ export const exceptions: { model: string; body: string }[] = [
   },
 ];
 
-// When every int4 CPU and GPU file on the Hub became GPTQ (execupack's research log, findings 43 to 45), and
-// the byte scan of every file that followed (execupack's tools/codecheck).
+// When the last round-to-nearest files went, and the byte check each rebuilt file passed before publishing
+// (execupack's PLAN.md, "No round-to-nearest CPU or GPU file is published", and research findings 43 to 45).
 export const rollout =
-  "On 9 November 2026 the last round-to-nearest CPU and GPU files were replaced, and the weights in every CPU and GPU file on the Hub were read back from its bytes and checked against what its report says it is.";
+  "No CPU or GPU file on the Hub is rounded to nearest. The last ones, every GPU file, were rebuilt from solved weights on 9 November 2026, and before each new file was published its int4 linear layers were read back from its bytes and matched to the solve that made them.";
