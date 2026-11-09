@@ -24,6 +24,29 @@ export const publishedAsOf = "2026-11-09";
 
 export const publishedRepos: PublishedRepo[] = [
   {
+    "id": "experimentalmachines/gemma-3-1b-it-ExecuTorch",
+    "name": "gemma-3-1b-it",
+    "family": "gemma3",
+    "source": "google/gemma-3-1b-it",
+    "sha": "ec656e009fa8020c345e38b5fcba164a140abee5",
+    "lastModified": "2026-11-09",
+    "builds": [
+      {
+        "backend": "mtk",
+        "chip": "MT6991",
+        "recipe": "A16W8",
+        "windows": [
+          512,
+          2048,
+          4096,
+          8192,
+          16384,
+          32768
+        ]
+      }
+    ]
+  },
+  {
     "id": "experimentalmachines/LFM2.5-1.2B-Instruct-ExecuTorch",
     "name": "LFM2.5-1.2B-Instruct",
     "family": "lfm2",
@@ -206,8 +229,8 @@ export const publishedRepos: PublishedRepo[] = [
     "name": "Llama-3.2-1B-Instruct",
     "family": "llama3_2",
     "source": "meta-llama/Llama-3.2-1B-Instruct",
-    "sha": "aece9782d82b6f6dd63cfc0cff42828413c382b1",
-    "lastModified": "2026-10-08",
+    "sha": "08c5ee382572104634ed2e7c4d51e057c7184dd8",
+    "lastModified": "2026-11-09",
     "builds": [
       {
         "backend": "mtk",
@@ -234,7 +257,7 @@ export const publishedRepos: PublishedRepo[] = [
       {
         "backend": "vulkan",
         "chip": null,
-        "recipe": "8da4w",
+        "recipe": "8da4w GPTQ",
         "windows": [
           2048,
           4096,
@@ -262,8 +285,8 @@ export const publishedRepos: PublishedRepo[] = [
     "name": "Llama-3.2-3B-Instruct",
     "family": "llama3_2",
     "source": "meta-llama/Llama-3.2-3B-Instruct",
-    "sha": "7c23fbadcc624206a7a22666bd603b8774fbe07d",
-    "lastModified": "2026-10-08",
+    "sha": "f656288c3dcfddfbaede2ef11b0df7cf30e4d715",
+    "lastModified": "2026-11-09",
     "builds": [
       {
         "backend": "mtk",
@@ -289,7 +312,7 @@ export const publishedRepos: PublishedRepo[] = [
       {
         "backend": "vulkan",
         "chip": null,
-        "recipe": "8da4w",
+        "recipe": "8da4w GPTQ",
         "windows": [
           2048,
           4096,
@@ -351,13 +374,13 @@ export const publishedRepos: PublishedRepo[] = [
     "name": "Qwen2.5-0.5B-Instruct",
     "family": "qwen2_5",
     "source": "Qwen/Qwen2.5-0.5B-Instruct",
-    "sha": "cff4d0471726bcb582f0d013a74ba36f26d86ff6",
-    "lastModified": "2026-10-03",
+    "sha": "970e1555fddae3d02f7bed9d200a78060bbf3b09",
+    "lastModified": "2026-11-09",
     "builds": [
       {
         "backend": "vulkan",
         "chip": null,
-        "recipe": "8da4w",
+        "recipe": "8da4w GPTQ",
         "windows": [
           2048,
           4096,
@@ -385,13 +408,13 @@ export const publishedRepos: PublishedRepo[] = [
     "name": "Qwen2.5-1.5B-Instruct",
     "family": "qwen2_5",
     "source": "Qwen/Qwen2.5-1.5B-Instruct",
-    "sha": "da3df2185906187e1a7f4448e7df3d41b0cfda31",
+    "sha": "09df654dfc6dfd40d9bedf14261159d28049f434",
     "lastModified": "2026-11-09",
     "builds": [
       {
         "backend": "vulkan",
         "chip": null,
-        "recipe": "8da4w",
+        "recipe": "8da4w GPTQ",
         "windows": [
           2048,
           4096,
@@ -419,13 +442,13 @@ export const publishedRepos: PublishedRepo[] = [
     "name": "Qwen2.5-3B-Instruct",
     "family": "qwen2_5",
     "source": "Qwen/Qwen2.5-3B-Instruct",
-    "sha": "02ce1e421aaa50e64f895b77ec8ee6e6d678a515",
-    "lastModified": "2026-10-04",
+    "sha": "1abbf8a9c4abb3882f67eab48d50f1c4b5afed4d",
+    "lastModified": "2026-11-09",
     "builds": [
       {
         "backend": "vulkan",
         "chip": null,
-        "recipe": "8da4w",
+        "recipe": "8da4w GPTQ",
         "windows": [
           2048,
           4096,
@@ -453,13 +476,13 @@ export const publishedRepos: PublishedRepo[] = [
     "name": "Qwen2.5-Math-1.5B-Instruct",
     "family": "qwen2_5",
     "source": "Qwen/Qwen2.5-Math-1.5B-Instruct",
-    "sha": "aa5e6b9e4b4a41767dfbaeaac1dcd98b29560620",
-    "lastModified": "2026-10-03",
+    "sha": "236f0bcbdd574fb8d94f31918287e1650dc81bb8",
+    "lastModified": "2026-11-09",
     "builds": [
       {
         "backend": "vulkan",
         "chip": null,
-        "recipe": "8da4w",
+        "recipe": "8da4w GPTQ",
         "windows": [
           2048,
           4096,
@@ -487,8 +510,8 @@ export const publishedRepos: PublishedRepo[] = [
     "name": "Qwen3-0.6B",
     "family": "qwen3",
     "source": "Qwen/Qwen3-0.6B",
-    "sha": "07f9ba4bd321668eb901dc45b1bf55b452e242be",
-    "lastModified": "2026-10-07",
+    "sha": "ac595648d690a5da389465e300de587dc801d236",
+    "lastModified": "2026-11-09",
     "builds": [
       {
         "backend": "mtk",
@@ -510,21 +533,9 @@ export const publishedRepos: PublishedRepo[] = [
         ]
       },
       {
-        "backend": "vulkan",
-        "chip": null,
-        "recipe": "8da4w",
-        "windows": [
-          2048,
-          4096,
-          8192,
-          16384,
-          32768
-        ]
-      },
-      {
         "backend": "xnnpack",
         "chip": null,
-        "recipe": "8da4w GPTQ",
+        "recipe": "fp32 linears",
         "windows": [
           2048,
           4096,
@@ -540,8 +551,8 @@ export const publishedRepos: PublishedRepo[] = [
     "name": "Qwen3-1.7B",
     "family": "qwen3",
     "source": "Qwen/Qwen3-1.7B",
-    "sha": "7245b5590b069e10781aa4f38f9da8e57981d1fe",
-    "lastModified": "2026-10-08",
+    "sha": "f5a633d4b020e84adc10f58ca3a04a3230fa4fdf",
+    "lastModified": "2026-11-09",
     "builds": [
       {
         "backend": "mtk",
@@ -567,7 +578,7 @@ export const publishedRepos: PublishedRepo[] = [
       {
         "backend": "vulkan",
         "chip": null,
-        "recipe": "8da4w",
+        "recipe": "8da4w GPTQ",
         "windows": [
           2048,
           4096,
@@ -595,8 +606,8 @@ export const publishedRepos: PublishedRepo[] = [
     "name": "Qwen3-4B",
     "family": "qwen3",
     "source": "Qwen/Qwen3-4B",
-    "sha": "ee28bb1356e4a2b243a8d796988073238df35877",
-    "lastModified": "2026-10-04",
+    "sha": "73b7ac63b6aeab0d6ad82a3f6e40f4d5c1813b32",
+    "lastModified": "2026-11-09",
     "builds": [
       {
         "backend": "mtk",
@@ -610,7 +621,7 @@ export const publishedRepos: PublishedRepo[] = [
       {
         "backend": "vulkan",
         "chip": null,
-        "recipe": "8da4w",
+        "recipe": "8da4w GPTQ",
         "windows": [
           2048,
           4096,
@@ -638,8 +649,8 @@ export const publishedRepos: PublishedRepo[] = [
     "name": "Qwen3-4B-Instruct-2507",
     "family": "qwen3",
     "source": "Qwen/Qwen3-4B-Instruct-2507",
-    "sha": "3967479600e85fda68e48724a958091a481bb455",
-    "lastModified": "2026-10-04",
+    "sha": "cf3693e336c611ae4e55f268f8d265b9e54e4dd8",
+    "lastModified": "2026-11-09",
     "builds": [
       {
         "backend": "mtk",
@@ -653,7 +664,7 @@ export const publishedRepos: PublishedRepo[] = [
       {
         "backend": "vulkan",
         "chip": null,
-        "recipe": "8da4w",
+        "recipe": "8da4w GPTQ",
         "windows": [
           2048,
           4096,
@@ -681,13 +692,13 @@ export const publishedRepos: PublishedRepo[] = [
     "name": "Qwen3-4B-Thinking-2507",
     "family": "qwen3",
     "source": "Qwen/Qwen3-4B-Thinking-2507",
-    "sha": "e8f944c7e32ddd4b242380324bc322432dc8e583",
+    "sha": "aa4387746627e3999e36390f2510d0ba462e5acf",
     "lastModified": "2026-11-09",
     "builds": [
       {
         "backend": "vulkan",
         "chip": null,
-        "recipe": "8da4w",
+        "recipe": "8da4w GPTQ",
         "windows": [
           2048,
           4096,
@@ -715,8 +726,8 @@ export const publishedRepos: PublishedRepo[] = [
     "name": "SmolLM2-135M-Instruct",
     "family": "smollm2",
     "source": "HuggingFaceTB/SmolLM2-135M-Instruct",
-    "sha": "c0d4461c7fffccf692266b1eae07b056091cb140",
-    "lastModified": "2026-10-07",
+    "sha": "26e7ba0e953593b7b96a4313468746f491a0955f",
+    "lastModified": "2026-11-09",
     "builds": [
       {
         "backend": "mtk",
@@ -742,7 +753,7 @@ export const publishedRepos: PublishedRepo[] = [
       {
         "backend": "vulkan",
         "chip": null,
-        "recipe": "8da4w",
+        "recipe": "8da4w GPTQ",
         "windows": [
           2048,
           4096,
@@ -770,8 +781,8 @@ export const publishedRepos: PublishedRepo[] = [
     "name": "SmolLM2-360M-Instruct",
     "family": "smollm2",
     "source": "HuggingFaceTB/SmolLM2-360M-Instruct",
-    "sha": "06e462dc6a7e930d4637738fba54512703c4f0ff",
-    "lastModified": "2026-10-04",
+    "sha": "30cf44e46801c3da4efc963cf51a3e2938fcf259",
+    "lastModified": "2026-11-09",
     "builds": [
       {
         "backend": "mtk",
@@ -787,7 +798,7 @@ export const publishedRepos: PublishedRepo[] = [
       {
         "backend": "vulkan",
         "chip": null,
-        "recipe": "8da4w",
+        "recipe": "8da4w GPTQ",
         "windows": [
           2048,
           4096,

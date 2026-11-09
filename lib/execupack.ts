@@ -157,7 +157,10 @@ export const families: Family[] = [
       xnnpack: { kind: "none", note: NOT_EXPORT_LLM },
       vulkan: { kind: "none", note: NOT_EXPORT_LLM },
       qnn: { kind: "checkpoints", ids: ["google/gemma-3-1b-it"] },
-      mtk: { kind: "upstream", note: "model_type gemma3; HF configs say gemma3_text" },
+      mtk: {
+        kind: "patched",
+        note: "MediaTek's Gemma 3 chunk gives every layer one RoPE table, but Gemma 3 rotates its sliding layers at base 10000 and its global ones at 1e6 (in fp32, one table at 10000 passes 6 of 11 gate prompts and at 1e6 5 of 11); execupack's mediatek-gemma.patch adds the second table, exact against Hugging Face, and the runner has to feed both",
+      },
       exynos,
     },
   },
@@ -170,7 +173,10 @@ export const families: Family[] = [
       xnnpack: { kind: "none", note: NOT_EXPORT_LLM },
       vulkan: { kind: "none", note: NOT_EXPORT_LLM },
       qnn: { kind: "checkpoints", ids: ["google/gemma-2-2b-it"] },
-      mtk: { kind: "upstream", note: "model_type gemma2" },
+      mtk: {
+        kind: "none",
+        note: "the graph builds (model_type gemma2) and matches Hugging Face, but mtk_converter holds a chunk's weights as fp32 in one protobuf capped at 2 GB, and the 2.36 GB output head sits whole in the last chunk at any chunk count",
+      },
       exynos,
     },
   },
@@ -339,7 +345,7 @@ export const runtimeNotes = {
   vulkanDevice:
     "Vulkan files have run through the apps on three GPUs: a Mali-G925 (Dimensity), an Adreno 750 (Snapdragon 8 Gen 3) and the Snapdragon 8 Elite Gen 5's. On the last, Qwen3-1.7B at 4k decodes at 42 tokens per second on the GPU against 54 on the CPU, and reads a 700-token prompt about twice as fast; on the Mali the CPU decodes two to four times faster.",
   gate:
-    "XNNPACK files marked 8da4w GPTQ or fp32 linears passed execupack's decision gate against the fp32 model before publishing, with one exception: Phi-4-mini-instruct-3.8B's keep 7 of the 8 tool calls its fp32 model is sure of, under the gate's 90%, and were published past it on the operator's decision, which each report records (fp32 itself is near a tie on those rows, 0.40 to 0.78, and an all-int8 build that keeps all 8 is 1.4 times the size). Qwen3-4B-Thinking-2507's pass, but there the gate measures little: the model reasons before it decides, so its first token is the same on every row. A Vulkan file marked 8da4w GPTQ carries the same solved codes as the XNNPACK file of its window, which stands as its gate; a plain 8da4w Vulkan file is rounded to nearest and ungated.",
+    "XNNPACK files marked 8da4w GPTQ or fp32 linears passed execupack's decision gate against the fp32 model before publishing, with one exception: Phi-4-mini-instruct-3.8B's keep 7 of the 8 tool calls its fp32 model is sure of, under the gate's 90%, and were published past it on the operator's decision, which each report records (fp32 itself is near a tie on those rows, 0.40 to 0.78, and an all-int8 build that keeps all 8 is 1.4 times the size). Qwen3-4B-Thinking-2507's pass, but there the gate measures little: the model reasons before it decides, so its first token is the same on every row. A Vulkan file marked 8da4w GPTQ carries the same solved codes as an XNNPACK build of its window, whose gate stands as its own: the published XNNPACK file, except for SmolLM2-360M-Instruct, whose CPU files are published with fp32 linears while the GPTQ build that gates its GPU files (2 of 2 graded rows) is not published. A plain 8da4w Vulkan file is rounded to nearest and ungated.",
   nextRelease:
     "ExecuTorch 1.6.0 is at release candidate (rc1, tagged 2026-10-30). Exports stay on 1.5.1, the runtime both apps ship, until the apps move; execupack's LFM3 definition already exports and runs under 1.6.0.",
   lfm3:
