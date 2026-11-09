@@ -12,14 +12,14 @@ export default function Punchcard({
   models,
   rows,
   groups,
-  slots,
 }: {
   builds: number;
   models: number;
   rows: PunchRow[];
-  groups: string[];
-  slots: number[];
+  // One per target, with the windows that target is built at: MediaTek's has 512, the others start at 2k.
+  groups: { label: string; slots: number[] }[];
 }) {
+  const widths = groups.map((g) => `${g.slots.length}fr`).join(" ");
   return (
     <div className="flex flex-col gap-10 rounded-[1.75rem] p-7 text-white sm:p-9" style={{ backgroundColor: bg }}>
       <div>
@@ -29,11 +29,11 @@ export default function Punchcard({
         </p>
       </div>
       <div aria-hidden>
-        <div className="grid grid-cols-4 gap-2.5 sm:gap-4">
+        <div className="grid gap-2.5 sm:gap-4" style={{ gridTemplateColumns: widths }}>
           {groups.map((g, gi) => (
-            <div key={g} className="grid gap-[3px]" style={{ gridTemplateColumns: `repeat(${slots.length}, minmax(0, 1fr))` }}>
+            <div key={g.label} className="grid gap-[3px]" style={{ gridTemplateColumns: `repeat(${g.slots.length}, minmax(0, 1fr))` }}>
               {rows.flatMap((r) =>
-                slots.map((w) => (
+                g.slots.map((w) => (
                   <span
                     key={`${r.name}-${w}`}
                     className="h-[7px] rounded-[2px] sm:h-[9px]"
@@ -44,10 +44,10 @@ export default function Punchcard({
             </div>
           ))}
         </div>
-        <div className="mt-3 grid grid-cols-4 gap-2.5 text-xs text-white/65 sm:gap-4">
+        <div className="mt-3 grid gap-2.5 text-xs text-white/65 sm:gap-4" style={{ gridTemplateColumns: widths }}>
           {groups.map((g) => (
-            <span key={g} className="truncate">
-              {g}
+            <span key={g.label} className="truncate">
+              {g.label}
             </span>
           ))}
         </div>

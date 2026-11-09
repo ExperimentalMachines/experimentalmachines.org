@@ -20,7 +20,9 @@ export type FinderCell =
 
 export type FinderRow = { name: string; href: string; family: string; updated: string; cells: Record<TargetKey, FinderCell> };
 
-export type FinderTarget = { key: TargetKey; label: string; detail: string };
+// `slots` are the windows this target is built at; a window it never gets has no block, so an empty block
+// always means a window that is missing.
+export type FinderTarget = { key: TargetKey; label: string; detail: string; slots: number[] };
 
 function Cell({ c, slots, version }: { c: FinderCell; slots: number[]; version: string }) {
   if (c.kind === "built") {
@@ -59,12 +61,10 @@ function Cell({ c, slots, version }: { c: FinderCell; slots: number[]; version: 
 export default function ModelFinder({
   rows,
   targets,
-  slots,
   version,
 }: {
   rows: FinderRow[];
   targets: FinderTarget[];
-  slots: number[];
   version: string;
 }) {
   const [only, setOnly] = useState<TargetKey | null>(null);
@@ -140,7 +140,7 @@ export default function ModelFinder({
                     </th>
                     {targets.map((t) => (
                       <td key={t.key} className={`px-2 py-2.5 ${mark(t.key)}`}>
-                        <Cell c={r.cells[t.key]} slots={slots} version={version} />
+                        <Cell c={r.cells[t.key]} slots={t.slots} version={version} />
                       </td>
                     ))}
                   </tr>,

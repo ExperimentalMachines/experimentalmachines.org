@@ -34,7 +34,8 @@ export function WindowKey({ slots }: { slots: number[] }) {
         ))}
       </span>
       <span className="max-w-sm leading-5">
-        Each block is one context window, in tokens. A filled block is a published file; an empty one was not built or not published.
+        Each block is one context window, in tokens. A filled block is a published file; an empty one was not built or not published. Only
+        MediaTek&apos;s column has a 512 block, because no other target is built at 512.
       </span>
     </div>
   );

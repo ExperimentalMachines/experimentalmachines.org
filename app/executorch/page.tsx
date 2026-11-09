@@ -24,6 +24,7 @@ import {
   runtimeNotes,
   sources,
   windowSlots,
+  windowTiers,
   withheld,
 } from "@/lib/execupack";
 import { type PublishedRepo, publishedAsOf, publishedRepos } from "@/lib/execupack-published";
@@ -71,11 +72,17 @@ const usualChip = (backend: BackendKey) => {
 const qnnChip = usualChip("qnn");
 const mtkChip = usualChip("mtk");
 
+// The windows each target is built at: the tiers, MediaTek's 512 too, and any other window a published file has.
+const slotsFor = (key: TargetKey) =>
+  [...new Set([...(key === "mtk" ? windowSlots : windowTiers), ...publishedRepos.flatMap((r) => buildsOf(r, key).flatMap((b) => b.windows))])].sort(
+    (a, b) => a - b,
+  );
+
 const targets: FinderTarget[] = [
-  { key: "xnnpack", label: "CPU", detail: "XNNPACK, any phone" },
-  { key: "vulkan", label: "GPU", detail: "Vulkan, any phone" },
-  { key: "qnn", label: "Qualcomm NPU", detail: `${qnnChip} only` },
-  { key: "mtk", label: "MediaTek NPU", detail: `${mtkChip} only` },
+  { key: "xnnpack", label: "CPU", detail: "XNNPACK, any phone", slots: slotsFor("xnnpack") },
+  { key: "vulkan", label: "GPU", detail: "Vulkan, any Vulkan GPU", slots: slotsFor("vulkan") },
+  { key: "qnn", label: "Qualcomm NPU", detail: `${qnnChip} only`, slots: slotsFor("qnn") },
+  { key: "mtk", label: "MediaTek NPU", detail: `${mtkChip} only`, slots: slotsFor("mtk") },
 ];
 const targetLabel = (key: BackendKey) => targets.find((t) => t.key === key)?.label ?? backends.find((b) => b.key === key)!.name;
 
@@ -222,12 +229,12 @@ export default function ExecuPackPage() {
     {
       key: "xnnpack" as const,
       name: "XNNPACK",
-      body: "Runs on any arm64 Android phone, in both apps. Linear layers hold int4 weights solved with GPTQ, except in two small models that keep fp32 ones, and activations are quantized to int8 as it runs. The file to start with on any phone.",
+      body: "Runs on any arm64 Android phone, and both apps load it, except LFM3's until they have its chat template. Linear layers hold int4 weights solved with GPTQ, except in two small models that keep fp32 ones, and activations are quantized to int8 as it runs. The file to start with on any phone.",
     },
     {
       key: "vulkan" as const,
       name: "Vulkan",
-      body: "Runs on any phone with Vulkan, in both apps, from the same int4 weights as a CPU build of its window. Which is faster depends on the GPU. With Qwen3-0.6B at 2k on a Snapdragon 8 Elite Gen 5, the GPU read a 702-token prompt faster than the CPU and wrote faster after it, 61 to 64 tokens per second against 50 to 51, but slower after a 27-token prompt; on a Mali-G925 the CPU wrote 2.2 to 3.9 times faster.",
+      body: "Runs on any phone with Vulkan, in both apps, from the same int4 weights as a CPU build of its window. Which is faster depends on the GPU. In October, with a Qwen3-0.6B file at 2k since withdrawn, a Snapdragon 8 Elite Gen 5's GPU read a 702-token prompt faster than its CPU and wrote faster after it, 61 to 64 tokens per second against 50 to 51, but slower after a 27-token prompt; on a Mali-G925 the CPU wrote 2.2 to 3.9 times faster.",
     },
     {
       key: "qnn" as const,
@@ -237,7 +244,7 @@ export default function ExecuPackPage() {
     {
       key: "mtk" as const,
       name: `NeuroPilot, ${mtkChip}`,
-      body: `Compiled for the ${mtkChip} (Dimensity 9400, 9500s) and loads only there, in ExecuServe. The files keep 8-bit weights (A16W8), not the 4-bit ones of MediaTek's stock recipe, which measured 110 times further from fp32 on LFM2.5-1.2B. LFM2.5-1.2B at 2k runs with the NPU reading the prompt and the CPU writing the reply.`,
+      body: `Compiled for the ${mtkChip} (Dimensity 9400, 9500s) and loads only there, in ExecuServe. The files keep 8-bit weights (A16W8), not the 4-bit ones of MediaTek's stock recipe, whose KL divergence from fp32 measured about 110 times higher (0.75 against 0.0068, LFM2.5-1.2B at a 4k window). LFM2.5-1.2B at 2k runs with the NPU reading the prompt and the CPU writing the reply.`,
     },
   ];
 
@@ -273,7 +280,12 @@ export default function ExecuPackPage() {
               Built with ExecuTorch {executorchVersion}, the version both apps ship. Listing as of {date(publishedAsOf, "long")}.
             </p>
           </div>
-          <Punchcard builds={buildCount} models={publishedRepos.length} rows={punchRows} groups={["CPU", "GPU", "Qualcomm", "MediaTek"]} slots={windowSlots} />
+          <Punchcard
+            builds={buildCount}
+            models={publishedRepos.length}
+            rows={punchRows}
+            groups={targets.map((t, i) => ({ label: ["CPU", "GPU", "Qualcomm", "MediaTek"][i], slots: t.slots }))}
+          />
         </div>
       </section>
 
@@ -285,7 +297,7 @@ export default function ExecuPackPage() {
       >
         <WindowKey slots={windowSlots} />
         <div className="mt-8">
-          <ModelFinder rows={finderRows} targets={targets} slots={windowSlots} version={executorchVersion} />
+          <ModelFinder rows={finderRows} targets={targets} version={executorchVersion} />
         </div>
         <p className="mt-5 max-w-3xl text-sm leading-6 text-ink-soft">
           Not yet: ExecuTorch {executorchVersion} can build it and nothing is published. Withheld: built, measured and kept off the Hub, with the
@@ -294,7 +306,7 @@ export default function ExecuPackPage() {
         </p>
       </ProductSection>
 
-      <ProductSection id="which" title="Which file to run" lede="CPU and GPU files run on any Android phone. An NPU file is compiled for one chip and loads only on it.">
+      <ProductSection id="which" title="Which file to run" lede="A CPU file runs on any arm64 Android phone, and a GPU file on any phone with Vulkan. An NPU file is compiled for one chip and loads only on it.">
         <ul className="grid gap-x-10 gap-y-10 sm:grid-cols-2 lg:grid-cols-4">
           {which.map((w) => (
             <li key={w.key} className="flex flex-col border-t-2 border-blue pt-4">

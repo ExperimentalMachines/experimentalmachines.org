@@ -359,8 +359,10 @@ export const withheld: Record<string, Partial<Record<BackendKey, string>>> = {
   },
 };
 
-// The context windows execupack builds, in tokens: MediaTek's 512 and the tiers 2k to 32k.
-export const windowSlots = [512, 2048, 4096, 8192, 16384, 32768];
+// The context windows execupack builds, in tokens (config/pipeline.yaml): the tiers 2k to 32k for every
+// target, and MediaTek's 512 as well, its default cache, which no other target is built at.
+export const windowTiers = [2048, 4096, 8192, 16384, 32768];
+export const windowSlots = [512, ...windowTiers];
 
 // What happens to a model between Hugging Face and the Hub, in order (execupack's pipeline/ and PLAN.md).
 export const pipelineSteps: { title: string; body: string }[] = [
