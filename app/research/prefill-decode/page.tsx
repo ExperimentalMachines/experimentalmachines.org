@@ -258,7 +258,7 @@ export default function PrefillDecode() {
                 <P>
                   The processors share heat: with only the CPU working, the NPU&apos;s sensors read {pdSpread.cpuOnlyNpuC} °C; with the NPU doing nearly all the work, the
                   CPU&apos;s read {pdSpread.npuOnlyCpuC} °C (Llama 3.2 3B). The XO thermistor warms whichever processor works. At the hard throttle, CPU cores pause and the NPU
-                  slows; no extra GPU decode slowdown was found.
+                  slows. Natural hard throttles showed no extra GPU decode slowdown; pausing the cores by hand cut GPU decode by at most 1.6% among the turn medians.
                 </P>
               </div>
             </div>

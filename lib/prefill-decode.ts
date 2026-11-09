@@ -22,7 +22,7 @@ export type Processor = (typeof processors)[number];
 
 export const pdPhone = {
   soc: "Snapdragon 8 Elite Gen 5 (SM8850)",
-  dates: "2 to 4 November 2026",
+  dates: "2 to 9 November 2026",
   llamacpp: "b2e5e9b (release b10549)",
 };
 
