@@ -61,17 +61,23 @@ export const pdTrigger = { onC: 78, offC: 70 };
 // and 597.5 s in r10, r11 and r13 on phone B. Hard, NPU: analysis-r14-heat.md and analysis-r13-heat.md
 // (turns at least half under cdsp above 0 against the same turn without) and Qwen3 1.7B's three GPU ->
 // NPU turns in the 18:12 hard throttle (r16) against the same turns in its other NPU-decode cells.
-// GPU decode, soft, and GPU, hard: the r20 throttle ladder on phone B (2026-11-08 and 09), the same three
-// Qwen3 4B turns repeated as the phone heated, power level 8 against its one uncapped probe (0.64 to 0.80),
-// and three probes through a hard throttle against the same turns without one (0.997 and 0.994). The GPU's
-// allowed ceiling read 578 MHz in every 2 s sample, through the hard throttles too (trig-r20b.txt).
+// GPU decode, soft: r21 on phone B (2026-11-09), the same three Qwen3 4B turns with the 578 MHz cap set by
+// hand (kgsl max_pwrlevel 8) after a cooling gate against six uncapped probes, 0.635 to 0.769 (r20's thermal cap on
+// a hot phone gave 0.64 to 0.80 against one). CPU, soft, second figure: r25, the soft throttle's ceilings
+// written to scaling_max_freq after a cooling gate, decode 0.803 to 0.828 of no ceiling set. GPU, hard: r24, the
+// CPU pause switches set by hand after a cooling gate, GPU decode 0.984 to 1.002 of the same turns without (r20's
+// natural pauses: 0.997 and 0.994). The GPU's allowed ceiling read 578 MHz in every 2 s sample through r20's
+// natural hard throttles (trig-r20b.txt).
 export const pdThrottle = {
   soft: {
-    CPU: { what: "Clock ceilings cut about in half: 6 cores from 3.63 to 1.90 GHz, 2 cores from 4.61 to 2.23 GHz", seen: "Decode 21% slower (17.1 to 13.6 tok/s), steady" },
+    CPU: {
+      what: "Clock ceilings cut about in half: 6 cores from 3.63 to 1.90 GHz, 2 cores from 4.61 to 2.23 GHz",
+      seen: "Decode 21% slower (17.1 to 13.6 tok/s), steady. The same ceilings set by hand after a cooling gate left decode at 80% to 83% of its rate with no ceiling set",
+    },
     GPU: {
       what: "Clock capped at 578 MHz, from 1.2 GHz",
       seen:
-        "Prefill about half as fast (202 to 105 tok/s). On Qwen3 4B, median decode rates at three repeated turn positions were 64% to 80% of their rates in one uncapped probe on phone B",
+        "Prefill about half as fast (202 to 105 tok/s). The same cap set by hand after a cooling gate left decode at 64% to 77% of uncapped, close to what the thermal cap gave on a hot phone",
     },
     NPU: { what: "No visible limit; its clock cannot be read", seen: "No slowdown found: an NPU-only pairing repeated within 1% with the soft throttle on and off" },
   },
@@ -80,7 +86,7 @@ export const pdThrottle = {
     CPU: { what: "6 of its 8 cores paused, leaving cores 0 and 1 (going by the switches' names)", seen: "" },
     GPU: {
       what: "Its cap stayed at 578 MHz",
-      seen: "No extra decode slowdown found: at two turn positions across three probes, median rates were within 1% of the same turns without a hard throttle, with the GPU capped at 578 MHz in both states",
+      seen: "Little or no extra slowdown: pausing the CPU cores by hand cut GPU decode by at most 1.6% among the turn medians, and no prefill slowdown was found",
     },
     NPU: { what: "Slowed", seen: "Decode at about half to two thirds of its speed at the median, never stuck" },
   },

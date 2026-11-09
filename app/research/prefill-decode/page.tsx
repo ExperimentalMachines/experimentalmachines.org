@@ -286,8 +286,9 @@ export default function PrefillDecode() {
                 ])}
               />
               <Note>
-                The soft throttle&apos;s CPU decode and GPU prefill figures compare nine matched Qwen3 4B turns on phone C. The GPU decode figures come from three repeated turn
-                positions on phone B, against one uncapped probe. The NPU&apos;s
+                The soft throttle&apos;s first CPU decode figure and its GPU prefill figure compare nine matched Qwen3 4B turns on phone C. Its second CPU figure, its GPU decode
+                figure and the GPU&apos;s hard-throttle figure come from three repeated Qwen3 4B turn positions on phone B, each cap or pause set by hand after a cooling gate,
+                against the same turns without it. The hand-set pause left the throttle&apos;s other switches, kgsl and cdsp, off. The NPU&apos;s
                 hard-throttle figures compare the same turns run with and without it: two thirds on Qwen3 4B and Llama 3.2 3B, about half on Qwen3 1.7B.
               </Note>
             </div>
@@ -444,12 +445,18 @@ export default function PrefillDecode() {
                 threads with work left wait for a core.
               </P>
               <P>
-                Each wait can then cost milliseconds, hundreds of times per token: enough to turn milliseconds per token into seconds. This fits the code and the timings, but it
-                has not been proven.
+                Each wait can then cost milliseconds, hundreds of times per token: enough to turn milliseconds per token into seconds. This fits the code and the timings; the
+                waiting itself has not been traced.
               </P>
               <P>
                 A later run on phone B recorded where the threads ran. During hard throttles the busy threads were on cores 0 and 1 in 99.7% of samples, against all 8 cores the
                 rest of the time: consistent with this account, though a sample shows only the last core a thread ran on.
+              </P>
+              <P>
+                A run on 9 November paused the same 6 cores by hand after a cooling gate, with the switches the phone&apos;s own throttle uses. With 6 threads, none of three tries
+                finished its first turn within 20 minutes, against about 6 seconds unpaused, while the threads kept the two remaining cores busy. The one paused run with 4
+                threads finished no turn within 10 minutes; with 3 decode ran at under half a token a second; with 2 at 6.9 tokens a second, with no step over half a second.
+                With the pause switches set, this benchmark got stuck at 6 and 4 threads and slowed badly at 3, and 2 did not get stuck.
               </P>
             </div>
           </div>
@@ -469,6 +476,10 @@ export default function PrefillDecode() {
                 A reply already running keeps its threads, so a hard throttle that starts mid-reply can still meet {pdStall.app.normal}. On a phone whose Android signal lags the
                 heat, the app would keep {pdStall.app.normal} threads throughout.
               </P>
+              <P>
+                With the pause set by hand, a single benchmark run with {pdStall.app.normal} threads finished no turn within 10 minutes. The app attaches a persistent thread pool to
+                each model context, which the benchmark does not, so the app itself was not measured.
+              </P>
             </div>
           </div>
 
@@ -481,7 +492,10 @@ export default function PrefillDecode() {
                 under the 78 °C trip, so there was no hard throttle and no step over half a second, but decoding took 13.6% longer, the 6-thread run&apos;s stalls included.
               </P>
               <P>
-                This is one pair, and the 2-thread run started with a cooler CPU. No 2-thread run met a hard throttle, so whether 2 threads would get stuck inside one is not known.
+                This is one pair, and the 2-thread run started with a cooler CPU. Inside a hard throttle set by hand, 2 threads did not get stuck (above). Switching from 6 threads
+                to 2 whenever the throttle switches read on, with the throttle turned on and off every 15 seconds, decoded at 4.3 to 6.3 tokens a second during the throttle,
+                against 0.3 to 0.9 without switching, and finished the same work in 21% less time (median decode times). The rates during the throttle split each step by how much
+                of it the throttle covered, and the CPU&apos;s ceilings also differed between the two. It read the switches as root; whether an app can read them was not tested.
               </P>
             </div>
           </div>
@@ -492,7 +506,7 @@ export default function PrefillDecode() {
               label="What could fix it"
               head={["Change", "Where", "Status"]}
               rows={[
-                ["Drop to 2 threads as soon as one decode step takes over half a second, then step back up", "App", "Switching during a hard throttle was not measured. In one pair, starting with 2 threads avoided it, but decoding took 13.6% longer, including the 6-thread stalls. The 2-thread run started with a cooler CPU"],
+                ["Drop to 2 threads as soon as one decode step takes over half a second, then step back up", "App", "Not measured as an app would do it. Switching on the throttle switches themselves, read as root, cut median decode time 21% with the throttle set by hand and turned on and off every 15 s"],
                 ["Make a waiting thread give up its core after a short check, instead of holding it", "llama.cpp", "Not measured; must not slow normal decode"],
                 ["Decode on the NPU during the hard throttle", "App", "Not measured; the NPU is slower then too"],
                 ["Read how many cores the app may use, before each step", "App", "Ruled out on this phone: the count stayed at 8 through a logged hard throttle"],
@@ -507,11 +521,12 @@ export default function PrefillDecode() {
           <Row label="Phones">
             Four {pdPhone.soc} phones of the same kind (A to D), Android 16, root shell, on AC power in Qualcomm Device Cloud&apos;s rack, {pdPhone.dates}. Each model ran all nine
             of its pairings on one phone, in one run, except Qwen3 4B&apos;s GPU → CPU, run again on phone D because it had started cool. The 2-thread run and the GPU&apos;s
-            throttle costs ran on phone B on 8 and 9 November.
+            throttle costs ran on phone B on 8 and 9 November, and the throttles set by hand on phone B on 9 November.
           </Row>
           <Row label="Runtime">
             llama.cpp {pdPhone.llamacpp} with its CPU, OpenCL (GPU) and Hexagon (NPU) backends in one process. When prefill and decode run on different processors, the conversation
-            state is copied across every turn. The matrix runs used 6 CPU threads; the later thread test compared 6 with 2.
+            state is copied across every turn. The matrix runs used 6 CPU threads; later tests compared 6 with 2 in natural heat, and 6, 4, 3 and 2 with the hard throttle
+            set by hand.
           </Row>
           <Row label="Models">
             Qwen3 0.6B, 1.7B and 4B; Gemma 3 1B; Llama 3.2 1B and 3B; LFM2.5 1.2B and 2.6B. All in Q4_0, the 4-bit format all three backends speed up, and Qwen3 1.7B also in Q8_0,
@@ -533,8 +548,8 @@ export default function PrefillDecode() {
         <div id="tilt" className="scroll-mt-28 lg:scroll-mt-16">
           <Rows>
             <Row label="Against the CPU">
-              The matrix uses 6 threads in every pairing. One later 2-thread run stayed out of the hard throttle; it is one pair, and 4 threads, the app&apos;s usual count on this
-              phone, was not tried.
+              The matrix uses 6 threads in every pairing. With the hard throttle set by hand, 6 and 4 threads got stuck and 2 did not, on repeated work in the benchmark rather
+              than the app; in natural heat, 2 threads against 6 is one pair.
             </Row>
             <Row label="Against the GPU">
               One GPU backend, llama.cpp&apos;s OpenCL, capped at 578 MHz in every matrix pairing compared. In one uncapped three-turn probe, GPU decode also slowed at later
