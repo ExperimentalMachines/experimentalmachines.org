@@ -28,7 +28,7 @@ export const publishedRepos: PublishedRepo[] = [
     "name": "gemma-3-1b-it",
     "family": "gemma3",
     "source": "google/gemma-3-1b-it",
-    "sha": "ec656e009fa8020c345e38b5fcba164a140abee5",
+    "sha": "55562952291cbefc798f8597d5e647a6522798bb",
     "lastModified": "2026-11-09",
     "builds": [
       {
@@ -37,6 +37,18 @@ export const publishedRepos: PublishedRepo[] = [
         "recipe": "A16W8",
         "windows": [
           512,
+          2048,
+          4096,
+          8192,
+          16384,
+          32768
+        ]
+      },
+      {
+        "backend": "qnn",
+        "chip": "SM8750",
+        "recipe": "QNN HTP",
+        "windows": [
           2048,
           4096,
           8192,
