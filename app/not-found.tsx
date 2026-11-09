@@ -21,12 +21,7 @@ const places: ResearchItem[] = [
   { href: "/", title: "Experimental Machines", meta: "Home", line: "Our apps, the models under them, and the fixes we took to ExecuTorch" },
   project("openweights", "/openweights/"),
   project("execuserve", "/execuserve/"),
-  {
-    href: "/executorch/",
-    title: "ExecuTorch exports",
-    meta: "ExecuPack",
-    line: "Every model ExecuPack has published, per accelerator, against everything ExecuTorch can export for Android",
-  },
+  project("execupack", "/executorch/"),
   { href: "/research/", title: "Research", meta: "Research", line: "Every study, with its committed results" },
   { href: "/conferences/", title: "Conferences", meta: "Talks", line: "Our talks at PyTorch and GitHub events, with their listings, recordings and evidence" },
 ];

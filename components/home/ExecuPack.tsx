@@ -45,7 +45,7 @@ export default function ExecuPack() {
             <Actions className="mt-auto pt-8">
               <Action href={links.execupackFindings}>Research log</Action>
               <Action href={links.huggingface}>Hugging Face</Action>
-              <Action href={links.exports}>What ExecuTorch can export</Action>
+              <Action href={links.exports}>About ExecuPack</Action>
             </Actions>
           </div>
         </div>

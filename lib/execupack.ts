@@ -318,7 +318,7 @@ export const chipBackends: { key: "qnn" | "mtk" | "exynos"; name: string; source
     chips: [
       {
         id: "MT6991",
-        name: "Dimensitys",
+        name: "Dimensity 9400, 9500s",
         kind: "phone",
         arch: "DX4",
         status: "ran",
@@ -342,10 +342,6 @@ export const chipBackends: { key: "qnn" | "mtk" | "exynos"; name: string; source
 
 // Facts about running the published files that the tables above cannot show.
 export const runtimeNotes = {
-  vulkanDevice:
-    "Vulkan files have run through the apps on three GPUs: a Mali-G925 (Dimensity), an Adreno 750 (Snapdragon 8 Gen 3) and the Snapdragon 8 Elite Gen 5's. On the last, Qwen3-1.7B at 4k decodes at 42 tokens per second on the GPU against 54 on the CPU, and reads a 700-token prompt about twice as fast; on the Mali the CPU decodes two to four times faster.",
-  gate:
-    "XNNPACK files marked 8da4w GPTQ or fp32 linears passed execupack's decision gate against the fp32 model before publishing, with one exception: Phi-4-mini-instruct-3.8B's keep 7 of the 8 tool calls its fp32 model is sure of, under the gate's 90%, and were published past it on the operator's decision, which each report records (fp32 itself is near a tie on those rows, 0.40 to 0.78, and an all-int8 build that keeps all 8 is 1.4 times the size). Qwen3-4B-Thinking-2507's pass, but there the gate measures little: the model reasons before it decides, so its first token is the same on every row. A Vulkan file marked 8da4w GPTQ carries the same solved codes as an XNNPACK build of its window, whose gate stands as its own: the published XNNPACK file, except for SmolLM2-360M-Instruct, whose CPU files are published with fp32 linears while the GPTQ build that gates its GPU files (2 of 2 graded rows) is not published. A plain 8da4w Vulkan file is rounded to nearest and ungated.",
   nextRelease:
     "ExecuTorch 1.6.0 is at release candidate (rc1, tagged 2026-10-30). Exports stay on 1.5.1, the runtime both apps ship, until the apps move; execupack's LFM3 definition already exports and runs under 1.6.0.",
   lfm3:
@@ -353,3 +349,75 @@ export const runtimeNotes = {
   vulkanAar:
     "Both apps now ship ExecuTorch 1.5.1 with the Vulkan delegate beside XNNPACK; ExecuServe's build adds Qualcomm's QNN and MediaTek's NeuroPilot, and offers each phone only the NPU files compiled for its own chip.",
 };
+
+// Builds ExecuTorch can make that execupack measured and chose not to publish, by repo name.
+// From execupack's research log, finding 43.
+export const withheld: Record<string, Partial<Record<BackendKey, string>>> = {
+  "Qwen3-0.6B": {
+    vulkan:
+      "int4 loses this model's tool decision: a GPTQ build keeps 0 of 4 calling rows, mean 0.016 against fp32's 0.619, so its CPU files keep fp32 linears (4 of 4, 0.618) and there is no int4 GPU file to publish",
+  },
+};
+
+// The context windows execupack builds, in tokens: MediaTek's 512 and the tiers 2k to 32k.
+export const windowSlots = [512, 2048, 4096, 8192, 16384, 32768];
+
+// What happens to a model between Hugging Face and the Hub, in order (execupack's pipeline/ and PLAN.md).
+export const pipelineSteps: { title: string; body: string }[] = [
+  {
+    title: "Solve",
+    body: "GPTQ solves each linear layer's int4 weights once per model, on prompts in the model's own chat template, each continued by the fp32 model's own reply.",
+  },
+  {
+    title: "Export",
+    body: "ExecuTorch builds one file per context window, from 2k to 32k tokens. A window's GPU file is built from the same solved weights as its CPU file.",
+  },
+  {
+    title: "Run",
+    body: "Each CPU file loads in ExecuTorch's C++ runner, the one the apps use, and has to answer a question. NPU files are checked structurally: the build machine has no NPU.",
+  },
+  {
+    title: "Gate",
+    body: "On prompts shaped like the apps', the file has to pick the fp32 model's next token on 90% of the rows that model is sure of, which is where a lost tool call shows.",
+  },
+  {
+    title: "Publish",
+    body: "The window goes into the model's repo on Hugging Face beside its other windows, with the config.json the apps read, and the report of every check.",
+  },
+];
+
+// The gate's own calibration, from execupack's pipeline/gate.py: of the rows the fp32 model is sure of,
+// how many each build still decides the same way, and its mean probability on fp32's token.
+export const gateEvidence = [
+  { label: "Round to nearest", kept: 0, of: 12, mean: 0.049 },
+  { label: "GPTQ, published", kept: 12, of: 12, mean: 0.701 },
+];
+
+// Published files that differ from the recipe, and why. Each is recorded in its repo's export report.
+export const exceptions: { model: string; body: string }[] = [
+  {
+    model: "Qwen3-0.6B",
+    body: "CPU files keep fp32 linear layers and there is no GPU file, because int4 loses its tool decision at this size: a GPTQ build keeps 0 of 4 calling rows, against 4 of 4 with fp32 linears.",
+  },
+  {
+    model: "SmolLM2-360M-Instruct",
+    body: "CPU files keep fp32 linear layers. Its GPU files are GPTQ, gated through a CPU build of the same weights (2 of 2 graded rows) that is not published.",
+  },
+  {
+    model: "Phi-4-mini-instruct-3.8B",
+    body: "Keeps 7 of the 8 tool calls its fp32 model is sure of, under the gate's 90%, and was published on the operator's decision. fp32 itself is near a tie on those rows, 0.40 to 0.78; an all-int8 build that keeps all 8 is 1.4 times the size.",
+  },
+  {
+    model: "Qwen3-4B-Thinking-2507",
+    body: "Passes, but the gate measures little here: the model reasons before it decides, so its first token is the same on every row.",
+  },
+  {
+    model: "LFM3-1.7B",
+    body: "ExecuTorch 1.5.1 has no LFM3 model, so its files are traced from execupack's own definition, which matches Hugging Face on fp32 logits. Neither app has an LFM3 chat template yet.",
+  },
+];
+
+// When every int4 CPU and GPU file on the Hub became GPTQ (execupack's research log, findings 43 to 45), and
+// the byte scan of every file that followed (execupack's tools/codecheck).
+export const rollout =
+  "On 9 November 2026 the last round-to-nearest CPU and GPU files were replaced, and the weights in every CPU and GPU file on the Hub were read back from its bytes and checked against what its report says it is.";

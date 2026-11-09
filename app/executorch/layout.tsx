@@ -1,8 +1,7 @@
 import HomeShell from "@/components/home/HomeShell";
 
-// ExecuPack's table of ExecuTorch exports wears the organisation's look. ExecuPack
-// has no page of its own to mark in the header, so the page's breadcrumb links
-// back to its section on the homepage.
+// ExecuPack's own page, at the address it had as the table of ExecuTorch exports, so the header marks
+// ExecuPack as the current project.
 export default function ExecuTorchLayout({ children }: { children: React.ReactNode }) {
-  return <HomeShell>{children}</HomeShell>;
+  return <HomeShell current="execupack">{children}</HomeShell>;
 }

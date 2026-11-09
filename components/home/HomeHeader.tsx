@@ -8,21 +8,24 @@ import { links } from "@/lib/home";
 // them, and a project's own pages name it as `current`, which links that project
 // to its page and marks it. Research and Conferences are first and in stronger type because they are places
 // of their own rather than homepage sections, and first keeps them in view in the row that scrolls on phones.
-const sections = [
+// ExecuPack's page keeps the address it had as the table of ExecuTorch exports, so its link is named here.
+const sections: { id: string; label: string; page?: string }[] = [
   { id: "openweights", label: "OpenWeights" },
   { id: "execuserve", label: "ExecuServe" },
-  { id: "execupack", label: "ExecuPack" },
+  { id: "execupack", label: "ExecuPack", page: "/executorch/" },
   { id: "upstream", label: "Upstream" },
   { id: "people", label: "People" },
 ];
 
-export default function HomeHeader({ home = false, current }: { home?: boolean; current?: "openweights" | "execuserve" | "research" | "conferences" }) {
+export type Current = "openweights" | "execuserve" | "execupack" | "research" | "conferences";
+
+export default function HomeHeader({ home = false, current }: { home?: boolean; current?: Current }) {
   const items = [
     { id: "research", label: "Research", href: "/research/", here: current === "research", strong: true },
     { id: "conferences", label: "Conferences", href: "/conferences/", here: current === "conferences", strong: true },
     ...sections.map((s) => ({
       ...s,
-      href: home ? `#${s.id}` : s.id === current ? `/${s.id}/` : `/#${s.id}`,
+      href: home ? `#${s.id}` : s.id === current ? (s.page ?? `/${s.id}/`) : `/#${s.id}`,
       here: s.id === current,
       strong: false,
     })),

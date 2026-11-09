@@ -45,8 +45,9 @@ export function Points({ items }: { items: { title: string; body: string }[] }) 
 
 // Numbered because the order is the point: each step needs the one before it.
 export function Steps({ items }: { items: { title: string; body: string }[] }) {
+  // Five steps share one row on a wide screen, as four do, so none sits alone under the others.
   return (
-    <ol className="grid gap-x-12 gap-y-8 sm:grid-cols-2 lg:grid-cols-4">
+    <ol className={`grid gap-y-8 sm:grid-cols-2 ${items.length === 5 ? "gap-x-8 lg:grid-cols-5" : "gap-x-12 lg:grid-cols-4"}`}>
       {items.map((s, i) => (
         <li key={s.title} className="border-t-2 border-blue pt-4">
           <p className="display text-3xl text-blue-deep">{i + 1}</p>
