@@ -81,13 +81,19 @@ function Chart({ viz, accent, mark, compact }: { viz: Viz; accent: string; mark:
 }
 
 // The cover's text repeats nothing a screen reader needs twice: the hook is real text, the chart is decoration.
-// A card in a row has a fixed height from sm up so the titles under the covers line up; alone in a column, on
-// a phone or beside its text, a cover takes the height of what is in it, so nothing sits above an empty gap.
+// A card in a row has a fixed height from sm up so the titles under the covers line up, and spreads hook and
+// chart to its top and bottom. A cover beside its own text (large, fit) stretches to that text's height,
+// which grows with every longer line: spread there, the extra height opened a hole between hook and chart,
+// so those keep the two together as one block, centred, and extra height becomes even margin instead.
 function Cover({ s, large, fit }: { s: Study; large?: boolean; fit?: boolean }) {
   const p = palette[s.project];
-  const size = large ? "h-full min-h-72 gap-6 p-7 sm:p-9" : fit ? "h-full gap-4 p-5 sm:p-6" : `gap-5 p-5 sm:gap-6 sm:p-6 ${s.eyebrow ? "sm:h-[17rem]" : "sm:h-64"}`;
+  const size = large
+    ? "h-full min-h-72 justify-center gap-10 p-7 sm:p-9"
+    : fit
+      ? "h-full justify-center gap-6 p-5 sm:p-6"
+      : `justify-between gap-5 p-5 sm:gap-6 sm:p-6 ${s.eyebrow ? "sm:h-[17rem]" : "sm:h-64"}`;
   return (
-    <div className={`flex flex-col justify-between text-white transition-transform motion-safe:group-hover:scale-[1.01] ${size}`} style={{ backgroundColor: p.bg }}>
+    <div className={`flex flex-col text-white transition-transform motion-safe:group-hover:scale-[1.01] ${size}`} style={{ backgroundColor: p.bg }}>
       <div>
         {s.eyebrow && <p className="mb-2 text-sm font-medium text-white/85">{s.eyebrow}</p>}
         <p className={`display font-medium leading-none tracking-[-0.03em] ${large ? "text-6xl sm:text-7xl" : s.eyebrow ? "text-4xl" : "text-4xl sm:text-5xl"}`}>{s.hook}</p>
