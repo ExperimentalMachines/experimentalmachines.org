@@ -9,7 +9,8 @@
 //  - A 30 s pause (r39-1 with the guard, r34-9 without): tokens a second in 2 s bins around the pause,
 //    from logcat-r39.txt and logcat-r34.txt, with the guard's own fallback and return lines.
 //  - Three chat sessions on phone D (r33-A, r33-B, r39-S): the XO thermistor each 30 s from the
-//    session's start, from the 1 s logger trig-r31.txt.
+//    session's start, from the 1 s logger trig-r31.txt; and r46's three on phone A, back to back.
+//  - The hard throttle forced by heat on phone A (r47, r48): tokens written each second from the trip.
 // A run is found by its chain log's start line and the one START line its process logged after it.
 import { execFileSync } from "node:child_process";
 import { readFileSync, writeFileSync } from "node:fs";
@@ -232,6 +233,272 @@ const benchmarkHeat = {
   points: benchPoints,
 };
 
+// The loggers of r46 to r48 (trig46.sh to trig48.sh): "epoch xo_milliC cpu_milliC" then the eleven pause devices,
+// about once a second; trig48.txt carries more columns after them, read by none of this.
+const trigOf = (name) =>
+  file(name)
+    .split("\n")
+    .map((l) => l.trim().split(/\s+/))
+    .filter((p) => /^\d+$/.test(p[0]) && /^\d+$/.test(p[1]))
+    .map((p) => ({ t: Number(p[0]), xo: Number(p[1]) / 1000, cpu: Number(p[2]) / 1000, on: p.slice(3, 14).some((x) => x !== "0") }));
+
+// r46 on phone A: three chat sessions with no pause between turns, back to back, from the first's start to the
+// third's end: the XO's mean over each 30 s, each session's start, the peak and the samples with a device on.
+const trig46 = trigOf("trig46.txt");
+const longFrom = chainTime("chain46.log", /^\d+ session r46-S1 think/);
+const longTo = chainTime("chain46.log", /^\d+ session r46-S3 end/);
+const longPoints = [];
+for (let t = longFrom; t <= longTo; t += 30) {
+  const w = trig46.filter((x) => x.t >= t && x.t < t + 30);
+  if (w.length) longPoints.push([round((t - longFrom) / 60, 2), round(w.reduce((a, x) => a + x.xo, 0) / w.length, 1)]);
+}
+const longIn = trig46.filter((x) => x.t >= longFrom && x.t <= longTo);
+const longSession = {
+  minutes: round((longTo - longFrom) / 60, 1),
+  starts: ["S1", "S2", "S3"].map((k) => round((chainTime("chain46.log", new RegExp(`^\\d+ session r46-${k} think`)) - longFrom) / 60, 1)),
+  peak: round(Math.max(...longIn.map((x) => x.xo)), 1),
+  samples: longIn.length,
+  samplesOn: longIn.filter((x) => x.on).length,
+  points: longPoints,
+};
+
+// r47 and r48 on phone A: heated with busy loops and dd loops until a pause device read non-zero by itself, then
+// ThreadCountBenchmark's 19-token prompt and up to 256 tokens. The pause's edges are the logger's first sample with
+// a device on and its first after with all off. Each run's process is the one whose START line falls between the
+// chain's start and end lines for it; times are seconds from the first sample with a device on.
+function tripRun(n, label) {
+  const chain = `chain${n}.log`;
+  const tr = trigOf(`trig${n}.txt`);
+  const heatOn = chainTime(chain, /^\d+ heat on:/);
+  const first = tr.find((x) => x.t >= heatOn && x.on);
+  const off = tr.find((x) => x.t > first.t && !x.on);
+  const started = chainTime(chain, new RegExp(`^\\d+ run ${label} guard`));
+  const ended = chainTime(chain, new RegExp(`^\\d+ run ${label} end`));
+  const lines = logcat(`logcat-r${n}.txt`).filter((x) => x.t >= started - 1 && x.t <= ended + 2);
+  const starts = lines.filter((x) => x.tag === "OpenWeightsBench" && x.msg.startsWith("START"));
+  if (starts.length !== 1) throw new Error(`${label}: ${starts.length} START lines`);
+  const pid = starts[0].pid;
+  const mine = lines.filter((x) => x.pid === pid);
+  const prog = mine.filter((x) => x.msg.startsWith("PROGRESS")).map((x) => ({ t: x.t - first.t, f: fields(x.msg) }));
+  const decoding = prog.filter((x) => x.f.reading === "false" && x.f.decodeMs !== "null").map((x) => [x.t, Number(x.f.generated)]);
+  const pauseS = off.t - first.t;
+  const inside = decoding.filter(([t]) => t >= 0 && t < pauseS);
+  const tokS = (xs) => (xs.length > 1 ? round((xs.at(-1)[1] - xs[0][1]) / (xs.at(-1)[0] - xs[0][0]), 2) : null);
+  const guard = mine.filter((x) => x.tag === "OpenWeights" && x.msg.includes("decode steps stalled")).map((x) => round(x.t - first.t, 1));
+  const bench = fields(mine.find((x) => x.msg.startsWith("BENCH")).msg.replace(/ tok\/s/g, ""));
+  const count = (t) => {
+    const seen = decoding.filter(([x]) => x <= t);
+    return seen.length ? seen.at(-1)[1] : 0;
+  };
+  const points = [];
+  for (let t = 0; t <= Math.ceil(decoding.at(-1)[0]); t += 1) points.push([t, count(t)]);
+  return {
+    label,
+    heatMinutes: round((first.t - heatOn) / 60, 1),
+    heatFromC: round(tr.find((x) => x.t >= heatOn).xo, 1),
+    onC: round(first.xo, 3),
+    offC: round(off.xo, 3),
+    pauseS,
+    startS: started - first.t,
+    promptMs: Number(prog.find((x) => x.f.prefillMs !== "null").f.prefillMs),
+    inPause: tokS(inside),
+    afterFallback: guard.length ? tokS(inside.filter(([t]) => t >= guard[0])) : null,
+    guard,
+    decode: Number(bench.decode),
+    points,
+  };
+}
+// The cool runs before heating, r47-B0 (guard off) and r47-B1 (on): decode rate and the prompt's reading time, from
+// the same progress records as the hot runs.
+const coolRuns = ["r47-B0", "r47-B1"].map((label) => {
+  const started = chainTime("chain47.log", new RegExp(`^\\d+ run ${label} guard`));
+  const ended = chainTime("chain47.log", new RegExp(`^\\d+ run ${label} end`));
+  const mine = logcat("logcat-r47.txt").filter((x) => x.t >= started && x.t <= ended + 2);
+  const b = mine.find((x) => x.msg.startsWith("BENCH"));
+  const read = mine.find((x) => x.msg.startsWith("PROGRESS") && fields(x.msg).prefillMs !== "null");
+  return { label, decode: Number(fields(b.msg.replace(/ tok\/s/g, "")).decode), promptMs: Number(fields(read.msg).prefillMs) };
+});
+// r47-P1, with the guard, started after r47's pause had released. The stall runs from the progress record before
+// the first slow gap between records (over 1.5 s of decode) to the guard's line; the CPU zone is the logger's
+// sample at the stall's start and its lowest during it; the board temperature is the chain's at the run's start.
+const afterTrip = (() => {
+  const startLine = file("chain47.log").split("\n").find((l) => /^\d+ run r47-P1 guard/.test(l));
+  const started = Number(startLine.split(" ")[0]);
+  const ended = chainTime("chain47.log", /^\d+ run r47-P1 end/);
+  const mine = logcat("logcat-r47.txt").filter((x) => x.t >= started && x.t <= ended);
+  const g = mine.find((x) => x.msg.includes("decode steps stalled"));
+  const m = /stalled \((\d+) ms against (\d+)\)/.exec(g.msg);
+  const prog = mine.filter((x) => x.msg.startsWith("PROGRESS") && fields(x.msg).decodeMs !== "null").map((x) => ({ t: x.t, ms: Number(fields(x.msg).decodeMs) }));
+  const k = prog.findIndex((x, i) => i > 0 && x.ms - prog[i - 1].ms > 1500 && x.t <= g.t + 1);
+  const from = prog[k - 1].t;
+  const tr = trigOf("trig47.txt");
+  const during = tr.filter((x) => x.t >= Math.floor(from) && x.t <= g.t);
+  return {
+    stepMs: Number(m[1]),
+    normalMs: Number(m[2]),
+    sampled: during.length,
+    anyOn: during.some((x) => x.on),
+    cpuBefore: during[0].cpu,
+    cpuLow: round(Math.min(...during.map((x) => x.cpu)), 1),
+    xo: round(Number(/ xo (\d+)/.exec(startLine)[1]) / 1000, 1),
+  };
+})();
+const forced = { off: tripRun(47, "r47-P0"), on: tripRun(48, "r48-P1"), cool: coolRuns, afterTrip };
+
+// r49 on phone A: the app's engine at 1 to 8 threads, normally (N) and with six cores taken out of use by hand (P),
+// three rounds; a 19-token prompt and up to 32 tokens, the guard off. A run is the process whose START line falls
+// between the chain's start and end lines for it. Prefill tok/s is promptRead over prefillMs; decode tok/s is the
+// tokens after the first over decodeMs, as the engine's BENCH line counts it, up to the last progress line, so a
+// run its watchdog stopped still counts. A paused run counts only if its threads ran on CPUs 0 and 1 alone in
+// every place-<label>.txt sample with any of them busy. Medians per thread count and state.
+const chain49 = file("chain49.log").split("\n");
+const cat49 = logcat("logcat-r49.txt");
+const runs49 = chain49
+  .map((l) => l.match(/^(\d+) run (r49-\d-[NP]\d) threads (\d+) state ([NP])/))
+  .filter(Boolean)
+  .map((m) => {
+    const label = m[2];
+    const t0 = Number(m[1]);
+    const end = chain49.find((l) => l.includes(` run ${label} end `));
+    if (!end) return null;
+    const t1 = Number(end.split(" ")[0]);
+    const win = cat49.filter((x) => x.t >= t0 - 1 && x.t <= t1 + 2);
+    const st = win.filter((x) => x.tag === "OpenWeightsBench" && x.msg.startsWith("START"));
+    if (st.length !== 1) throw new Error(`${label}: ${st.length} START lines`);
+    const prog = win.filter((x) => x.pid === st[0].pid && x.msg.startsWith("PROGRESS")).map((x) => fields(x.msg));
+    const read = prog.find((f) => f.prefillMs !== "null");
+    const dec = prog.filter((f) => f.decodeMs !== "null" && Number(f.decodeMs) > 0);
+    let held = true;
+    if (m[4] === "P") {
+      let prev = null;
+      let busySamples = 0;
+      for (const line of file(`place-${label}.txt`).split("\n")) {
+        const p = line.trim().split(/\s+/);
+        if (!/^\d+$/.test(p[0]) || p.length < 4) continue;
+        // Every sample must also read all three pause switches on.
+        if (p[2] !== "111") held = false;
+        const cur = Object.fromEntries(
+          p
+            .slice(3)
+            .map((f) => f.split(":"))
+            .map(([tid, cpu, ticks]) => [tid, [Number(cpu), Number(ticks)]]),
+        );
+        if (prev) {
+          const busy = Object.entries(cur).filter(([tid, [, ticks]]) => prev[tid] && ticks > prev[tid][1]);
+          if (busy.length) busySamples++;
+          if (busy.some(([, [cpu]]) => cpu > 1)) held = false;
+        }
+        prev = cur;
+      }
+      if (!busySamples) held = false;
+    }
+    return {
+      label,
+      threads: Number(m[3]),
+      state: m[4],
+      held,
+      watchdog: chain49.some((l) => l.includes(`watchdog stopped ${label}`)),
+      prefill: read ? (Number(read.promptRead) / Number(read.prefillMs)) * 1000 : null,
+      decode: dec.length ? ((Number(dec.at(-1).generated) - 1) / Number(dec.at(-1).decodeMs)) * 1000 : null,
+    };
+  })
+  .filter(Boolean);
+const med = (xs) => (xs.length ? median(xs) : null);
+const threadMatrix = [1, 2, 3, 4, 5, 6, 7, 8].map((t) => {
+  const n = runs49.filter((r) => r.threads === t && r.state === "N");
+  const p = runs49.filter((r) => r.threads === t && r.state === "P" && r.held);
+  const pick = (xs, k, d) =>
+    xs
+      .map((r) => r[k])
+      .filter((x) => x !== null)
+      .map((x) => round(x, d));
+  return {
+    threads: t,
+    decode: { normal: med(pick(n, "decode", 3)), paused: med(pick(p, "decode", 4)), runs: [pick(n, "decode", 3), pick(p, "decode", 4)] },
+    prefill: { normal: med(pick(n, "prefill", 2)), paused: med(pick(p, "prefill", 3)), runs: [pick(n, "prefill", 2), pick(p, "prefill", 3)] },
+    left: runs49.filter((r) => r.threads === t && r.state === "P" && !r.held).map((r) => r.label),
+    watchdog: runs49.filter((r) => r.threads === t && r.watchdog).length,
+  };
+});
+
+// r49's two traced 6-thread runs: the kernel's sched_switch events for 2 s of decode. The engine's threads are the
+// ones named openweights-inf in the run's thread list, numbered by thread id. Each core's time goes to the task it
+// ran; before a core's first switch in the window, to that switch's previous task. Shares are of the whole window;
+// the segments, of `windowMs` from `fromMs`, are drawn as they are.
+function schedTrace(label, fromMs, windowMs) {
+  const eng = file(`tasks-${label}.txt`)
+    .split("\n")
+    .filter((l) => l.includes("openweights-inf"))
+    .map((l) => l.split(" ")[0])
+    .sort((a, b) => Number(a) - Number(b));
+  const num = Object.fromEntries(eng.map((tid, i) => [tid, i + 1]));
+  const ev = file(`trace-${label}.txt`)
+    .split("\n")
+    .map((l) => l.match(/\[(\d+)\].*?\s(\d+\.\d+): sched_switch: prev_comm=.* prev_pid=(\d+) .*==> next_comm=.* next_pid=(\d+)/))
+    .filter(Boolean)
+    .map((m) => ({ t: Number(m[2]), cpu: Number(m[1]), prev: m[3], next: m[4] }))
+    .sort((a, b) => a.t - b.t);
+  const t0 = ev[0].t;
+  const t1 = ev.at(-1).t;
+  const cur = {};
+  const since = {};
+  const busy = {};
+  const segs = [];
+  const a = fromMs / 1000;
+  const b = (fromMs + windowMs) / 1000;
+  const engineStretches = [];
+  const account = (cpu, tid, fr, to) => {
+    busy[`${cpu}:${tid}`] = (busy[`${cpu}:${tid}`] ?? 0) + to - fr;
+    if (num[tid]) engineStretches.push(to - fr);
+    const f = fr - t0;
+    const e = to - t0;
+    if (tid !== "0" && e > a && f < b) segs.push({ cpu, thread: num[tid] ?? 0, from: round((Math.max(f, a) - a) * 1000, 3), to: round((Math.min(e, b) - a) * 1000, 3) });
+  };
+  for (const x of ev) {
+    account(x.cpu, cur[x.cpu] ?? x.prev, since[x.cpu] ?? t0, x.t);
+    cur[x.cpu] = x.next;
+    since[x.cpu] = x.t;
+  }
+  for (const cpu of Object.keys(cur)) account(Number(cpu), cur[cpu], since[cpu], t1);
+  const span = t1 - t0;
+  const shares = eng.map((tid) => {
+    const per = Object.entries(busy).filter(([k]) => k.split(":")[1] === tid);
+    const total = per.reduce((s, [, v]) => s + v, 0);
+    // The cores it spent at least 1% of the window on.
+    const cpus = per
+      .filter(([, v]) => v / span >= 0.01)
+      .map(([k]) => Number(k.split(":")[0]))
+      .sort((x, y) => x - y);
+    return { thread: num[tid], share: round(total / span, 3), cpus };
+  });
+  const cores = [0, 1, 2, 3, 4, 5, 6, 7].map((cpu) => {
+    const on = Object.entries(busy).filter(([k]) => Number(k.split(":")[0]) === cpu);
+    const engine = on.filter(([k]) => num[k.split(":")[1]]).reduce((s, [, v]) => s + v, 0);
+    const idle = on.filter(([k]) => k.split(":")[1] === "0").reduce((s, [, v]) => s + v, 0);
+    const all = on.reduce((s, [, v]) => s + v, 0);
+    return { cpu, engine: round(engine / span, 3), other: round((all - engine - idle) / span, 3), idle: round(idle / span, 3), events: ev.filter((x) => x.cpu === cpu).length };
+  });
+  const stretches = { count: engineStretches.length, medianMs: round(median(engineStretches) * 1000, 3) };
+  // How an engine thread left its core: still runnable (R, R+: the scheduler took it) or blocked (S, D: the thread
+  // gave it up), and how often the kernel woke one. A thread that waited by sleeping would leave blocked and be woken.
+  const lines = file(`trace-${label}.txt`).split("\n");
+  const leftBy = {};
+  for (const l of lines) {
+    const m = l.match(/sched_switch: prev_comm=.* prev_pid=(\d+) .*prev_state=(\S+) ==>/);
+    if (m && num[m[1]]) leftBy[m[2]] = (leftBy[m[2]] ?? 0) + 1;
+  }
+  const taken = Object.entries(leftBy)
+    .filter(([st]) => st.startsWith("R"))
+    .reduce((n, [, c]) => n + c, 0);
+  const left = { taken, gaveUp: Object.values(leftBy).reduce((n, c) => n + c, 0) - taken };
+  const woken = lines.filter((l) => {
+    const m = l.match(/sched_wakeup: comm=.* pid=(\d+) /);
+    return m && num[m[1]];
+  }).length;
+  return { label, spanMs: round(span * 1000, 0), switches: ev.length, stretches, left, woken, fromMs, windowMs, shares, cores, segs };
+}
+const traces = { normal: schedTrace("r49-T-N6", 1000, 10), paused: schedTrace("r49-T-P6", 1000, 10) };
+
 const out = `// Generated by scripts/build-decode-stall-data.mjs from OpenWeights at ${commit.slice(0, 12)}
 // (${DIR}). Do not edit: change the script or the results and run it again.
 
@@ -269,10 +536,64 @@ export const benchmarkHeat = {
   points: ${JSON.stringify(benchmarkHeat.points)} as [number, number][],
 };
 
+// r46 on phone A: three chat sessions with no pause, back to back; the XO's 30 s means in minutes from the first's
+// start, each session's start, the peak, and how many logger samples had any pause device on.
+export const longSession = ${JSON.stringify(longSession)} as { minutes: number; starts: number[]; peak: number; samples: number; samplesOn: number; points: [number, number][] };
+
+// r47 and r48 on phone A: the hard throttle forced by heat, the same short decode inside it without the guard (off)
+// and with it (on); tokens written each second from the first logger sample with a pause device on.
+export const forcedTrip = ${JSON.stringify(forced)} as {
+  off: ForcedRun;
+  on: ForcedRun;
+  cool: { label: string; decode: number; promptMs: number }[];
+  afterTrip: { stepMs: number; normalMs: number; sampled: number; anyOn: boolean; cpuBefore: number; cpuLow: number; xo: number };
+};
+type ForcedRun = {
+  label: string;
+  heatMinutes: number;
+  heatFromC: number;
+  onC: number;
+  offC: number;
+  pauseS: number;
+  startS: number;
+  promptMs: number;
+  inPause: number;
+  afterFallback: number | null;
+  guard: number[];
+  decode: number;
+  points: [number, number][];
+};
+
+// r49 on phone A: the app's engine at 1 to 8 threads, normally and with six cores out of use, medians over the runs
+// that count, every run's value, the paused runs left out because their pause did not hold, and watchdog stops.
+export const threadMatrix = ${JSON.stringify(threadMatrix)} as {
+  threads: number;
+  decode: { normal: number | null; paused: number | null; runs: number[][] };
+  prefill: { normal: number | null; paused: number | null; runs: number[][] };
+  left: string[];
+  watchdog: number;
+}[];
+
+// r49's scheduler traces of six engine threads writing a reply, normally and with six cores out of use: each thread's
+// share of a core over 2 s and the cores it used, each core's time, and every stretch in a short window.
+export const schedTraces = ${JSON.stringify(traces)} as Record<"normal" | "paused", {
+  label: string;
+  spanMs: number;
+  switches: number;
+  stretches: { count: number; medianMs: number };
+  left: { taken: number; gaveUp: number };
+  woken: number;
+  fromMs: number;
+  windowMs: number;
+  shares: { thread: number; share: number; cpus: number[] }[];
+  cores: { cpu: number; engine: number; other: number; idle: number; events: number }[];
+  segs: { cpu: number; thread: number; from: number; to: number }[];
+}>;
+
 // Chat sessions on phone D: the XO thermistor's mean over each 30 s, minutes from the session's start.
 export const sessionHeat: { label: string; pause: string; minutes: number; peak: number; points: [number, number][] }[] = ${JSON.stringify(sessions, null, 2)};
 `;
 writeFileSync(new URL("../lib/decode-stall-data.ts", import.meta.url), out);
 console.log(
-  `lib/decode-stall-data.ts from ${commit.slice(0, 12)}: held ${held.with.progress.length}/${held.without.progress.length} progress lines, guard ${JSON.stringify(held.with.guard)}; short guard ${JSON.stringify(short.with.guard)}; sessions ${sessions.map((s) => `${s.label} ${s.minutes} min peak ${s.peak}`).join(", ")}; placement ${JSON.stringify(threadPlacement)}; bench ${JSON.stringify({ ...benchmarkHeat, points: benchmarkHeat.points.length })}`,
+  `lib/decode-stall-data.ts from ${commit.slice(0, 12)}: held ${held.with.progress.length}/${held.without.progress.length} progress lines, guard ${JSON.stringify(held.with.guard)}; short guard ${JSON.stringify(short.with.guard)}; sessions ${sessions.map((s) => `${s.label} ${s.minutes} min peak ${s.peak}`).join(", ")}; placement ${JSON.stringify(threadPlacement)}; bench ${JSON.stringify({ ...benchmarkHeat, points: benchmarkHeat.points.length })}; matrix ${JSON.stringify(threadMatrix.map((r) => [r.threads, r.decode.normal, r.decode.paused, r.prefill.normal, r.prefill.paused, r.left.length]))}; traces ${JSON.stringify(Object.fromEntries(Object.entries(traces).map(([k, v]) => [k, { shares: v.shares, stretches: v.stretches, segs: v.segs.length }])))}; long ${JSON.stringify({ ...longSession, points: longSession.points.length })}; forced ${JSON.stringify({ off: { ...forced.off, points: forced.off.points.length }, on: { ...forced.on, points: forced.on.points.length }, cool: forced.cool, afterTrip: forced.afterTrip })}`,
 );
