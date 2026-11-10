@@ -291,141 +291,114 @@ export function ThreadLife({ steps, footnote }: { steps: Life[]; footnote: strin
   );
 }
 
-const Dots = ({ n }: { n: number }) => (
-  <span aria-hidden className="inline-flex gap-1">
-    {Array.from({ length: n }, (_, i) => (
-      <span key={i} className="h-3 w-3 rounded-full" style={{ backgroundColor: RUNS }} />
-    ))}
-  </span>
-);
+// One state of threads and cores, drawn: the app's threads as dots on top, the phone's eight cores as tiles
+// below (hatched when out of use), and a line from each thread to the core Android puts it on. A thread with
+// no core free is a hollow orange dot on a dashed line to the core it waits for. Which core each lands on is
+// an example; how many fit is the point.
+type Placement = { title: string; caption: string; off: number[]; threads: { core: number; waiting?: boolean }[] };
 
-// The small pictures under the thread steps: each is a card with a title, one or two labelled rows of
-// cores and threads, and one line.
-const Card = ({ title, line, children }: { title: string; line: string; children?: React.ReactNode }) => (
-  <div className="flex flex-col rounded-xl bg-white p-4">
-    <p className="text-sm font-medium">{title}</p>
-    {children && <div className="mt-3 space-y-2">{children}</div>}
-    <p className="mt-3 text-sm leading-6 text-ink-soft">{line}</p>
-  </div>
-);
+function MapPanel({ p, id }: { p: Placement; id: string }) {
+  const [W, tileW, gap, top, tileY, tileH] = [260, 26, 4, 22, 96, 26];
+  const left = (W - (8 * tileW + 7 * gap)) / 2;
+  const coreX = (c: number) => left + c * (tileW + gap) + tileW / 2;
+  const n = p.threads.length;
+  const dotX = (i: number) => W / 2 + (i - (n - 1) / 2) * 30;
+  return (
+    <div className="min-w-0">
+      <p className="text-sm font-medium">{p.title}</p>
+      <svg viewBox={`0 0 ${W} 132`} role="img" aria-label={`${p.title}. ${p.caption}`} className="mt-2 w-full">
+        <defs>
+          <pattern id={id} width="5" height="5" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+            <rect width="5" height="5" fill="#ffffff" />
+            <rect width="2" height="5" fill={PARKED} />
+          </pattern>
+        </defs>
+        {p.threads.map((t, i) => (
+          <line
+            key={`l${i}`}
+            x1={dotX(i)}
+            y1={top + 8}
+            x2={coreX(t.core)}
+            y2={tileY}
+            stroke={t.waiting ? WAITS : "var(--color-ink-soft)"}
+            strokeWidth={1.5}
+            strokeDasharray={t.waiting ? "3 3" : undefined}
+          />
+        ))}
+        {p.threads.map((t, i) => (
+          <circle key={`d${i}`} cx={dotX(i)} cy={top} r={7} fill={t.waiting ? "#ffffff" : RUNS} stroke={t.waiting ? WAITS : RUNS} strokeWidth={2} />
+        ))}
+        {Array.from({ length: 8 }, (_, c) => {
+          const off = p.off.includes(c);
+          return (
+            <g key={c}>
+              <rect x={left + c * (tileW + gap)} y={tileY} width={tileW} height={tileH} rx={4} fill={off ? `url(#${id})` : RUNS} stroke={off ? PARKED : RUNS} />
+              <text x={coreX(c)} y={tileY + 17} textAnchor="middle" fontSize={11} fontWeight={500} fill={off ? "#3d4460" : "#ffffff"}>
+                {c}
+              </text>
+            </g>
+          );
+        })}
+      </svg>
+      <p className="mt-2 text-sm leading-6 text-ink-soft">{p.caption}</p>
+    </div>
+  );
+}
 
-const Lane = ({ label, children }: { label: string; children: React.ReactNode }) => (
-  <div className="grid grid-cols-[5.25rem_minmax(0,1fr)] items-center gap-2">
-    <span className="text-xs text-ink-soft">{label}</span>
-    <span className="flex flex-wrap items-center gap-1.5">{children}</span>
-  </div>
-);
-
-// A core with one thread on it: the tile is the core, the white dot the thread.
-const CoreWithThread = ({ core }: { core: number }) => (
-  <span className="flex h-7 items-center gap-1.5 rounded-md px-2 text-xs font-medium text-white" style={{ backgroundColor: RUNS }} title={`Core ${core}, one thread on it`}>
-    {core}
-    <span aria-hidden className="h-2.5 w-2.5 rounded-full bg-white" />
-  </span>
-);
-
-// Threads with no core to run on.
-const Waiting = ({ n }: { n: number }) => (
-  <span className="inline-flex items-center gap-1.5 text-xs text-ink-soft">
-    <span aria-hidden className="inline-flex gap-1">
-      {Array.from({ length: n }, (_, i) => (
-        <span key={i} className="h-2.5 w-2.5 rounded-full" style={{ boxShadow: `inset 0 0 0 1.5px ${WAITS}` }} />
-      ))}
-    </span>
-    {n} waiting
-  </span>
-);
-
-// Eight small core tiles, the ones in `off` hatched.
-const MiniCores = ({ off }: { off: number[] }) => (
-  <span className="flex w-full gap-1" role="img" aria-label={off.length ? `Cores 0 and 1 running work, ${off.length} out of use` : "All eight cores listed as usable"}>
-    {Array.from({ length: 8 }, (_, c) => (
-      <span
-        key={c}
-        className="flex h-7 min-w-0 flex-1 items-center justify-center rounded text-[11px] font-medium"
-        style={off.includes(c) ? { ...hatch(PARKED), color: "#3d4460" } : { backgroundColor: RUNS, color: "#ffffff" }}
-      >
-        {c}
-      </span>
-    ))}
-  </span>
-);
-
-// How the app picks its thread count: a real sequence, so the steps are numbered, and each shows its count as
-// dots, one a thread.
-const Step = ({ n, title, children }: { n: number; title: string; children: React.ReactNode }) => (
-  <li className="min-w-0">
-    <p className="flex items-center gap-2 text-sm font-medium">
-      <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-ink text-xs text-white">{n}</span>
-      {title}
-    </p>
-    <div className="mt-3 space-y-2 text-sm leading-6">{children}</div>
-  </li>
-);
-const Row = ({ label, count, text }: { label: string; count?: number; text: string }) => (
-  <p className="grid grid-cols-[6.5rem_minmax(0,1fr)] items-center gap-2">
-    <span className="text-ink-soft">{label}</span>
-    <span className="flex flex-wrap items-center gap-2">
-      {count ? <Dots n={count} /> : null}
-      <span>{text}</span>
-    </span>
-  </p>
-);
-
-export function ThreadChoice({ normal, warm, hot, fallback, retrySeconds }: { normal: number; warm: number; hot: number; fallback: number; retrySeconds: number }) {
-  const who: [string, string][] = [
-    ["The app", "How many threads write the reply"],
-    ["Android", "Which core runs each thread, moment to moment"],
-    ["The phone", "Which cores can run work: normally all 8; in the Snapdragon's hard throttle, only cores 0 and 1"],
-  ];
+// Who decides what, shown rather than told: three states side by side, then how the app picks its count and
+// the two reasons behind its design.
+export function ThreadChoice({ panels, rules, notes }: { panels: Placement[]; rules: { when: string; text: string }[]; notes: [string, string][] }) {
   return (
     <ChartCard>
-      <p className="text-sm font-medium">Who decides what</p>
-      <dl className="mt-3 grid gap-3 sm:grid-cols-3">
-        {who.map(([k, v]) => (
-          <div key={k} className="rounded-xl bg-white p-4">
-            <dt className="text-sm font-medium">{k}</dt>
-            <dd className="mt-1 text-sm leading-6 text-ink-soft">{v}</dd>
-          </div>
+      <p className="flex flex-wrap gap-x-6 gap-y-1.5 text-sm">
+        <span className="inline-flex items-center gap-2">
+          <span aria-hidden className="h-3 w-3 rounded-full" style={{ backgroundColor: RUNS }} />
+          <span>
+            <span className="font-medium">The app</span> picks how many threads
+          </span>
+        </span>
+        <span className="inline-flex items-center gap-2">
+          <span aria-hidden className="h-[2px] w-4 bg-ink-soft" />
+          <span>
+            <span className="font-medium">Android</span> puts each on a core
+          </span>
+        </span>
+        <span className="inline-flex items-center gap-2">
+          <Swatch color={RUNS} />
+          <Swatch color={PARKED} hatched />
+          <span>
+            <span className="font-medium">The phone</span> decides which cores run
+          </span>
+        </span>
+        <span className="inline-flex items-center gap-2">
+          <span aria-hidden className="h-3 w-3 rounded-full bg-white" style={{ boxShadow: `inset 0 0 0 2px ${WAITS}` }} />
+          Waiting for a core
+        </span>
+      </p>
+      <div className="mt-5 grid gap-8 md:grid-cols-3">
+        {panels.map((p, i) => (
+          <MapPanel key={p.title} p={p} id={`threadmap-hatch-${i}`} />
         ))}
-      </dl>
-      <p className="mt-8 text-sm font-medium">How the app picks its number of threads</p>
-      <ol className="mt-4 grid gap-8 md:grid-cols-3">
-        <Step n={1} title="Before each reply">
-          <Row label="Normally" count={normal} text={`${normal} threads`} />
-          <p className="text-ink-soft">Half the CPU&apos;s cores, never under 2 or over 6. These phones have 8.</p>
-        </Step>
-        <Step n={2} title="If Android says the phone is hot">
-          <Row label="Warm" count={warm} text={`${warm} threads`} />
-          <Row label="Hot" count={hot} text={`${hot} threads`} />
-          <Row label="Very hot" text="Does not start the reply" />
-        </Step>
-        <Step n={3} title="If the reply stalls">
-          <Row label="Two slow steps" count={fallback} text={`${fallback} threads`} />
-          <p className="text-ink-soft">Every {retrySeconds} s it tries the count from steps 1 and 2 again, and keeps it if that step is close to the 2-thread pace.</p>
-        </Step>
-      </ol>
-      <div className="mt-8 grid gap-3 md:grid-cols-3">
-        <Card title="Why 2 threads fit" line="Two threads run on at most two cores at once, so they fit on the two left.">
-          <Lane label="2 threads">
-            <CoreWithThread core={0} />
-            <CoreWithThread core={1} />
-          </Lane>
-          <Lane label="6 threads">
-            <CoreWithThread core={0} />
-            <CoreWithThread core={1} />
-            <Waiting n={4} />
-          </Lane>
-        </Card>
-        <Card title="Why the guard times each step" line="On the Snapdragon we checked, Android's list still showed all eight, so the app cannot count the cores left.">
-          <Lane label="Android's list">
-            <MiniCores off={[]} />
-          </Lane>
-          <Lane label="Running work">
-            <MiniCores off={[2, 3, 4, 5, 6, 7]} />
-          </Lane>
-        </Card>
-        <Card title="Why threads are not tied to cores" line="Linux allows it, but OpenWeights lets Android place its threads on any core the app may use." />
+      </div>
+      <div className="mt-6 grid gap-6 border-t border-rule pt-5 md:grid-cols-2">
+        <div>
+          <p className="text-sm font-medium">How many threads the app picks</p>
+          <dl className="mt-3 space-y-2 text-sm">
+            {rules.map((r) => (
+              <div key={r.when} className="grid grid-cols-[8.5rem_minmax(0,1fr)] items-center gap-3 sm:grid-cols-[11rem_minmax(0,1fr)]">
+                <dt className="text-ink-soft">{r.when}</dt>
+                <dd>{r.text}</dd>
+              </div>
+            ))}
+          </dl>
+        </div>
+        <div className="space-y-3 text-sm leading-6">
+          {notes.map(([k, v]) => (
+            <p key={k}>
+              <span className="font-medium">{k}</span> <span className="text-ink-soft">{v}</span>
+            </p>
+          ))}
+        </div>
       </div>
     </ChartCard>
   );

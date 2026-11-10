@@ -125,10 +125,45 @@ export default function DecodeStall() {
         <Figure
           id="choice"
           title="The app picks how many threads; the phone decides which cores are in use"
-          lede="A thread is a worker helping write the reply; a core is a processor that runs it. Who chooses the number of threads, and who chooses where they run."
+          lede="A thread is a worker helping write the reply; a core is a processor that runs it. The app chooses how many threads, the phone how many cores."
           note="From the app's heat policy (ThermalPolicy.kt) and its guard (stall_guard.h); the exact rules are under Every number."
         >
-          <ThreadChoice normal={pdStall.app.normal} warm={pdStall.app.light} hot={pdStall.app.severe} fallback={2} retrySeconds={30} />
+          <ThreadChoice
+            panels={[
+              {
+                title: "Normally",
+                caption: `${pdStall.app.normal} threads, each on a core of its own.`,
+                off: [],
+                threads: [{ core: 2 }, { core: 3 }, { core: 6 }, { core: 7 }],
+              },
+              {
+                title: "Hard throttle, the usual 4 threads",
+                caption: "Only cores 0 and 1 run work, so two threads wait at a time and the reply nearly stops.",
+                off: parkedCores,
+                threads: [{ core: 0 }, { core: 1 }, { core: 0, waiting: true }, { core: 1, waiting: true }],
+              },
+              {
+                title: "Hard throttle, the guard's 2 threads",
+                caption: "Two threads, two cores: each has one again.",
+                off: parkedCores,
+                threads: [{ core: 0 }, { core: 1 }],
+              },
+            ]}
+            rules={[
+              { when: "Before each reply", text: `${pdStall.app.normal} threads, half the cores` },
+              { when: "Android says warm", text: `${pdStall.app.light} threads` },
+              { when: "Android says hot", text: `${pdStall.app.severe} threads` },
+              { when: "Android says very hot", text: "does not start the reply" },
+              { when: "A reply stalls", text: "2 threads, trying its count again every 30 s" },
+            ]}
+            notes={[
+              [
+                "Why the guard times each step.",
+                "On the Snapdragon we checked, Android's list of usable cores still showed all eight while six were out of use, so the app cannot count the cores left.",
+              ],
+              ["Why threads are not tied to cores.", "Linux allows it, but OpenWeights lets Android place its threads on any core the app may use."],
+            ]}
+          />
         </Figure>
 
         <Figure
@@ -384,9 +419,10 @@ export default function DecodeStall() {
             inside a stretch with cores out of use. Shares over a whole core, from whole-second timestamps, show as 100%.
           </Note>
           <Note>
-            The app&apos;s rules. Warm is Android&apos;s light or moderate heat status, hot is severe, very hot is critical or worse. A slow step takes over a quarter of a second
-            and more than 8 times the recent normal step, or more than 2 s over it; before the guard has seen enough steps, any step over 1.5 s. A try comes after at least four
-            steps at 2 threads, and keeps the planned count if its step is within 3 times the recent 2-thread step and within 2 s of it.
+            The app&apos;s rules. Before each reply, half the cores, never under 2 or over 6. Warm is Android&apos;s light or moderate heat status, hot is severe, very hot is
+            critical or worse. A slow step takes over a quarter of a second and more than 8 times the recent normal step, or more than 2 s over it; before the guard has seen enough
+            steps, any step over 1.5 s. A try comes after at least four steps at 2 threads, and keeps the planned count if its step is within 3 times the recent 2-thread step and
+            within 2 s of it.
           </Note>
           <Table
             label="Six natural hard throttles, logged every 2 seconds"
