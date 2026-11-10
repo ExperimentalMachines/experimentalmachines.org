@@ -22,7 +22,7 @@ export type Processor = (typeof processors)[number];
 
 export const pdPhone = {
   soc: "Snapdragon 8 Elite Gen 5 (SM8850)",
-  dates: "2 to 9 November 2026",
+  dates: "2 to 10 November 2026",
   llamacpp: "b2e5e9b (release b10549)",
 };
 
@@ -135,6 +135,60 @@ export const pdStall = {
   // The app's decode threads, set once before each reply: 4 here (half the cores), 3 at light or
   // moderate, 2 at severe; at critical or above it does not start the reply.
   app: { normal: 4, light: 3, severe: 2 },
+};
+
+// What came after the matrix: the stall profiled, two fixes measured, chat paced like a person, and the
+// thread count. From the report's sections for r28 to r45 (docs/research/snapdragon-pd-matrix.md) and
+// the result files under tools/snapdragon/results. Change them there first.
+export const pdFix = {
+  // r28: simpleperf (cpu-clock, 1 kHz) over a 6-thread decode with the pause set by hand and without.
+  // The share of samples in ggml_graph_compute_thread, which holds the inlined barrier wait, and in the
+  // matrix and attention kernels; cores busy on average.
+  profile: { pausedWait: 69.6, normalWait: 8.6, pausedKernels: 29, normalKernels: 78, pausedCores: 1.83, normalCores: 3.46 },
+  // r29 and r31: llama.cpp's barrier made to call sched_yield after a spin budget. Decode in tok/s on the
+  // same three turns (Qwen3 4B, UltraChat-200k-2): the pause set by hand with 6 or 4 threads after
+  // 10,000 spins; unpaused decode after 10,000 as a share of the stock wait's on the turns it slowed;
+  // the pause after 1,000,000 spins (6 and 4 threads).
+  yield: { paused10k: [3.0, 3.6], normal10kShare: [20, 62], paused1m: [0.6, 1.2], stockPaused2: 6.9 },
+  // r34, r38 and r39 on phone D: the engine's own test, a 1,751-token prompt, up to 1,024 tokens of
+  // reply, 4 threads, the pause set by hand 10 s into decode. Rates in tok/s; times in s.
+  guard: {
+    pausedOn: [3.21, 3.37],
+    pausedOff: [0.57, 0.61],
+    fellBackHeldS: [7, 19],
+    fellBackShortS: [6, 14],
+    returnedAfterS: [6, 14],
+    firstToken4S: [101, 103],
+    firstToken2S: [138, 139],
+    shortPauseOn: [115.7, 118.7],
+    shortPauseOff: [122.0, 124.6],
+    noPause4: [10.04, 10.3],
+    noPause4Guard: 10.18,
+    noPause2: [8.94, 9.16],
+    twoThreadsCostPct: 11,
+    tryCostS: [2.6, 8.7],
+    pausesSet: 14,
+    pausesFailed: 1,
+  },
+  // r41 on the owner's MediaTek POCO X8 Pro Max (MT6991), the same prompt and length, on USB power.
+  poco: { four: [6.77, 7.22], two: [4.86, 5.07], decodeCostPct: 29, prefillCostPct: 49, firstToken4S: [128, 140], firstToken2S: [249, 278] },
+  // r33, r39, r37 and r41: the study's conversations chatted through on one loaded engine, each reply
+  // the model's own (up to 512 tokens), with a pause before each next message. Decode is the median
+  // tok/s over the turns; first token the median and the longest in seconds.
+  sessions: [
+    { phone: "Snapdragon, phone D", pause: "30 s", turns: 29, minutes: 40.7, peak: "XO 64.2 °C", hard: "none in 1,876 samples", decode: 12.8, first: "4.8 (119.3)" },
+    { phone: "Snapdragon, phone D", pause: "5 s", turns: 31, minutes: 30.4, peak: "XO 73.7 °C", hard: "none in 1,453", decode: 13.3, first: "4.8 (119.4)" },
+    { phone: "Snapdragon, phone D", pause: "none", turns: 34, minutes: 30.6, peak: "XO 76.4 °C", hard: "none in 1,709, all eleven switches read", decode: 12.7, first: "4.9 (119.4)" },
+    { phone: "MediaTek POCO, charging", pause: "30 s", turns: 17, minutes: 30.9, peak: "CPU 73.8 °C", hard: "Android status 0 throughout", decode: 8.2, first: "3.2 (108.4)" },
+    { phone: "MediaTek POCO, charging", pause: "none", turns: 34, minutes: 42.8, peak: "CPU 85.4 °C", hard: "Android status 0 throughout", decode: 8.1, first: "6.4 (138.2)" },
+  ],
+  sessionTurns: 145,
+  // r19 and r22: the same greedy tokens on the same teacher-forced context, 33 turns a cell.
+  agreement: { sameCount: 33, changed: 23, of: 33, firstDiverge: [13, 305] },
+  // The engine's own mem lines: Qwen3 4B Q4_0 resident, 2,048 to 8,192 tokens of window, two phones.
+  memoryGb: [3.0, 4.5],
+  // The sixth turn of the first conversation: the cache stopped matching 550 tokens from the end.
+  cacheMiss: { tokens: 550, snapdragonS: 119, pocoS: 108 },
 };
 
 export type PdPair = { prefill: Processor; decode: Processor; cell: PdCell };

@@ -89,7 +89,7 @@ export const studies: Study[] = [
   {
     href: "/research/prefill-decode/",
     title: "Prefill and decode on CPU, GPU and NPU",
-    date: "2 to 9 November 2026",
+    date: "2 to 10 November 2026",
     project: "OpenWeights",
     line: "Which processor should prefill and which should decode: nine models, every pairing, on a Snapdragon 8 Elite Gen 5.",
     hook: `${npuWins} of ${pdModels.length}`,

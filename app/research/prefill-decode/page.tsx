@@ -5,6 +5,7 @@ import Post, { Figure, Findings, H4, More, Note, P, postMetadata, Row, Rows, Sec
 import {
   name,
   pairs,
+  pdFix,
   pdGate,
   pdLinks,
   pdModels,
@@ -151,6 +152,22 @@ export default function PrefillDecode() {
                   The phone throttles itself in two steps as it heats. Every pairing compared ran under the first; the second comes and goes, and CPU decode gets stuck while it is
                   on. Up to {Math.round(Math.max(...stuckShares))}% of a CPU-decode pairing&apos;s time went to decode steps that took over half a second. Both steps are described
                   under{" "}
+                  <a href="#heat" className={link}>
+                    Heat
+                  </a>
+                  .
+                </>
+              ),
+            },
+            {
+              headline: "The stall has a cause, and the app now has a guard",
+              line: (
+                <>
+                  A profile put {pdFix.profile.pausedWait}% of a paused 6-thread run&apos;s CPU time in the function that holds llama.cpp&apos;s spinning wait, against{" "}
+                  {pdFix.profile.normalWait}% unpaused. The app&apos;s engine now drops to 2 threads when steps stall and tries its count again every 30 s: through a hard
+                  throttle set by hand it wrote {pdFix.guard.pausedOn[0]} to {pdFix.guard.pausedOn[1]} tokens a second against {pdFix.guard.pausedOff[0]} to{" "}
+                  {pdFix.guard.pausedOff[1]} without it. Chat paced like a person, even with no pause between turns, did not reach the hard throttle in 30 to 41 minutes on the
+                  Snapdragon. Under{" "}
                   <a href="#heat" className={link}>
                     Heat
                   </a>
@@ -348,7 +365,7 @@ export default function PrefillDecode() {
         <More
           id="stuck"
           title="When CPU decode gets stuck"
-          summary="What happens during the hard throttle, what it cost each pairing, why we think it happens, whether the OpenWeights app hits it, and what could fix it."
+          summary="What happens during the hard throttle, what it cost each pairing, why it happens, whether the OpenWeights app hits it, what now guards against it, and whether ordinary use gets there."
         >
           <div>
             <H4>What happens</H4>
@@ -433,7 +450,7 @@ export default function PrefillDecode() {
           </div>
 
           <div>
-            <H4>Why we think it happens</H4>
+            <H4>Why it happens</H4>
             <div className="mt-3 space-y-4">
               <P>
                 The CPU decodes with 6 threads, and normally each has a core of its own. llama.cpp computes each token as a chain of operations ({grouped(pdStall.graphNodes)} in
@@ -445,8 +462,10 @@ export default function PrefillDecode() {
                 threads with work left wait for a core.
               </P>
               <P>
-                Each wait can then cost milliseconds, hundreds of times per token: enough to turn milliseconds per token into seconds. This fits the code and the timings; the
-                waiting itself has not been traced.
+                Each wait can then cost milliseconds, hundreds of times per token: enough to turn milliseconds per token into seconds. A profile on phone E shows it: with the pause
+                set by hand, {pdFix.profile.pausedWait}% of a 6-thread decode&apos;s CPU time was in the function that holds that wait, against {pdFix.profile.normalWait}% unpaused,
+                while the matrix and attention kernels&apos; share fell from about {pdFix.profile.normalKernels}% to {pdFix.profile.pausedKernels}%, on {pdFix.profile.pausedCores} cores
+                busy on average against {pdFix.profile.normalCores}. The profile is by function, so the split inside that function between the wait and its other work is not in it.
               </P>
               <P>
                 A later run on phone B recorded where the threads ran. During hard throttles the busy threads were on cores 0 and 1 in 99.7% of samples, against all 8 cores the
@@ -473,8 +492,8 @@ export default function PrefillDecode() {
                 the phone&apos;s surface temperature.
               </P>
               <P>
-                A reply already running keeps its threads, so a hard throttle that starts mid-reply can still meet {pdStall.app.normal}. On a phone whose Android signal lags the
-                heat, the app would keep {pdStall.app.normal} threads throughout.
+                Before the guard below, a reply already running kept its threads, so a hard throttle that started mid-reply met {pdStall.app.normal}. On a phone whose Android
+                signal lags the heat, the app kept {pdStall.app.normal} threads throughout.
               </P>
               <P>
                 With the pause set by hand on a fifth phone of the same kind (E), the app&apos;s own engine, which keeps its threads in a pool for the life of the model,
@@ -482,6 +501,83 @@ export default function PrefillDecode() {
                 runs each, a token every 4.1 seconds on average. With 3 it decoded at 0.51; with 2 at 10.6, 46% of its unpaused rate with 2 threads. With the pause held
                 through a whole run, the engine at its usual {pdStall.app.normal} threads decoded about 95 times slower. These runs used Qwen3 4B, a 19-token prompt and a 64-token
                 reply; the thread pool was the app&apos;s, but its heat policy, which picks the thread count before each reply, was not in the loop.
+              </P>
+              <P>
+                Could the app read the throttle switches itself? On these rack phones its test process could read all eleven; on a retail MediaTek phone (the POCO below) it could
+                not even list the thermal devices. So a fix cannot rely on them.
+              </P>
+            </div>
+          </div>
+
+          <div>
+            <H4>What the app now does</H4>
+            <div className="mt-3 space-y-4">
+              <P>
+                The engine now watches its own decode steps. Two steps in a row that are slow, over a quarter of a second and more than 8 times the recent normal step or more
+                than 2 seconds over it (or over 1.5 seconds with no history yet), drop decode and prompt reading to 2 threads; every 30 seconds it tries one step at its planned
+                count and keeps it if that step is close to its 2-thread steps. The normal step is the median of the last eight, so one odd step moves nothing. Codex reviewed
+                it seven times before and after it reached a phone; the bugs those rounds found are listed in the report. The pause runs below used earlier builds of the guard,
+                which differ in how the normal step is kept; every stalled step they met was 37 to 127 times the normal one, which every version judges alike. The final rules
+                have run on the POCO without a pause and not yet through one.
+              </P>
+              <P>
+                Measured on phone D with the pause set by hand 10 seconds into decode, on a {grouped(1751)}-token prompt and replies of up to {grouped(1024)} tokens, 4 threads.
+                Through a pause that stayed, the engine wrote {pdFix.guard.pausedOn[0]} to {pdFix.guard.pausedOn[1]} tokens a second with the guard against{" "}
+                {pdFix.guard.pausedOff[0]} to {pdFix.guard.pausedOff[1]} without it, falling back {pdFix.guard.fellBackHeldS[0]} to {pdFix.guard.fellBackHeldS[1]} seconds
+                after the pause began; each try at 4 threads inside the pause cost one stalled step of {pdFix.guard.tryCostS[0]} to {pdFix.guard.tryCostS[1]} seconds. Through a
+                30-second pause it fell back {pdFix.guard.fellBackShortS[0]} to {pdFix.guard.fellBackShortS[1]} seconds in, decoded in {pdFix.guard.shortPauseOn[0]} to{" "}
+                {pdFix.guard.shortPauseOn[1]} seconds against {pdFix.guard.shortPauseOff[0]} to {pdFix.guard.shortPauseOff[1]} without it, and returned to 4 threads{" "}
+                {pdFix.guard.returnedAfterS[0]} to {pdFix.guard.returnedAfterS[1]} seconds after the pause ended. With no pause the guarded run decoded at {pdFix.guard.noPause4Guard} tokens a second, between the two unguarded runs ({pdFix.guard.noPause4[0]} and{" "}
+                {pdFix.guard.noPause4[1]}); it never fell back in {pdFix.sessionTurns} turns of chat on two phones.
+              </P>
+              <P>
+                Three things it does not show. The pause was set by hand: no natural hard throttle came while the guard ran. One of {pdFix.guard.pausesSet} pauses set by hand did
+                not hold (threads kept running on two cores it should have parked), and two more probably did not; those runs are left out. And a pause that begins while the
+                prompt is being read is not caught, since the guard reads decode steps.
+              </P>
+            </div>
+          </div>
+
+          <div>
+            <H4>Does ordinary use reach it?</H4>
+            <div className="mt-3 space-y-4">
+              <P>
+                The study&apos;s conversations, chatted through turn by turn on one loaded engine with the model&apos;s own replies kept in the history and a pause before each next
+                message, as a person reads. Qwen3 4B, 4 threads, the guard on.
+              </P>
+            </div>
+            <Table
+              label="Chat sessions against the throttle"
+              head={["Phone", "Pause between turns", "Turns", "Hottest reading", "Hard throttle (Snapdragon) or Android's thermal status (POCO)", "Decode tok/s", "First token s, median (longest)"]}
+              min="52rem"
+              rows={pdFix.sessions.map((r) => [r.phone, r.pause, `${r.turns} in ${r.minutes} min`, r.peak, r.hard, r.decode.toFixed(1), r.first])}
+            />
+            <Note>
+              The hard throttle trips at {pdTrigger.onC} °C on the XO thermistor; the POCO has no such switch an app or a shell can read, so its rows give Android&apos;s thermal
+              status, which never left 0. The soft throttle held almost throughout every Snapdragon session, with the CPU clocks capped at about half. Decode slowed within
+              each conversation as its context grew and recovered with each new one. On both phones one turn waited about two minutes for its first word (
+              {pdFix.cacheMiss.snapdragonS} and {pdFix.cacheMiss.pocoS} s) after the engine&apos;s cache stopped matching {pdFix.cacheMiss.tokens} tokens from the end of the
+              prompt and it re-read them; why the cache did not match, and whether heat added to the wait, were not traced. The POCO was charging, which adds heat, and its
+              power service read the screen as dozing for most of its longer session; a phone in a hand was still not measured.
+            </Note>
+          </div>
+
+          <div>
+            <H4>How many threads, then</H4>
+            <div className="mt-3 space-y-4">
+              <P>
+                Four for decode, half the cores, with the guard. At this length and without a pause, 2 threads decoded {pdFix.guard.twoThreadsCostPct}% slower than 4 on the
+                Snapdragon ({pdFix.guard.noPause2[0]} and {pdFix.guard.noPause2[1]} against {pdFix.guard.noPause4[0]} and {pdFix.guard.noPause4[1]} tokens a second), and
+                the first word came after {pdFix.guard.firstToken2S[0]} to {pdFix.guard.firstToken2S[1]} seconds against {pdFix.guard.firstToken4S[0]} to{" "}
+                {pdFix.guard.firstToken4S[1]}. On the MediaTek POCO, same prompt and length, 2 threads cost far more: decode {pdFix.poco.two[0]} and {pdFix.poco.two[1]}{" "}
+                against {pdFix.poco.four[0]} and {pdFix.poco.four[1]} tokens a second ({pdFix.poco.decodeCostPct}% slower), prompt reading {pdFix.poco.prefillCostPct}% slower, the first
+                word after {pdFix.poco.firstToken2S[0]} to {pdFix.poco.firstToken2S[1]} seconds against {pdFix.poco.firstToken4S[0]} to {pdFix.poco.firstToken4S[1]}. A fixed 2 would
+                pay that on every reply to insure against a throttle no Snapdragon session reached; the guard pays it only on a stall.
+              </P>
+              <P>
+                The thread count also changes the text. The same count gave identical replies on two phones, token for token; 6 threads against 2 changed{" "}
+                {pdFix.agreement.changed} of {pdFix.agreement.of} replies, first diverging between the {pdFix.agreement.firstDiverge[0]}th and{" "}
+                {pdFix.agreement.firstDiverge[1]}th token, because the sums come out in a different order and a close greedy choice flips. Neither version was graded.
               </P>
             </div>
           </div>
@@ -502,7 +598,7 @@ export default function PrefillDecode() {
                 under the trip and decoded 61% faster than the 2-thread runs. Inside a hard throttle set by hand, 2 threads did not get stuck (above). Switching from 6 threads
                 to 2 whenever the throttle switches read on, with the throttle turned on and off every 15 seconds, decoded at 4.3 to 6.3 tokens a second during the throttle,
                 against 0.3 to 0.9 without switching, and finished the same work in 21% less time (median decode times). The rates during the throttle split each step by how much
-                of it the throttle covered, and the CPU&apos;s ceilings also differed between the two. It read the switches as root; whether an app can read them was not tested.
+                of it the throttle covered, and the CPU&apos;s ceilings also differed between the two. It read the switches as root; the app&apos;s own guard, above, reads none.
               </P>
             </div>
           </div>
@@ -513,8 +609,8 @@ export default function PrefillDecode() {
               label="What could fix it"
               head={["Change", "Where", "Status"]}
               rows={[
-                ["Drop to 2 threads as soon as one decode step takes over half a second, then step back up", "App", "Not measured as an app would do it. Switching on the throttle switches themselves, read as root, cut median decode time 21% with the throttle set by hand and turned on and off every 15 s"],
-                ["Make a waiting thread give up its core after a short check, instead of holding it", "llama.cpp", "Not measured; must not slow normal decode"],
+                ["Drop to 2 threads after two stalled decode steps, then try the planned count every 30 s", "App", `Built into the engine and measured above: ${pdFix.guard.pausedOn[0]} to ${pdFix.guard.pausedOn[1]} tokens a second through a pause set by hand against ${pdFix.guard.pausedOff[0]} to ${pdFix.guard.pausedOff[1]}. Not yet seen in a natural hard throttle`],
+                ["Make a waiting thread give up its core after a short check, instead of holding it", "llama.cpp", `Measured, and no setting tried does both: yielding after 10,000 spins kept ${pdFix.yield.paused10k[0]} to ${pdFix.yield.paused10k[1]} tokens a second in the pause but slowed unpaused decode on some turns to ${pdFix.yield.normal10kShare[0]}% to ${pdFix.yield.normal10kShare[1]}% of the stock wait; after 1,000,000 spins the unpaused cost was within run-to-run variation and the pause got ${pdFix.yield.paused1m[0]} to ${pdFix.yield.paused1m[1]}. Both lose to 2 threads (${pdFix.yield.stockPaused2} in the same pause)`],
                 ["Decode on the NPU during the hard throttle", "App", "Not measured; the NPU is slower then too"],
                 ["Read how many cores the app may use, before each step", "App", "Ruled out on this phone: the count stayed at 8 through a logged hard throttle"],
               ]}
@@ -528,12 +624,14 @@ export default function PrefillDecode() {
           <Row label="Phones">
             Five {pdPhone.soc} phones of the same kind (A to E), Android 16, root shell, on AC power in Qualcomm Device Cloud&apos;s rack, {pdPhone.dates}. Each model ran all nine
             of its pairings on one phone, in one run, except Qwen3 4B&apos;s GPU → CPU, run again on phone D because it had started cool. The 2-thread run and the GPU&apos;s
-            throttle costs ran on phone B on 8 and 9 November, and the throttles set by hand on phone B on 9 November; the 2-thread rerun and the app&apos;s own engine on phone E the same day.
+            throttle costs ran on phone B on 8 and 9 November, and the throttles set by hand on phone B on 9 November; the 2-thread rerun, the app&apos;s own engine and the
+            profile on phone E the same day; the guard, the barrier change and the chat sessions on phone D on 9 and 10 November. One MediaTek phone, a POCO X8 Pro Max
+            (MT6991, HyperOS, Android 16) on USB power, ran the chat sessions and the thread comparison on 9 and 10 November.
           </Row>
           <Row label="Runtime">
             llama.cpp {pdPhone.llamacpp} with its CPU, OpenCL (GPU) and Hexagon (NPU) backends in one process. When prefill and decode run on different processors, the conversation
             state is copied across every turn. The matrix runs used 6 CPU threads; later tests compared 6 with 2 in natural heat, and 6, 4, 3 and 2 with the hard throttle
-            set by hand, in the benchmark and in the app&apos;s own engine.
+            set by hand, in the benchmark and in the app&apos;s own engine. The guard&apos;s runs used the engine&apos;s own device tests, with every step&apos;s time logged.
           </Row>
           <Row label="Models">
             Qwen3 0.6B, 1.7B and 4B; Gemma 3 1B; Llama 3.2 1B and 3B; LFM2.5 1.2B and 2.6B. All in Q4_0, the 4-bit format all three backends speed up, and Qwen3 1.7B also in Q8_0,
@@ -556,7 +654,8 @@ export default function PrefillDecode() {
           <Rows>
             <Row label="Against the CPU">
               The matrix uses 6 threads in every pairing. With the hard throttle set by hand, 6 and 4 threads got stuck and 2 did not, in the benchmark and in the app&apos;s
-              own engine, on short repeated work; in natural heat, 2 threads against 6 is one pair on phone B and one balanced set of four runs on phone E.
+              own engine; in natural heat, 2 threads against 6 is one pair on phone B and one balanced set of four runs on phone E, and 2 against 4 at a realistic length is two
+              runs each on phone D and on the POCO. The guard was measured against pauses set by hand, one model, one prompt.
             </Row>
             <Row label="Against the GPU">
               One GPU backend, llama.cpp&apos;s OpenCL, capped at 578 MHz in every matrix pairing compared. In one uncapped three-turn probe, GPU decode also slowed at later
@@ -568,8 +667,10 @@ export default function PrefillDecode() {
             </Row>
             <Row label="One format">Q4_0 for all but one model, the format all three backends speed up. Other CPU formats were not tried.</Row>
             <Row label="Not measured">
-              Energy, battery drain and memory. A phone in a hand, rather than in a rack on AC power. An ordinary app without root, and a cold start. Contexts past about 4,000
-              tokens, replies of the model&apos;s own length, and continuing a conversation from what the model wrote. Answer quality.
+              Energy and battery drain: the rack phones bypass their battery, and the one retail phone stayed on its charger. A phone in a hand, rather than in a rack or on
+              a desk. A cold start. Contexts past about 4,000 tokens in the matrix. Answer quality, beyond whether the tokens match. Memory was measured for one instance of
+              Qwen3 4B in the app&apos;s engine, {pdFix.memoryGb[0]} to {pdFix.memoryGb[1]} GB across windows and phones, not for a split that keeps two. The guard has not
+              been seen in a natural hard throttle.
             </Row>
           </Rows>
         </div>
