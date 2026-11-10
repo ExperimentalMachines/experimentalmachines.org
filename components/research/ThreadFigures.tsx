@@ -60,7 +60,7 @@ const span = (cores: number[]) => (cores.length === 1 ? `Core ${cores[0]}` : cor
 
 // One card per kind of phone: its CPU as eight tiles by cluster, what the hard throttle parks where it was
 // seen, and the rest of its specification.
-// One card a phone. With a single phone the card spans the column and splits in two on wider screens (the CPU on
+// One card a phone: its CPU's clusters as text, then the rest of its specification. With a single phone the card spans the column and splits in two on wider screens (the CPU on
 // the left, the rest of the specification on the right), so it does not sit alone in half a grid. `throttle`
 // adds the row of cores the hard throttle takes out of use, where the phone has one recorded.
 export function PhoneSpecs({ phones, throttle = true }: { phones: PhoneSpec[]; throttle?: boolean }) {
@@ -88,10 +88,7 @@ export function PhoneSpecs({ phones, throttle = true }: { phones: PhoneSpec[]; t
             <p className="display mt-2 text-xl leading-snug">{p.name}</p>
             <p className="text-sm">{p.chip}</p>
             <p className="mt-5 text-sm font-medium">CPU, 8 cores</p>
-            <div className="mt-2">
-              <Cores groups={groups} state={() => "run"} label={`${p.name}: ${p.clusters.map((c) => `${c.cores.length} ${c.type} up to ${c.ghz} GHz`).join(", ")}`} />
-            </div>
-            <ul className="mt-2 space-y-0.5 text-sm text-ink-soft">
+            <ul className="mt-1 space-y-0.5 text-sm text-ink-soft">
               {p.clusters.map((c) => (
                 <li key={c.cores[0]}>
                   {span(c.cores)}: {c.type}, up to {c.ghz.toFixed(2)} GHz
