@@ -555,14 +555,15 @@ export default function DecodeStall() {
             themselves.
           </Row>
           <Row label="Runtime">
-            llama.cpp {pdPhone.llamacpp}: its benchmark on B and C for the natural-heat runs, on B for the first runs by hand, and on E and D for the profile and the llama.cpp
-            change; the app&apos;s own engine, every decode step timed, on A for the thread counts and the scheduler traces, on D for the guard and the sessions, and on A for the
-            longest sessions and the forced throttle.
+            llama.cpp&apos;s benchmark, built from {pdPhone.llamacpp}, on B and C for the natural-heat runs, on B for the first runs by hand, and on E and D for the profile and the
+            llama.cpp change. The app&apos;s own engine, on llama.cpp v0.8.0 (8642541b), every decode step timed, on A for the thread counts and the scheduler traces, on D for the
+            guard and the sessions, and on A for the longest sessions and the forced throttle.
           </Row>
           <Row label="Model">Qwen3 4B in Q4_0 for every run set up for this post; the six logged throttles came from the matrix, on Qwen3 1.7B and 4B.</Row>
           <Row label="The guard">
             Two slow steps in a row (over a quarter of a second, and more than 8 times the recent normal step or more than 2 s over it) drop decode and prompt reading to 2 threads;
-            after at least 30 s and four steps at 2 threads it tries its count again. Codex reviewed it seven times.
+            after at least 30 s and four steps at 2 threads it tries its count again, or at once when two 2-thread steps in a row come 1.6 times faster than usual, which on a
+            Snapdragon 8 Gen 2 brought it back 0.3 and 0.4 s after a pause ended, against about 14 to 22 s on the schedule alone. Codex reviewed it ten times.
           </Row>
         </Rows>
       </Section>
