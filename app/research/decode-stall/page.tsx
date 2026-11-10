@@ -2,7 +2,7 @@ import { grouped } from "@/components/openweights/pd-parts";
 import { Aligned, PairBars, Stack, TimeLines } from "@/components/research/Compare";
 import Post, { Figure, Findings, More, Note, postMetadata, Row, Rows, Section, Table } from "@/components/research/Post";
 import { PhoneSpecs, ThreadChoice, ThreadLife, ThreadPlacement, WaitLanes } from "@/components/research/ThreadFigures";
-import { heldPause, sessionHeat, shortPause, threadPlacement } from "@/lib/decode-stall-data";
+import { benchmarkHeat, heldPause, sessionHeat, shortPause, threadPlacement } from "@/lib/decode-stall-data";
 import { pdFix, pdLinks, pdPhone, pdSpecs, pdStall, pdTrigger } from "@/lib/prefill-decode";
 
 const href = "/research/decode-stall/";
@@ -324,10 +324,36 @@ export default function DecodeStall() {
         </Figure>
 
         <Figure
+          id="benchmark"
+          title={`Nonstop benchmark work did reach the hard throttle, ${Math.round(benchmarkHeat.firstThrottle)} minutes in`}
+          lede="The board sensor through the benchmark run that logged the natural hard throttles: a warm-up, nine pairings of one model, then a second model, back to back with only 2-minute waits to cool."
+          note={`Snapdragon test phone C, 3 November: Qwen3 1.7B's warm-up and its nine pairings of CPU, GPU and NPU, then Qwen3 4B, ${Math.round(benchmarkHeat.minutes)} minutes in all. The sensor read ${benchmarkHeat.startC} °C at the start and ${benchmarkHeat.warmup.c} °C after the ${benchmarkHeat.warmup.minutes}-minute warm-up, and was logged every 2 seconds only from minute ${Math.round(benchmarkHeat.denseFrom)}, so the line starts there. Mean of each 30 s.`}
+        >
+          <TimeLines
+            series={[{ name: "Benchmark, nonstop", points: benchmarkHeat.points, color: 3 }]}
+            xMin={60}
+            xMax={160}
+            xStep={20}
+            yMin={40}
+            yMax={80}
+            yStep={10}
+            unit="°C"
+            xLabel="Minutes into the run"
+            hover="Minute {x} of the run"
+            hoverUnit="°C"
+            summary={`The board sensor through a nonstop benchmark run: it reached ${pdTrigger.onC} °C ${Math.round(benchmarkHeat.firstThrottle)} minutes in, and the hard throttle came on ${benchmarkHeat.throttles.length} times.`}
+            rule={{ y: pdTrigger.onC, label: `Hard throttle trips at ${pdTrigger.onC} °C` }}
+            spans={{ at: benchmarkHeat.throttles, label: "Hard throttle on" }}
+            stops={[60, 70, 80, 90, 100, 110, 120, 130, 140, 150]}
+            digits={1}
+          />
+        </Figure>
+
+        <Figure
           id="use"
           title="Our chat sessions never reached the hard throttle"
           lede="The board sensor that trips the hard throttle, through three chat sessions on the Snapdragon."
-          note="Mean of each 30 s. Phone D in the rack, screen on, Qwen3 4B, 4 threads, the guard on, the study's nine conversations with each reply kept in the history. The heaviest was still warming slowly when its conversations ran out. The natural hard throttles in this post came from the benchmark instead: about an hour and a half of nonstop work on the CPU, GPU and NPU, with no time to cool between runs."
+          note="Mean of each 30 s. Phone D in the rack, screen on, Qwen3 4B, 4 threads, the guard on, the study's nine conversations with each reply kept in the history. The heaviest was still warming slowly when its conversations ran out. The benchmark run above did reach it."
         >
           <TimeLines
             series={sessionHeat.map((s) => ({ name: s.pause === "none" ? "No break" : `${s.pause} between turns`, points: s.points }))}

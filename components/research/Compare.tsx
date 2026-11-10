@@ -297,6 +297,7 @@ export function Lines({
 // pushed apart where lines end close together. Hover a column for every line's value there.
 export function TimeLines({
   series,
+  xMin = 0,
   xMax,
   xStep,
   yMin = 0,
@@ -306,6 +307,7 @@ export function TimeLines({
   xLabel,
   summary,
   band,
+  spans,
   rule,
   marker,
   stops,
@@ -314,6 +316,8 @@ export function TimeLines({
   hoverUnit,
 }: {
   series: { name: string; points: [number, number][]; color?: number }[];
+  // Where the x axis starts, for a chart whose data begins well after zero.
+  xMin?: number;
   xMax: number;
   xStep: number;
   yMin?: number;
@@ -323,6 +327,8 @@ export function TimeLines({
   xLabel: string;
   summary: string;
   band?: { from: number; to: number; label: string };
+  // Several short stretches shaded like the band, such as each time a throttle was on, named in the legend.
+  spans?: { at: { from: number; to: number }[]; label: string };
   rule?: { y: number; label: string };
   marker?: { series: string; x: number; label: string };
   // The x positions a reader can hover for every line's value.
@@ -334,18 +340,18 @@ export function TimeLines({
   hoverUnit?: string;
 }) {
   const [W, H, L, R, T, B] = [720, 330, 62, 128, 30, 46];
-  const xp = (v: number) => L + (v / xMax) * (W - L - R);
+  const xp = (v: number) => L + ((v - xMin) / (xMax - xMin)) * (W - L - R);
   const yp = (v: number) => H - B - ((v - yMin) / (yMax - yMin)) * (H - T - B);
   const n = (v: number) => v.toLocaleString("en-US", { maximumFractionDigits: digits });
   const colorOf = (s: { color?: number }, i: number) => lineColors[s.color ?? i];
-  const inside = (pts: [number, number][]) => pts.filter(([x]) => x >= 0 && x <= xMax);
+  const inside = (pts: [number, number][]) => pts.filter(([x]) => x >= xMin && x <= xMax);
   const near = (pts: [number, number][], x: number) => inside(pts).reduce((a, p) => (Math.abs(p[0] - x) < Math.abs(a[0] - x) ? p : a));
   const path = (pts: [number, number][]) =>
     inside(pts)
       .map(([x, y], i) => `${i ? "L" : "M"}${xp(x).toFixed(1)} ${yp(y).toFixed(1)}`)
       .join(" ");
   const yTicks = Array.from({ length: Math.floor((yMax - yMin) / yStep) + 1 }, (_, i) => yMin + i * yStep);
-  const xTicks = Array.from({ length: Math.floor(xMax / xStep) + 1 }, (_, i) => i * xStep);
+  const xTicks = Array.from({ length: Math.floor((xMax - xMin) / xStep) + 1 }, (_, i) => xMin + i * xStep);
   // End labels sit just past each line's own last point, pushed apart where they would overlap and kept inside the
   // plot: walked down 16 units apart, then, if the lowest runs off the bottom, walked back up from it.
   const ends = series
@@ -384,10 +390,19 @@ export function TimeLines({
             {s.name}
           </span>
         ))}
+        {spans && (
+          <span className="inline-flex items-center gap-2">
+            <span aria-hidden className="inline-block h-3 w-2 rounded-[2px]" style={{ backgroundColor: "color-mix(in srgb, #d9480f 22%, transparent)" }} />
+            {spans.label}
+          </span>
+        )}
       </p>
       <div role="region" aria-label={`${summary}, scrolls sideways on small screens`} tabIndex={0} className="mt-3 overflow-x-auto">
         <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label={summary} className="mx-auto w-full min-w-[34rem] max-w-3xl">
           {band && <rect x={xp(band.from)} y={T} width={xp(band.to) - xp(band.from)} height={H - T - B} fill="color-mix(in srgb, #d9480f 9%, transparent)" />}
+          {spans?.at.map((sp) => (
+            <rect key={sp.from} x={xp(sp.from)} y={T} width={Math.max(xp(sp.to) - xp(sp.from), 2)} height={H - T - B} fill="color-mix(in srgb, #d9480f 22%, transparent)" />
+          ))}
           {yTicks.map((v) => (
             <g key={v} fontSize={12}>
               <line x1={L} x2={W - R} y1={yp(v)} y2={yp(v)} stroke="var(--color-rule)" />
