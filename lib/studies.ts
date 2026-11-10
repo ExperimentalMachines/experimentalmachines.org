@@ -9,7 +9,7 @@ import { serving } from "@/lib/neuron";
 import { latencyModels } from "@/lib/openweights-latency";
 import { rerunsCaps } from "@/lib/openweights-reruns";
 import { windowCells } from "@/lib/openweights-window";
-import { pdModels, ranked } from "@/lib/prefill-decode";
+import { pdFix, pdModels, pdStall, ranked } from "@/lib/prefill-decode";
 
 export type Viz =
   | { kind: "grid"; cols: number; cells: { level: number; on?: boolean }[] }
@@ -40,6 +40,9 @@ const qwen = pdModels.find((m) => m.name === "Qwen3 1.7B" && m.quant === "Q8_0")
 const qwenRank = ranked(qwen);
 const [fastest, slowest] = [qwenRank[0].cell.seconds, qwenRank.at(-1)!.cell.seconds];
 const npuWins = pdModels.filter((m) => ranked(m)[0].prefill === "NPU").length;
+
+// Decode stall: the app's engine in a hard throttle, by decode threads, with the count that keeps running lit.
+const appThreads = pdFix.byThreads.find((r) => r.threads === pdStall.app.normal)!;
 
 // Latency: every model and chip pair, lit where ExecuTorch reached the first token sooner.
 const firstToken = latencyModels.flatMap((m) => m.et.map((p, i) => p.ttft < m.llama[i].ttft));
@@ -86,6 +89,19 @@ const thousands = (x: number) => Math.round(x).toLocaleString("en-US");
 const agentsOk = rtxCapacity.find((r) => r.agents === 8)!;
 
 export const studies: Study[] = [
+  {
+    href: "/research/decode-stall/",
+    title: "Why CPU decode stalls when a phone throttles",
+    date: "3 to 10 November 2026",
+    project: "OpenWeights",
+    line: "A Snapdragon 8 Elite Gen 5 parks six of its eight cores when it overheats, and llama.cpp with more threads than the two left nearly stops. The cause, the guard OpenWeights now carries, and whether real chat gets there.",
+    hook: `${Math.round((100 * appThreads.paused) / appThreads.normal)}%`,
+    hookLabel: `of its decode rate: the app's engine at ${appThreads.threads} threads, with the phone's hard throttle set by hand`,
+    viz: {
+      kind: "bars",
+      rows: pdFix.byThreads.map((r) => ({ label: `${r.threads} threads`, value: r.paused, shown: `${r.paused} tok/s`, on: r.threads === 2 })),
+    },
+  },
   {
     href: "/research/prefill-decode/",
     title: "Prefill and decode on CPU, GPU and NPU",

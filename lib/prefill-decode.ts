@@ -15,6 +15,11 @@ const ref = pdSource.commit === "worktree" ? "main" : pdSource.commit;
 export const pdLinks = {
   report: `${repo}/blob/${ref}/docs/research/snapdragon-pd-matrix.md#all-nine-pairings-at-reply-length-r12-to-r16`,
   results: `${repo}/tree/${ref}/${pdSource.dir}`,
+  // For /research/decode-stall: the report from the section where the stall is first explained, the
+  // guard's source, and the MediaTek phone's result files.
+  stallReport: `${repo}/blob/${ref}/docs/research/snapdragon-pd-matrix.md#why-the-cpus-reply-gets-stuck-r16`,
+  guard: `${repo}/blob/${ref}/core/engine/src/main/cpp/stall_guard.h`,
+  pocoResults: `${repo}/tree/${ref}/tools/snapdragon/results/2026-11-09-poco-mt6991`,
 };
 
 export const processors = ["CPU", "GPU", "NPU"] as const;
@@ -141,6 +146,14 @@ export const pdStall = {
 // thread count. From the report's sections for r28 to r45 (docs/research/snapdragon-pd-matrix.md) and
 // the result files under tools/snapdragon/results. Change them there first.
 export const pdFix = {
+  // r27: the app's own engine on phone E, Qwen3 4B, a 19-token prompt and 64 tokens, the pause set by
+  // hand for the whole run or not at all; median decode tok/s over four runs (two with 6 threads).
+  byThreads: [
+    { threads: 2, normal: 22.91, paused: 10.57 },
+    { threads: 3, normal: 22.53, paused: 0.51 },
+    { threads: 4, normal: 23.12, paused: 0.24 },
+    { threads: 6, normal: 23.25, paused: 0.083 },
+  ],
   // r28: simpleperf (cpu-clock, 1 kHz) over a 6-thread decode with the pause set by hand and without.
   // The share of samples in ggml_graph_compute_thread, which holds the inlined barrier wait, and in the
   // matrix and attention kernels; cores busy on average.
