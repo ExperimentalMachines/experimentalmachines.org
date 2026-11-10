@@ -435,3 +435,82 @@ export function ThreadChoice({ panels, rules, notes }: { panels: Placement[]; ru
     </ChartCard>
   );
 }
+
+// Six threads' own colours, the site's validated categorical order; a thread is also named in every tooltip and
+// in the list under each panel, since the amber falls under 3:1 against the card.
+const THREAD = ["#2b44e6", "#d9480f", "#008f7a", "#6741d9", "#e0a100", "#d6336c"];
+
+export type TraceSeg = { cpu: number; thread: number; from: number; to: number };
+
+// A recording, not an illustration: the kernel's scheduler trace of the app's engine writing a reply, one lane per
+// core over a short stretch of it. Each piece is a stretch when that core ran one of the engine's six threads
+// (coloured and numbered) or any other task (grey); a blank is the core idle. Under it, each thread's share of a
+// core over the whole 2 s trace and the cores it ran on.
+export function SchedTrace({
+  panels,
+}: {
+  panels: { title: string; caption: string; parked: number[]; windowMs: number; segs: TraceSeg[]; shares: { thread: number; share: number; cpus: number[] }[] }[];
+}) {
+  return (
+    <ChartCard>
+      <Key
+        items={[...THREAD.map((c, i) => ({ color: c, label: `Thread ${i + 1}` })), { color: OTHER, label: "Another task" }, { color: PARKED, label: "Out of use", hatched: true }]}
+      />
+      <div className="mt-5 grid gap-8 lg:grid-cols-2">
+        {panels.map((p) => (
+          <div key={p.title}>
+            <p className="text-sm font-medium">{p.title}</p>
+            <p className="mt-0.5 text-xs leading-5 text-ink-soft">{p.caption}</p>
+            <div className="mt-3 space-y-1" role="img" aria-label={`${p.title}: which thread each core ran over ${p.windowMs} ms of the recording`}>
+              {[0, 1, 2, 3, 4, 5, 6, 7].map((cpu) => (
+                <div key={cpu} className="grid grid-cols-[3.25rem_minmax(0,1fr)] items-center gap-2 text-xs tabular-nums">
+                  <span className="text-ink-soft">Core {cpu}</span>
+                  <span className="relative block h-5 overflow-hidden rounded-[4px] bg-white" style={p.parked.includes(cpu) ? hatch(PARKED) : undefined}>
+                    {!p.parked.includes(cpu) &&
+                      p.segs
+                        .filter((s) => s.cpu === cpu)
+                        .map((s, k) => (
+                          <span
+                            key={k}
+                            title={`${s.thread ? `Thread ${s.thread}` : "Another task"} on core ${cpu}, ${s.from.toFixed(1)} to ${s.to.toFixed(1)} ms`}
+                            className="absolute inset-y-0"
+                            style={{
+                              left: `${(s.from / p.windowMs) * 100}%`,
+                              width: `${((s.to - s.from) / p.windowMs) * 100}%`,
+                              backgroundColor: s.thread ? THREAD[s.thread - 1] : OTHER,
+                            }}
+                          />
+                        ))}
+                  </span>
+                </div>
+              ))}
+              <div className="grid grid-cols-[3.25rem_minmax(0,1fr)] gap-2 text-[11px] tabular-nums text-ink-soft">
+                <span />
+                <span className="flex justify-between">
+                  <span>0</span>
+                  <span>{p.windowMs / 2} ms</span>
+                  <span>{p.windowMs} ms</span>
+                </span>
+              </div>
+            </div>
+            <ul className="mt-4 space-y-1.5" aria-label={`${p.title}, each thread's share of a core over the whole recording`}>
+              {p.shares.map((t) => (
+                <li key={t.thread} className="grid grid-cols-[4.25rem_5.5rem_minmax(0,1fr)_2.5rem] items-center gap-2 text-xs tabular-nums">
+                  <span className="inline-flex items-center gap-1.5 text-ink-soft">
+                    <Swatch color={THREAD[t.thread - 1]} />
+                    Thread {t.thread}
+                  </span>
+                  <span className="truncate">{t.cpus.length === 1 ? `core ${t.cpus[0]}` : `cores ${t.cpus.join(", ")}`}</span>
+                  <span className="h-2.5 overflow-hidden rounded-full bg-ink/10">
+                    <span className="block h-full rounded-full" style={{ width: `${Math.min(1, t.share) * 100}%`, backgroundColor: THREAD[t.thread - 1] }} />
+                  </span>
+                  <span className="text-right font-medium">{Math.round(t.share * 100)}%</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))}
+      </div>
+    </ChartCard>
+  );
+}

@@ -1,8 +1,8 @@
 import { grouped } from "@/components/openweights/pd-parts";
 import { Aligned, PairBars, Stack, TimeLines } from "@/components/research/Compare";
 import Post, { Figure, Findings, More, Note, postMetadata, Row, Rows, Section, Table } from "@/components/research/Post";
-import { PhoneSpecs, ThreadChoice, ThreadLife, ThreadPlacement, WaitLanes } from "@/components/research/ThreadFigures";
-import { benchmarkHeat, forcedTrip, heldPause, longSession, sessionHeat, shortPause, threadPlacement } from "@/lib/decode-stall-data";
+import { PhoneSpecs, SchedTrace, ThreadChoice, ThreadLife, WaitLanes } from "@/components/research/ThreadFigures";
+import { benchmarkHeat, forcedTrip, heldPause, longSession, schedTraces, sessionHeat, shortPause, threadMatrix, threadPlacement } from "@/lib/decode-stall-data";
 import { pdFix, pdLinks, pdPhone, pdSpecs, pdStall, pdTrigger } from "@/lib/prefill-decode";
 
 const href = "/research/decode-stall/";
@@ -12,7 +12,9 @@ export const metadata = postMetadata(
   "On a Snapdragon 8 Elite Gen 5 the hard throttle takes six of eight cores out of use, and llama.cpp with more threads than the two left nearly stops writing the reply. A profile of the cause, the guard OpenWeights now carries, a llama.cpp change that did not work both ways, chat sessions against the throttle, and the throttle forced by heat.",
 );
 
-const at = (n: number) => pdFix.byThreads.find((r) => r.threads === n)!;
+// r49 on phone A: the app's engine at each thread count, decode medians normally and with six cores out of use.
+const tm = (n: number) => threadMatrix.find((r) => r.threads === n)!;
+const at = (n: number) => ({ threads: n, normal: tm(n).decode.normal!, paused: tm(n).decode.paused! });
 const app = at(pdStall.app.normal);
 const two = at(2);
 const kept = (r: { normal: number; paused: number }) => (100 * r.paused) / r.normal;
@@ -34,7 +36,27 @@ const unguarded = heldPause.without.points.at(-1)![1];
 const twoOfSix = Math.round((100 * mid(y.normal2)) / mid(y.normal6));
 const range = (r: number[], d = 1) => `${r[0].toFixed(d)} to ${r[1].toFixed(d)}`;
 const pf = pdFix.profile;
-const placed = threadPlacement;
+const tr = schedTraces;
+// One row of the thread-count figure: a job's median normally and with cores out of use, and the share kept.
+type Pair = { normal: number | null; paused: number | null };
+// The app writes with 4 threads but reads prompts with as many as the performance cores, so only the decode
+// figure marks its usual count.
+const matrixRow = (t: number, x: Pair, show: (v: number) => string, usual?: number) => ({
+  label: t === usual ? `${t} threads, the app's usual` : `${t} thread${t > 1 ? "s" : ""}`,
+  on: t === 2,
+  cells: [
+    x.normal === null ? null : { value: x.normal, shown: `${x.normal.toFixed(1)} tok/s` },
+    x.paused === null ? null : { value: x.paused, shown: `${show(x.paused)} tok/s` },
+    x.normal === null || x.paused === null ? null : { value: (100 * x.paused) / x.normal, shown: share((100 * x.paused) / x.normal) },
+  ],
+});
+const leftOut = threadMatrix.reduce((n, r) => n + r.left.length, 0);
+const pct = (x: number) => Math.round(x * 100);
+// The paused trace's cores, each with the threads that ran on it and their shares of it.
+const pausedCores = [0, 1].map((cpu) => ({ cpu, shares: tr.paused.shares.filter((s) => s.cpus.length === 1 && s.cpus[0] === cpu).map((s) => s.share) }));
+// A range of shares as whole percents, one figure when both ends round the same.
+const pctSpan = (xs: number[]) => (pct(Math.min(...xs)) === pct(Math.max(...xs)) ? `about ${pct(xs[0])}%` : `${pct(Math.min(...xs))}% to ${pct(Math.max(...xs))}%`);
+const coreLine = (c: { cpu: number; shares: number[] }) => `${c.shares.length} on core ${c.cpu} at ${pctSpan(c.shares)} of it each`;
 const parkedCores = pdSpecs[0].parked!;
 // How many times longer one token took at 6 threads with six cores parked.
 const slowdown6 = Math.round(at(6).normal / at(6).paused);
@@ -89,11 +111,11 @@ export default function DecodeStall() {
           items={[
             {
               headline: "When six cores go out of use, the reply nearly stops",
-              line: `With six of the eight cores out of use, as the phone does on its own at ${pdTrigger.onC} °C, the app's engine writing with ${app.threads} threads fell from ${app.normal.toFixed(1)} to ${app.paused} tokens a second (a token is a small piece of text); with 2 threads it kept ${Math.round(kept(two))}% of its speed.`,
+              line: `With six of the eight cores out of use, as the phone does on its own at ${pdTrigger.onC} °C, the app's engine writing with ${app.threads} threads fell from ${app.normal.toFixed(1)} to ${rate(app.paused)} tokens a second (a token is a small piece of text); with 2 threads it kept ${Math.round(kept(two))}% of its speed.`,
             },
             {
               headline: "Waiting threads hold the cores the working ones need",
-              line: `With six cores out of use, six threads shared the two cores left at a median ${Math.round(placed.paused.share * 100)}% of a core per thread, and ${Math.round(pf.pausedWait)}% of the CPU time was in the function that contains llama.cpp's waiting loop, against ${Math.round(pf.normalWait)}% normally.`,
+              line: `With six cores out of use, the engine's six threads all ran on cores 0 and 1, ${coreLine(pausedCores[0])} and ${coreLine(pausedCores[1])}, and in a profile ${Math.round(pf.pausedWait)}% of the CPU time was in the function that contains llama.cpp's waiting loop, against ${Math.round(pf.normalWait)}% normally.`,
             },
             {
               headline: "The app's engine now drops to 2 threads when a step stalls",
@@ -109,7 +131,7 @@ export default function DecodeStall() {
             },
             {
               headline: "Four threads with the guard, not two all the time",
-              line: `Normally, with no cores taken out of use, 2 threads wrote ${slower(g.noPause2, g.noPause4)}% slower than 4 on the Snapdragon and ${slower(pdFix.poco.two, pdFix.poco.four)}% slower on a MediaTek phone.`,
+              line: `Normally, with no cores taken out of use and a 1,751-token prompt, 2 threads wrote ${slower(g.noPause2, g.noPause4)}% slower than 4 on the Snapdragon and ${slower(pdFix.poco.two, pdFix.poco.four)}% slower on a MediaTek phone.`,
             },
           ]}
         />
@@ -129,7 +151,7 @@ export default function DecodeStall() {
           id="choice"
           title="The app picks how many threads; the phone decides which cores are in use"
           lede="A thread is a worker helping write the reply; a core is a processor that runs it. The app chooses how many threads, the phone how many cores."
-          note="Speeds from the app's own engine on Snapdragon phone E, six cores taken out of use by hand. The rules are from its heat policy (ThermalPolicy.kt) and its guard (stall_guard.h); the exact ones are under Every number."
+          note="Speeds from the app's own engine on Snapdragon phone A, six cores taken out of use by hand. The rules are from its heat policy (ThermalPolicy.kt) and its guard (stall_guard.h); the exact ones are under Every number."
         >
           <ThreadChoice
             panels={[
@@ -141,13 +163,13 @@ export default function DecodeStall() {
               },
               {
                 title: "Writing, hard throttle, the usual 4",
-                caption: `Only cores 0 and 1 run work, so two threads wait at a time: the reply crawls at ${at(4).paused} tokens a second.`,
+                caption: `Only cores 0 and 1 run work, so two threads wait at a time: the reply crawls at ${rate(at(4).paused)} tokens a second.`,
                 off: parkedCores,
                 threads: [{ core: 0 }, { core: 1 }, { core: 0, waiting: true }, { core: 1, waiting: true }],
               },
               {
                 title: "Writing, hard throttle, the guard's 2",
-                caption: `Two threads, two cores, each has one again: ${two.paused} tokens a second, about ${Math.round(two.paused / at(4).paused)} times as fast.`,
+                caption: `Two threads, two cores, each has one again: ${rate(two.paused)} tokens a second, about ${Math.round(two.paused / at(4).paused)} times as fast.`,
                 off: parkedCores,
                 threads: [{ core: 0 }, { core: 1 }],
               },
@@ -199,37 +221,24 @@ export default function DecodeStall() {
           id="threads"
           title="Every thread past the two cores left costs nearly all the speed, writing and reading"
           lede="How fast the app's own engine writes the reply (decode) and reads the prompt (prefill), normally and with six cores taken out of use by hand, for each number of threads."
-          note="Phone E, Qwen3 4B, a 19-token prompt and a 64-token reply, both jobs at the same thread count. Medians of four runs in each state, two with 6 threads; with cores out of use those two were stopped by a watchdog before the engine reported its reading speed. The app's heat policy was not in the loop."
+          note={`Snapdragon phone A, Qwen3 4B, a 19-token prompt and up to 32 tokens of reply, both jobs at the same thread count, the guard off. Medians of three runs in each state, run in a shuffled order, each after a cooling gate. A run its 300 s watchdog stopped counts up to its last progress line; with cores out of use a run counts only if, in every sample taken once a second, the switches read on and each busy thread was last seen on core 0 or 1; where threads ran between samples is not known.${leftOut ? ` ${leftOut} paused run${leftOut > 1 ? "s" : ""} where that did not hold ${leftOut > 1 ? "are" : "is"} left out.` : ""} The two speed columns share a scale. The app's heat policy was not in the loop.`}
         >
           <div className="space-y-4">
             <p className="text-sm font-medium">Writing the reply (decode)</p>
             <Aligned
               label="Threads"
               head={["Normally", "Only 2 cores left", "Speed kept"]}
-              rows={pdFix.byThreads.map((r) => ({
-                label: r.threads === app.threads ? `${r.threads} threads, the app's usual` : `${r.threads} threads`,
-                on: r.threads === 2,
-                cells: [
-                  { value: r.normal, shown: `${r.normal.toFixed(1)} tok/s` },
-                  { value: r.paused, shown: `${rate(r.paused)} tok/s` },
-                  { value: kept(r), shown: share(kept(r)) },
-                ],
-              }))}
+              missing="not measured"
+              scales={[0, 0, 1]}
+              rows={threadMatrix.map((r) => matrixRow(r.threads, r.decode, rate, app.threads))}
             />
             <p className="pt-2 text-sm font-medium">Reading the prompt (prefill)</p>
             <Aligned
               label="Threads"
               head={["Normally", "Only 2 cores left", "Speed kept"]}
-              missing="not recorded"
-              rows={pdFix.promptByThreads.map((r) => ({
-                label: `${r.threads} threads`,
-                on: r.threads === 2,
-                cells: [
-                  { value: r.normal, shown: `${r.normal.toFixed(1)} tok/s` },
-                  r.paused === null ? null : { value: r.paused, shown: `${r.paused} tok/s` },
-                  r.paused === null ? null : { value: (100 * r.paused) / r.normal, shown: share((100 * r.paused) / r.normal) },
-                ],
-              }))}
+              missing="not measured"
+              scales={[0, 0, 1]}
+              rows={threadMatrix.map((r) => matrixRow(r.threads, r.prefill, (x) => (x < 10 ? x.toFixed(2) : x.toFixed(1))))}
             />
           </div>
         </Figure>
@@ -237,17 +246,22 @@ export default function DecodeStall() {
         <Figure
           id="placement"
           title="With six cores out of use, six threads share the two left"
-          lede="Where each of six decode threads ran in one 2-second sample, and how much of a core it got, on a Snapdragon phone in its own hard throttles."
-          note="Snapdragon test phone B, llama.cpp's benchmark tool, 6 threads. Every 2 seconds: the last core each thread ran on and how much of a core it used, capped at 100%. The panels are example moments; every sample is under Every number."
+          lede={`Which thread each core ran, recorded by the phone's kernel over ${tr.paused.windowMs} ms of the app's own engine writing a reply with 6 threads, normally and with six cores taken out of use by hand.`}
+          note={`Snapdragon phone A, Qwen3 4B. The kernel's scheduler events (sched_switch) for 2 s of decode in each state; the lanes show ${tr.paused.windowMs} ms from ${tr.paused.fromMs} ms into each recording, every stretch at its true width, and the shares are over the whole 2 s. Grey is any other task: here mostly the lab's screen streaming, the graphics driver and USB.`}
         >
-          <ThreadPlacement
+          <SchedTrace
             panels={[
-              { title: "Normally", caption: "Each thread on a core of its own, about a whole core each.", threads: placed.normal.sample.threads, parked: [] },
+              {
+                title: "Normally",
+                caption: `Each thread ran ${pctSpan(tr.normal.shares.map((x) => x.share))} of the 2 s, a full core's worth; ${tr.normal.shares.filter((x) => x.cpus.length === 1).length} stayed on one core and ${tr.normal.shares.filter((x) => x.cpus.length > 1).length} moved between cores now and then.`,
+                parked: [],
+                ...tr.normal,
+              },
               {
                 title: "Six cores out of use",
-                caption: `All six on cores 0 and 1, a median ${Math.round(placed.paused.share * 100)}% of a core per thread, over every sample with all six busy and cores out of use.`,
-                threads: placed.paused.sample.threads,
+                caption: `All six on cores 0 and 1: ${coreLine(pausedCores[0])}, ${coreLine(pausedCores[1])}. The trace holds ${grouped(tr.paused.stretches.count)} stretches of an engine thread in 2 s, against ${grouped(tr.normal.stretches.count)} normally.`,
                 parked: parkedCores,
+                ...tr.paused,
               },
             ]}
           />
@@ -489,11 +503,12 @@ export default function DecodeStall() {
             The benchmark on the same three turns of Qwen3 4B: the changed waits on phones E and D, stock 2 against 6 threads on phone B. A budget between the two was not tried.
           </Note>
           <Note>
-            Where the threads ran (phone B): each thread&apos;s last core and CPU time every 2 s; whether cores were out of use came from a log read every 5 s, so a sample at the
-            edge may be misfiled. In all {placed.paused.intervals} samples with the six busy and cores out of use, their last cores numbered {placed.paused.cores[0]} or{" "}
-            {placed.paused.cores[1]} and a thread got a median {Math.round(placed.paused.share * 100)}% of a core; in the {placed.normal.intervals} with no switch logged,{" "}
-            {placed.normal.cores[0]} or {placed.normal.cores[1]}, about a whole core each. The panels show the first sample that spread over six cores and one near the median well
-            inside a stretch with cores out of use. Shares over a whole core, from whole-second timestamps, show as 100%.
+            The scheduler traces (phone A, 2 s each): normally the six engine threads ran in {grouped(tr.normal.stretches.count)} stretches with a median of{" "}
+            {tr.normal.stretches.medianMs} ms; with six cores out of use, in {grouped(tr.paused.stretches.count)} with a median of {tr.paused.stretches.medianMs} ms. Then cores 0
+            and 1 ran engine threads {pct(tr.paused.cores[0].engine)}% and {pct(tr.paused.cores[1].engine)}% of the time and other tasks {pct(tr.paused.cores[0].other)}% and{" "}
+            {pct(tr.paused.cores[1].other)}%, and cores 2 to 7 logged {tr.paused.cores.slice(2).every((c) => c.events === 0) ? "no switch at all" : "a few switches"}. An earlier
+            run on phone B, with llama.cpp&apos;s own benchmark and the phone&apos;s own throttles, sampled every 2 s, put the six on cores 0 and 1 at a median{" "}
+            {Math.round(threadPlacement.paused.share * 100)}% of a core each.
           </Note>
           <Note>
             The app&apos;s rules. Before each reply, half the cores, never under 2 or over 6. Warm is Android&apos;s light or moderate heat status, hot is severe, very hot is
@@ -588,8 +603,8 @@ export default function DecodeStall() {
           </Row>
           <Row label="Runtime">
             llama.cpp {pdPhone.llamacpp}: its benchmark on B and C for the natural-heat runs, on B for the first runs by hand, and on E and D for the profile and the llama.cpp
-            change; the app&apos;s own engine, every decode step timed, on E for the thread counts, on D for the guard and the sessions, and on A for the longest sessions and the
-            forced throttle.
+            change; the app&apos;s own engine, every decode step timed, on A for the thread counts and the scheduler traces, on D for the guard and the sessions, and on A for the
+            longest sessions and the forced throttle.
           </Row>
           <Row label="Model">Qwen3 4B in Q4_0 for every run set up for this post; the six logged throttles came from the matrix, on Qwen3 1.7B and 4B.</Row>
           <Row label="The guard">

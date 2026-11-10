@@ -884,19 +884,24 @@ export function Ranges({
 
 export type AlignedCell = { value: number; low?: number; shown: string } | null;
 
-// One row per setting with several measures beside it, each column on its own scale.
+// One row per setting with several measures beside it, each column on its own scale unless `scales` puts columns
+// in one group: columns with the same group number share a scale, so bars of the same unit compare by length.
 export function Aligned({
   head,
   rows,
   label,
   missing = "not run",
+  scales,
 }: {
   head: string[];
   label: string;
   rows: { label: string; on?: boolean; cells: AlignedCell[] }[];
   missing?: string;
+  scales?: number[];
 }) {
-  const tops = head.map((_, c) => Math.max(...rows.map((r) => r.cells[c]?.value ?? 0)));
+  const group = scales ?? head.map((_, c) => c);
+  const colTop = head.map((_, c) => Math.max(...rows.map((r) => r.cells[c]?.value ?? 0)));
+  const tops = head.map((_, c) => Math.max(...colTop.filter((_, k) => group[k] === group[c])));
   const cols = { gridTemplateColumns: `minmax(8rem, 11rem) repeat(${head.length}, minmax(0, 1fr))` };
   return (
     <ChartCard>
