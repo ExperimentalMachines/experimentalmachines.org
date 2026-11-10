@@ -9,6 +9,8 @@ export type BlogPost = {
   // The cover is drawn, not a photo: a panel in one of the site's colours with one large term on it.
   cover: { tone: "cobalt" | "ink" | "teal" | "night"; mark: string };
   body: string[];
+  // A post with its own page under app/blog/<slug>/, which the generic template then skips.
+  custom?: boolean;
 };
 
 const author = "Alpha Romer Coma";
@@ -19,10 +21,11 @@ export const posts: BlogPost[] = [
     slug: "training-and-inference-formulas",
     title: "Training and inference, in formulas",
     date: "November 2026",
-    summary: "Placeholder for the first post: the arithmetic behind training and running a model, from compute to memory.",
+    summary: "Three numbers on a chip's spec sheet, and a handful of formulas, explain how fast a model trains and runs, on a phone or in a datacenter.",
     author,
     cover: { tone: "cobalt", mark: "6ND" },
-    body: placeholder,
+    body: [],
+    custom: true,
   },
   {
     slug: "placeholder-two",

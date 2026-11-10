@@ -7,7 +7,7 @@ import { posts } from "@/lib/blog";
 
 // A post's page. The site is a static export, so every slug is built ahead of time.
 export function generateStaticParams() {
-  return posts.map((p) => ({ slug: p.slug }));
+  return posts.filter((p) => !p.custom).map((p) => ({ slug: p.slug }));
 }
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
