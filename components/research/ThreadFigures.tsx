@@ -208,6 +208,58 @@ const Dots = ({ n }: { n: number }) => (
   </span>
 );
 
+// The small pictures under the thread steps: each is a card with a title, one or two labelled rows of
+// cores and threads, and one line.
+const Card = ({ title, line, children }: { title: string; line: string; children?: React.ReactNode }) => (
+  <div className="flex flex-col rounded-xl bg-white p-4">
+    <p className="text-sm font-medium">{title}</p>
+    {children && <div className="mt-3 space-y-2">{children}</div>}
+    <p className="mt-3 text-sm leading-6 text-ink-soft">{line}</p>
+  </div>
+);
+
+const Lane = ({ label, children }: { label: string; children: React.ReactNode }) => (
+  <div className="grid grid-cols-[5.25rem_minmax(0,1fr)] items-center gap-2">
+    <span className="text-xs text-ink-soft">{label}</span>
+    <span className="flex flex-wrap items-center gap-1.5">{children}</span>
+  </div>
+);
+
+// A core with one thread on it: the tile is the core, the white dot the thread.
+const CoreWithThread = ({ core }: { core: number }) => (
+  <span className="flex h-7 items-center gap-1.5 rounded-md px-2 text-xs font-medium text-white" style={{ backgroundColor: RUNS }} title={`Core ${core}, one thread on it`}>
+    {core}
+    <span aria-hidden className="h-2.5 w-2.5 rounded-full bg-white" />
+  </span>
+);
+
+// Threads with no core to run on.
+const Waiting = ({ n }: { n: number }) => (
+  <span className="inline-flex items-center gap-1.5 text-xs text-ink-soft">
+    <span aria-hidden className="inline-flex gap-1">
+      {Array.from({ length: n }, (_, i) => (
+        <span key={i} className="h-2.5 w-2.5 rounded-full" style={{ boxShadow: `inset 0 0 0 1.5px ${WAITS}` }} />
+      ))}
+    </span>
+    {n} waiting
+  </span>
+);
+
+// Eight small core tiles, the ones in `off` hatched.
+const MiniCores = ({ off }: { off: number[] }) => (
+  <span className="flex w-full gap-1" role="img" aria-label={off.length ? `Cores 0 and 1 running work, ${off.length} out of use` : "All eight cores listed as usable"}>
+    {Array.from({ length: 8 }, (_, c) => (
+      <span
+        key={c}
+        className="flex h-7 min-w-0 flex-1 items-center justify-center rounded text-[11px] font-medium"
+        style={off.includes(c) ? { ...hatch(PARKED), color: "#3d4460" } : { backgroundColor: RUNS, color: "#ffffff" }}
+      >
+        {c}
+      </span>
+    ))}
+  </span>
+);
+
 // How the app picks its thread count: a real sequence, so the steps are numbered, and each shows its count as
 // dots, one a thread.
 const Step = ({ n, title, children }: { n: number; title: string; children: React.ReactNode }) => (
@@ -262,18 +314,27 @@ export function ThreadChoice({ normal, warm, hot, fallback, retrySeconds }: { no
           <p className="text-ink-soft">Every {retrySeconds} s it tries the count from steps 1 and 2 again, and keeps it if that step is close to the 2-thread pace.</p>
         </Step>
       </ol>
-      <div className="mt-6 space-y-3 border-t border-rule pt-4 text-sm leading-6">
-        <p>
-          <span className="font-medium">Using only 2 cores</span> means running 2 threads: two threads run on at most two cores at once, so they fit on the two left.
-        </p>
-        <p>
-          <span className="font-medium">Why step 3:</span> on the Snapdragon we checked, the list of cores an app may use still showed all eight while six were out of use, so the
-          app cannot tell from it. The guard watches how long each step takes instead.
-        </p>
-        <p>
-          <span className="font-medium">Why not tie threads to cores:</span> Linux allows it, but OpenWeights does not. It resets the cores it may use to those it had at startup,
-          then lets Android place its threads.
-        </p>
+      <div className="mt-8 grid gap-3 md:grid-cols-3">
+        <Card title="Why 2 threads fit" line="Two threads run on at most two cores at once, so they fit on the two left.">
+          <Lane label="2 threads">
+            <CoreWithThread core={0} />
+            <CoreWithThread core={1} />
+          </Lane>
+          <Lane label="6 threads">
+            <CoreWithThread core={0} />
+            <CoreWithThread core={1} />
+            <Waiting n={4} />
+          </Lane>
+        </Card>
+        <Card title="Why the guard times each step" line="On the Snapdragon we checked, Android's list still showed all eight, so the app cannot count the cores left.">
+          <Lane label="Android's list">
+            <MiniCores off={[]} />
+          </Lane>
+          <Lane label="Running work">
+            <MiniCores off={[2, 3, 4, 5, 6, 7]} />
+          </Lane>
+        </Card>
+        <Card title="Why threads are not tied to cores" line="Linux allows it, but OpenWeights lets Android place its threads on any core the app may use." />
       </div>
     </ChartCard>
   );
