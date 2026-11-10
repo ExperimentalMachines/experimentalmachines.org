@@ -15,7 +15,7 @@ const busPresets = [
     rate: 10667,
     channels: 4,
     width: 16,
-    note: "The Dimensity 9500's memory speed, on four 16-bit channels, the usual phone bus; MediaTek does not print the bus",
+    note: "MediaTek lists LPDDR5X 10667 for the Dimensity 9500. Read as MT/s on four 16-bit channels, the usual phone bus; MediaTek prints neither, so this one is an estimate",
   },
   { id: "rtx4090", label: "RTX 4090, GDDR6X", rate: 21000, channels: 12, width: 32, note: "NVIDIA prints 21 Gbps a pin, 384 bits, 1,008 GB/s" },
   { id: "rtx5090", label: "RTX 5090, GDDR7", rate: 28000, channels: 16, width: 32, note: "NVIDIA prints 28 Gbps a pin, 512 bits, 1,792 GB/s" },
@@ -199,7 +199,7 @@ export function HybridLab() {
         ref={ref}
         className="mt-6 grid gap-6 md:grid-cols-2"
         role="img"
-        aria-label={`At ${fmt(shownCtx)} tokens, a 32-layer full-attention model keeps ${fmt(full)} GB of KV cache; the hybrid keeps ${fmt(hybrid)} GB.`}
+        aria-label={`At ${fmt(shownCtx)} tokens, a 32-layer full-attention model keeps ${fmt(full)} GB of KV cache; the hybrid's attention layers keep ${fmt(hybrid)} GB, plus recurrent states that do not grow.`}
       >
         <div>
           <p className="text-sm font-medium">Full attention</p>
@@ -259,7 +259,7 @@ export function Hierarchy() {
             </div>
             {i === 1 && (
               <p className="my-1.5 text-center text-xs font-medium text-[#c92a2a]" style={{ marginLeft: `${(i + 0.5) * 4}%`, marginRight: `${(2.5 - i) * 4}%` }}>
-                ↑ the memory bandwidth on the spec sheet is this link: in decode, the weights cross it for every token
+                ↑ the memory bandwidth on the spec sheet is this link: in decode, the weights cross it about once per token
               </p>
             )}
           </li>

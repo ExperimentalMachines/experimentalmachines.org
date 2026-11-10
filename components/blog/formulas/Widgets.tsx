@@ -181,7 +181,7 @@ export function DecodeLab({ models, devices }: { models: ModelPreset[]; devices:
         />
         <Readout label="Read per token" value={`${fmt(readPerToken)} GB`} note={m.activeB ? `only the ${fmt(m.activeB)}B parameters each token uses` : "every weight, once"} />
         <Readout
-          label="Fastest possible writing"
+          label="Bandwidth ceiling"
           value={fits ? `${fmt(tokS)} tokens/s` : "does not fit"}
           note={fits ? (comp !== null && comp < bw ? "compute is the limit" : `memory bandwidth is the limit: ${fmt(d.bandwidthGBs)} GB/s ÷ ${fmt(readPerToken)} GB`) : undefined}
           tone={fits ? "good" : "bad"}
@@ -298,7 +298,11 @@ export function RooflineLab({ models, devices }: { models: ModelPreset[]; device
   // Prefill: the whole prompt in one pass, so one read of the weights it touches; the slower of the two limits wins.
   const preGB = weightsReadGB(m, prompt, bytes);
   const pre = (2 * act * prompt) / (preGB * 1e9);
-  const preSeconds = Math.max(prefillSeconds(act / 1e9, prompt, peak, 0.5), preGB / d.bandwidthGBs);
+  const preCompute = prefillSeconds(act / 1e9, prompt, peak, 0.5);
+  const preMemory = preGB / d.bandwidthGBs;
+  const preSeconds = Math.max(preCompute, preMemory);
+  // One prompt has to fit on its own: all the weights and that prompt's KV cache.
+  const preFits = weightsGB(m.paramsB, bytes) + kvSeq <= d.memoryGB;
   const [W, H, L, R, T, B] = [640, 300, 56, 24, 20, 44];
   const xmin = 0.5;
   const xmax = 1e5;
@@ -397,9 +401,16 @@ export function RooflineLab({ models, devices }: { models: ModelPreset[]; device
           tone={fits ? undefined : "bad"}
         />
         <Readout
-          label="Prefill time"
-          value={fmtTime(preSeconds)}
-          note={pre < r ? "memory bound: reading the weights takes longer than the arithmetic" : "compute bound, at 50% of peak"}
+          label="Prefill time, estimated"
+          value={preFits ? fmtTime(preSeconds) : "does not fit"}
+          note={
+            preFits
+              ? preMemory > preCompute
+                ? "reading the weights takes longer than the arithmetic at 50% of peak"
+                : "the arithmetic at 50% of peak takes longer than reading the weights"
+              : `weights + this prompt's KV cache: over ${fmt(d.memoryGB)} GB`
+          }
+          tone={preFits ? undefined : "bad"}
         />
       </div>
     </Card>

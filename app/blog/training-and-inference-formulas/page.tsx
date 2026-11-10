@@ -79,7 +79,7 @@ export default function FormulasPost() {
         <Bullets
           items={[
             <>{strong("A parameter")}, or weight, is one number the model learned. Llama 3.1 8B has about 8 billion of them.</>,
-            <>{strong("A token")} is a piece of text: a word, or part of one. Models read and write one token at a time.</>,
+            <>{strong("A token")} is a piece of text: a word, or part of one. Models read text as tokens and write a reply one token at a time.</>,
             <>{strong("A FLOP")} is one arithmetic operation on decimal numbers. TFLOP/s is a trillion of them a second.</>,
           ]}
         />
@@ -87,7 +87,7 @@ export default function FormulasPost() {
         <Wide>
           <DataTable
             label="The six formulas"
-            head={["What", "Formula", "Waits on"]}
+            head={["What", "Formula", "Usually waits on"]}
             rows={[
               ["Weights in memory", "N × bytes per parameter", "Capacity"],
               ["Reading a prompt (prefill)", "2 × N × prompt tokens operations", "Compute"],
@@ -144,8 +144,9 @@ export default function FormulasPost() {
               a stack, several stacks a chip.
             </>,
             <>
-              {strong("Watch for MHz.")} Some spec sheets quote the memory clock instead of transfers. LPDDR5X moves two transfers a clock, so Qualcomm&apos;s &quot;5,300 MHz&quot;
-              is 10,600 MT/s. On the usual 64-bit phone bus, which Qualcomm does not print, that is {bw(phone.bandwidthGBs)}: an estimate, not a published figure.
+              {strong("Watch for MHz.")} Some spec sheets quote the memory clock instead of transfers. LPDDR5X moves two transfers a clock, so if Qualcomm&apos;s &quot;5,300
+              MHz&quot; is that clock, it is 10,600 MT/s. On the usual 64-bit phone bus, which Qualcomm does not print either, that is {bw(phone.bandwidthGBs)}: our estimate, not a
+              published figure, and the phone figures below use it.
             </>,
             <>{strong("Watch for GiB.")} Vendors use GB (10⁹ bytes). Many tools report GiB (2³⁰ bytes), about 7.4% more. Mix the two and an estimate is off by that much.</>,
           ]}
@@ -169,7 +170,7 @@ export default function FormulasPost() {
             "The Snapdragon and Apple pages cited here give no comparable figure for their NPUs, only comparisons with the last generation. Where a phone vendor does quote TOPS, check the precision it is for.",
           ]}
         />
-        <Wide note="Each preset is a real part: the formula reproduces the number its vendor prints. Change any input to see what it does.">
+        <Wide note="The graphics-card and MI300X presets reproduce the bandwidth their vendors print, and both compute presets NVIDIA's; the phone's is an estimate from its memory speed. Change any input to see what it does.">
           <SpecLab />
         </Wide>
 
@@ -202,7 +203,7 @@ export default function FormulasPost() {
         </Wide>
 
         <H3>The devices, side by side</H3>
-        <Wide note="Bars are on log scales: each step is ten times the last. The last column is decode's ideal ceiling for one conversation on one chip: bandwidth ÷ weights. On on-chip SRAM that number runs into the millions and predicts nothing; other limits take over.">
+        <Wide note="Bars are on log scales: each step is ten times the last. The last column is decode's ideal ceiling for one conversation on one chip: bandwidth ÷ weights. On on-chip SRAM that number runs into the millions and is not a useful prediction: compute, the latency from layer to layer and the links between chips can limit it first.">
           <SpecBars models={models} devices={devices} />
         </Wide>
         <div id="devices" className="scroll-mt-28 lg:scroll-mt-16">
@@ -239,7 +240,7 @@ export default function FormulasPost() {
               operations per byte.
             </>,
             "Work that does fewer operations per byte than that waits on memory. Work that does more waits on compute.",
-            "Every phase below is one or the other, and the formulas say which.",
+            "Each phase below leans one way or the other, and the formulas show which.",
           ]}
         />
       </Section>
@@ -306,8 +307,8 @@ export default function FormulasPost() {
 
         <H3>Prefill time</H3>
         <P>
-          Almost all the work is matrix multiplication, where each weight does one multiply and one add per token: about 2 × N operations. Attention over a long context adds more
-          (see the last section).
+          Almost all the work is matrix multiplication, roughly one multiply and one add per weight per token: about 2 × N operations, a first estimate. Attention over a long
+          context adds more (see the last section).
         </P>
         <Formula label="Prefill time" where="Utilisation is the share of peak a real system reaches; 50% is a fair guess for a long prompt.">
           time ≈ 2 × N × prompt tokens ÷ (compute × utilisation)
@@ -326,8 +327,8 @@ export default function FormulasPost() {
 
         <H3>Decode speed</H3>
         <P>
-          Every new token passes through every layer, so on an ordinary chip the weights are read from main memory once per token. Reading is far slower than computing, so for one
-          conversation the limit is usually bandwidth.
+          Every new token passes through every layer, so in the simple picture the weights are read from main memory once per token. Reading is far slower than computing, so for
+          one conversation the limit is usually bandwidth. The formula gives a ceiling under that picture, not a measured speed.
         </P>
         <Formula
           label="Decode speed, one conversation: an ideal ceiling"
@@ -355,7 +356,7 @@ export default function FormulasPost() {
         />
         <Formula
           label="Model bandwidth utilisation (MBU)"
-          where="An estimate of how much of the memory's peak a runtime uses. Low suggests overhead in the software; near the top, only fewer bytes or faster memory will help much."
+          where="An estimate of how much of the memory's peak a runtime uses, useful for comparing runtimes on the same chip. It is not a direct measurement of the memory bus."
         >
           MBU = bytes read per token × measured tokens/s ÷ peak bandwidth
         </Formula>
@@ -399,7 +400,7 @@ export default function FormulasPost() {
             "A phone serves one person. It runs at a batch of 1, on the far left of this chart.",
           ]}
         />
-        <Wide note="The line is the most a chip can do at each intensity: rising while memory is the limit, flat once compute is. The decode point counts the KV caches too, and for the mixture of experts the experts a batch touches, assuming tokens pick them evenly.">
+        <Wide note="The line is the most a chip can do at each intensity: rising while memory is the limit, flat once compute is. The decode point counts the KV caches too. For the mixture of experts it estimates the experts a batch touches, assuming each token picks its experts independently and evenly and each one touched is read once. Only weight reads and weight arithmetic are counted; attention adds more at long prompts.">
           <RooflineLab models={models} devices={chips} />
         </Wide>
       </Section>
@@ -418,8 +419,8 @@ export default function FormulasPost() {
               {llama8.short}: 2 × {llama8.layers} × {llama8.kvHeads} × {llama8.headDim} × 2 bytes = {fmt(kib(llama8))} KiB a token.
             </>,
             <>
-              A full 128k-token conversation: {fmt(kvAt(llama8, 131072))} GB, a little more than the weights at BF16 ({fmt(weightsGB(llama8.paramsB, 2))} GB). If bandwidth alone
-              sets the speed, the ceiling at the end of that conversation is about half the one at its start.
+              A full 128k-token conversation: {fmt(kvAt(llama8, 131072))} GB, a little more than the weights at BF16 ({fmt(weightsGB(llama8.paramsB, 2))} GB). If weights and cache
+              are each read once per token and bandwidth alone sets the speed, the ceiling at the end of that conversation is about half the one at its start.
             </>,
           ]}
         />
@@ -455,7 +456,7 @@ export default function FormulasPost() {
             ]}
           />
         </Wide>
-        <P>A hybrid keeps a few attention layers for looking back precisely and makes the rest recurrent. Only the attention layers have a KV cache:</P>
+        <P>A hybrid keeps a few attention layers for looking straight back and makes the rest recurrent. Only the attention layers have a KV cache:</P>
         <Formula label="KV cache of a hybrid" where="Only the layers with attention count; the recurrent layers add a fixed amount that does not grow.">
           KV bytes = 2 × attention layers × KV heads × head size × bytes × tokens
         </Formula>
@@ -470,7 +471,7 @@ export default function FormulasPost() {
               {llama8.heads / llama8.kvHeads} times smaller.
             </>,
             <>{strong("Multi-query attention.")} One KV head for all of them.</>,
-            <>{strong("Multi-head latent attention.")} DeepSeek V2 and V3 store one compressed vector per token and expand it when needed.</>,
+            <>{strong("Multi-head latent attention.")} DeepSeek V2 and V3 store a compressed vector per token, plus a small positional key, instead of full keys and values.</>,
             <>{strong("Sliding windows.")} Some layers keep only the last few thousand tokens. Gemma 3 has five such layers for each one that sees everything.</>,
             <>{strong("Recurrent layers.")} As above: a state that does not grow.</>,
             <>{strong("A smaller cache format.")} Storing keys and values at FP8 halves it.</>,
@@ -493,7 +494,7 @@ export default function FormulasPost() {
               {strong("All positions go through at once,")} like one huge prefill, with a mask so each position sees only earlier ones. A sequence of T tokens is T predictions in
               one pass.
             </>,
-            <>{strong("Keys and values are computed, but there is no KV cache.")} They are kept, or recomputed, as activations for the backward pass.</>,
+            <>{strong("Keys and values are computed, but not kept as a cache for later tokens.")} They are kept, or recomputed, as activations for the backward pass.</>,
             <>
               {strong("Each weight read serves a large batch of tokens,")} so training usually sits far past the ridge: it waits on compute. What runs out first is memory capacity.
             </>,
@@ -540,7 +541,7 @@ export default function FormulasPost() {
         <Formula label="Training time" where="MFU, model FLOPs utilisation: the share of peak compute a run actually achieves. The training counterpart of MBU.">
           time ≈ 6 × N × D ÷ (chips × compute × MFU)
         </Formula>
-        <P>The formula lands close to a real run.</P>
+        <P>The formula lands on the same scale as a real run.</P>
         <Bullets
           items={[
             <>
@@ -594,8 +595,9 @@ export default function FormulasPost() {
             <>{strong("Size.")} Pick N and D: about 20 tokens per parameter for the best model per unit of compute, many more for a model that will be run a lot.</>,
             <>{strong("Shape.")} Width, layers, query heads and KV heads, feed-forward width, vocabulary. Proven models&apos; ratios are a safe start.</>,
             <>
-              {strong("The common parts.")} Many recent open models start from the same pieces: RMSNorm before each block, a gated (SwiGLU) feed-forward block, rotary position
-              embeddings, few or no biases, little or no dropout in pretraining. Models still differ.
+              {strong("The common parts.")} Many recent open models start from the same pieces: a normalisation (RMSNorm) before each block to keep its numbers in range, a gated
+              feed-forward block (SwiGLU), rotary position embeddings to tell the model each token&apos;s place, few or no biases, little or no dropout in pretraining. Models still
+              differ.
             </>,
             <>
               {strong("The open questions.")} Which mixer, in what ratio and where (attention, sliding windows, recurrent layers); how many experts, and how many each token uses.
@@ -611,7 +613,7 @@ export default function FormulasPost() {
           ]}
         />
         <P>Steps 2 and 3 are where the formulas in this post live. Start from a real model, change its shape, and see what follows.</P>
-        <Wide note="Picking a preset reproduces that model's published parameter count from its shape alone, to the card's rounding (Qwen3 30B-A3B counts 3.35B active; its card says 3.3B). Head size is fixed at 128, as in all four. Any shape is counted, though not every shape is one a runtime supports.">
+        <Wide note="Picking a preset counts that model's parameters from its shape alone and lands on its model card's figure; Qwen3 30B-A3B counts 3.35B active, which its card rounds to 3.3B. Norms and biases are left out. Head size is fixed at 128, as in all four. Any shape is counted, though not every shape is one a runtime supports.">
           <ModelBuilder models={models} devices={chips} />
         </Wide>
         <Wide>
@@ -640,7 +642,11 @@ export default function FormulasPost() {
                 "At the same N, more layers means more KV cache per token and more steps one after another",
                 `${qwen4.short} has ${qwen4.layers} layers to ${llama8.short}'s ${llama8.layers}, and a bigger cache per token (${fmt(kib(qwen4))} against ${fmt(kib(llama8))} KiB) at half the size`,
               ],
-              ["Mixer", "Recurrent and sliding-window layers keep a cache that stops growing", "A hybrid with attention in 1 layer of 4 keeps a quarter of the cache"],
+              [
+                "Mixer",
+                "Recurrent and sliding-window layers keep a cache that stops growing",
+                "A hybrid with attention in 1 layer of 4 keeps a quarter of the KV cache, plus small recurrent states",
+              ],
               [
                 "Context length",
                 "The KV cache grows in proportion; attention's own work per token grows too",
@@ -666,8 +672,8 @@ export default function FormulasPost() {
         <Bullets
           items={[
             <>
-              {strong("Bandwidth is the wall.")} A {phone.short} reads {bw(phone.bandwidthGBs)}: {fmt(gpu.bandwidthGBs / phone.bandwidthGBs)} times less than an {gpu.short},{" "}
-              {fmt(h100.bandwidthGBs / phone.bandwidthGBs)} times less than an {h100.short}.
+              {strong("Bandwidth is the wall.")} A {phone.short} reads about {bw(phone.bandwidthGBs)} by our estimate: {fmt(gpu.bandwidthGBs / phone.bandwidthGBs)} times less than
+              an {gpu.short}, {fmt(h100.bandwidthGBs / phone.bandwidthGBs)} times less than an {h100.short}.
             </>,
             <>{strong("Capacity is shared.")} The phone&apos;s memory also holds the operating system and every app, so a model gets part of it.</>,
             <>{strong("The batch is 1.")} No other users share the weight read, so small models and 4-bit weights are what make writing fast.</>,

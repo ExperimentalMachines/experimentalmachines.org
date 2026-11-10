@@ -85,7 +85,8 @@ export type Shape = {
 export function paramCount(s: Shape) {
   const attention = s.dModel * s.heads * s.headDim * 2 + 2 * s.dModel * s.kvHeads * s.headDim;
   const block = 3 * s.dModel * s.ffn;
-  const router = s.experts ? s.dModel * s.experts : 0;
+  // A dense model has no router; only a mixture of experts carries one.
+  const router = s.experts && s.experts > 1 ? s.dModel * s.experts : 0;
   const embeddings = s.vocab * s.dModel * (s.tied ? 1 : 2);
   const mlpTotal = block * (s.experts ?? 1) + router;
   const mlpActive = block * (s.activeExperts ?? 1) + router;
