@@ -231,18 +231,58 @@ export function WaitLanes({ panels, caption }: { panels: { title: string; note: 
   );
 }
 
-// The life of the app's threads, a real sequence, so the steps are numbered.
-export function ThreadLife({ steps, footnote }: { steps: [string, string][]; footnote: string }) {
+// How the app's threads work, in the style of "Who decides what": a white card a stage, its gist in a line
+// a reader takes in at a glance, a small picture, and the exact detail under it in small type.
+type Life = { when: string; gist: string; detail: string; picture: "made" | "ops" | "checkpoint" | "sleep" };
+
+function LifePicture({ kind }: { kind: Life["picture"] }) {
+  if (kind === "made" || kind === "sleep") {
+    return (
+      <span aria-hidden className="inline-flex gap-1">
+        {Array.from({ length: 6 }, (_, i) => (
+          <span key={i} className="h-3 w-3 rounded-full" style={{ backgroundColor: kind === "made" ? RUNS : PARKED }} />
+        ))}
+      </span>
+    );
+  }
+  if (kind === "ops") {
+    return (
+      <span aria-hidden className="flex items-end gap-[3px]">
+        {Array.from({ length: 16 }, (_, i) => (
+          <span key={i} className="w-1.5 rounded-sm" style={{ height: `${8 + ((i * 7) % 10)}px`, backgroundColor: RUNS }} />
+        ))}
+        <span className="ml-1 whitespace-nowrap text-xs text-ink-soft">and on</span>
+      </span>
+    );
+  }
+  return (
+    <span aria-hidden className="flex w-full max-w-[12rem] items-stretch gap-1">
+      <span className="flex flex-1 flex-col gap-1">
+        {[0.7, 1, 0.85].map((w, i) => (
+          <span key={i} className="flex h-2.5 gap-px">
+            <span className="rounded-sm" style={{ width: `${w * 100}%`, backgroundColor: RUNS }} />
+            <span className="flex-1 rounded-sm" style={hatch(WAITS)} />
+          </span>
+        ))}
+      </span>
+      <span className="w-[3px] rounded-full bg-ink" />
+    </span>
+  );
+}
+
+export function ThreadLife({ steps, footnote }: { steps: Life[]; footnote: string }) {
   return (
     <ChartCard>
-      <ol className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-        {steps.map(([title, line], i) => (
-          <li key={title} className="min-w-0">
-            <p className="flex items-center gap-2 text-sm font-medium">
-              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-ink text-xs text-white">{i + 1}</span>
-              {title}
-            </p>
-            <p className="mt-2 text-sm leading-6 text-ink-soft">{line}</p>
+      <p className="text-sm font-medium">How the threads work</p>
+      <ol className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        {steps.map((st) => (
+          <li key={st.when} className="flex flex-col rounded-xl bg-white p-4">
+            <p className="text-xs text-ink-soft">{st.when}</p>
+            <p className="mt-1 text-sm font-medium leading-6">{st.gist}</p>
+            <div className="mt-3 flex min-h-5 items-center">
+              <LifePicture kind={st.picture} />
+            </div>
+            <p className="mt-3 text-xs leading-5 text-ink-soft">{st.detail}</p>
           </li>
         ))}
       </ol>

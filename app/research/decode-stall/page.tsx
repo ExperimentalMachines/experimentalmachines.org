@@ -206,16 +206,30 @@ export default function DecodeStall() {
           <div className="space-y-4">
             <ThreadLife
               steps={[
-                [
-                  "The model loads",
-                  "The app normally makes one set of worker threads and keeps it: as many as the larger of its two counts, for reading the prompt and writing the reply.",
-                ],
-                [
-                  "Each token",
-                  `Writing a token, or reading a chunk of the prompt, is a long list of small operations: one token of Llama 3.2 3B lists ${pdStall.graphNodes}, some skipped or combined.`,
-                ],
-                ["Each operation", "Most are split into one slice per thread. A thread that is done waits at a checkpoint until all are, then all start the next."],
-                ["Between tokens", "If no new work arrives, the threads check for a short while, then sleep. A new thread count only picks how many of the set work."],
+                {
+                  when: "When the model loads",
+                  gist: "The app makes its threads once",
+                  picture: "made",
+                  detail: "Normally one set, kept and reused: as many as the larger of its two counts, for reading the prompt and writing the reply.",
+                },
+                {
+                  when: "For each token",
+                  gist: "Hundreds of small operations, one after another",
+                  picture: "ops",
+                  detail: `One token of Llama 3.2 3B lists ${pdStall.graphNodes}, some skipped or combined. Reading a chunk of the prompt works the same way.`,
+                },
+                {
+                  when: "For each operation",
+                  gist: "Each thread does its slice, then waits at a checkpoint",
+                  picture: "checkpoint",
+                  detail: "Most operations are split one slice per thread. When every thread is done, all start the next.",
+                },
+                {
+                  when: "Between tokens",
+                  gist: "Idle threads sleep",
+                  picture: "sleep",
+                  detail: "If no new work arrives, they check for a short while, then sleep. A new thread count only picks how many of the set work.",
+                },
               ]}
               footnote={`Reading the prompt slowed sharply too: with 4 threads and only 2 cores left, set by hand, it ran at ${pdFix.promptPaused[0]} tokens a second against ${pdFix.promptPaused[1]} with 2 threads (phone E). This post measures writing.`}
             />
