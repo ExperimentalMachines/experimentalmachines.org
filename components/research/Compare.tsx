@@ -265,6 +265,177 @@ export function Lines({
   );
 }
 
+// A measure over time for a few runs, on one linear time axis, drawn like Lines. A shaded band marks a stretch of
+// time (a pause), a dashed rule marks a level (a trip point), and a ringed dot marks one event on one line. Every
+// label sits on a halo of the card's colour, so a line passing under it never makes it unreadable, and end labels are
+// pushed apart where lines end close together. Hover a column for every line's value there.
+export function TimeLines({
+  series,
+  xMax,
+  xStep,
+  yMin = 0,
+  yMax,
+  yStep,
+  unit,
+  xLabel,
+  summary,
+  band,
+  rule,
+  marker,
+  stops,
+  digits = 0,
+}: {
+  series: { name: string; points: [number, number][]; color?: number }[];
+  xMax: number;
+  xStep: number;
+  yMin?: number;
+  yMax: number;
+  yStep: number;
+  unit: string;
+  xLabel: string;
+  summary: string;
+  band?: { from: number; to: number; label: string };
+  rule?: { y: number; label: string };
+  marker?: { series: string; x: number; label: string };
+  // The x positions a reader can hover for every line's value.
+  stops: number[];
+  digits?: number;
+}) {
+  const [W, H, L, R, T, B] = [720, 330, 62, 128, 30, 46];
+  const xp = (v: number) => L + (v / xMax) * (W - L - R);
+  const yp = (v: number) => H - B - ((v - yMin) / (yMax - yMin)) * (H - T - B);
+  const n = (v: number) => v.toLocaleString("en-US", { maximumFractionDigits: digits });
+  const colorOf = (s: { color?: number }, i: number) => lineColors[s.color ?? i];
+  const inside = (pts: [number, number][]) => pts.filter(([x]) => x >= 0 && x <= xMax);
+  const near = (pts: [number, number][], x: number) => inside(pts).reduce((a, p) => (Math.abs(p[0] - x) < Math.abs(a[0] - x) ? p : a));
+  const path = (pts: [number, number][]) => inside(pts).map(([x, y], i) => `${i ? "L" : "M"}${xp(x).toFixed(1)} ${yp(y).toFixed(1)}`).join(" ");
+  const yTicks = Array.from({ length: Math.floor((yMax - yMin) / yStep) + 1 }, (_, i) => yMin + i * yStep);
+  const xTicks = Array.from({ length: Math.floor(xMax / xStep) + 1 }, (_, i) => i * xStep);
+  // End labels sit just past each line's own last point, pushed apart where they would overlap and kept inside the
+  // plot: walked down 16 units apart, then, if the lowest runs off the bottom, walked back up from it.
+  const ends = series
+    .map((s, i) => {
+      const last = inside(s.points).at(-1)!;
+      return { name: s.name, x: xp(last[0]) + 8, y: yp(last[1]), i };
+    })
+    .sort((a, b) => a.y - b.y);
+  ends.forEach((e, k) => {
+    if (k && e.y - ends[k - 1].y < 16) e.y = ends[k - 1].y + 16;
+  });
+  for (let k = ends.length - 1; k >= 0; k--) {
+    const floor = k === ends.length - 1 ? H - B - 6 : ends[k + 1].y - 16;
+    if (ends[k].y > floor) ends[k].y = floor;
+  }
+  const lastX = (s: { points: [number, number][] }) => inside(s.points).at(-1)![0];
+  const halo = { paintOrder: "stroke" as const, stroke: "var(--color-bench)", strokeWidth: 4, strokeLinejoin: "round" as const };
+  const boxH = 30 + series.length * 18;
+  // The event's label goes above its dot, or below it where that would land on the band's or the rule's label.
+  const mark = marker && (() => {
+    const s = series.find((v) => v.name === marker.series)!;
+    const p = near(s.points, marker.x);
+    const x = xp(p[0]);
+    const y = yp(p[1]);
+    const clash = (ly: number, lx: number) => Math.abs(y - 9 - ly) < 16 && Math.abs(x + 9 - lx) < 160;
+    const below = (band && clash(T + 16, xp(band.from) + 8)) || (rule && clash(yp(rule.y) - 7, L + 8));
+    return { x, y, labelY: below ? y + 20 : y - 9, color: colorOf(s, series.indexOf(s)) };
+  })();
+  return (
+    <ChartCard>
+      <p className="flex flex-wrap gap-x-5 gap-y-1 text-sm">
+        {series.map((s, i) => (
+          <span key={s.name} className="inline-flex items-center gap-2">
+            <Swatch color={colorOf(s, i)} />
+            {s.name}
+          </span>
+        ))}
+      </p>
+      <div role="region" aria-label={`${summary}, scrolls sideways on small screens`} tabIndex={0} className="mt-3 overflow-x-auto">
+        <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label={summary} className="mx-auto w-full min-w-[34rem] max-w-3xl">
+          {band && <rect x={xp(band.from)} y={T} width={xp(band.to) - xp(band.from)} height={H - T - B} fill="color-mix(in srgb, #d9480f 9%, transparent)" />}
+          {yTicks.map((v) => (
+            <g key={v} fontSize={12}>
+              <line x1={L} x2={W - R} y1={yp(v)} y2={yp(v)} stroke="var(--color-rule)" />
+              <text x={L - 8} y={yp(v) + 4} textAnchor="end" fill="var(--color-ink-soft)">
+                {n(v)}
+              </text>
+            </g>
+          ))}
+          <text x={L - 8} y={T - 14} textAnchor="end" fontSize={12} fill="var(--color-ink-soft)">
+            {unit}
+          </text>
+          {xTicks.map((v) => (
+            <text key={v} x={xp(v)} y={H - B + 18} textAnchor="middle" fontSize={12} fill="var(--color-ink-soft)">
+              {v}
+            </text>
+          ))}
+          {rule && (
+            <g fontSize={12}>
+              <line x1={L} x2={W - R} y1={yp(rule.y)} y2={yp(rule.y)} stroke="var(--color-ink)" strokeDasharray="5 4" />
+              <text x={L + 8} y={yp(rule.y) - 7} fill="var(--color-ink)" {...halo}>
+                {rule.label}
+              </text>
+            </g>
+          )}
+          {series.map((s, i) => (
+            <path key={s.name} d={path(s.points)} fill="none" stroke={colorOf(s, i)} strokeWidth={2} strokeLinejoin="round" />
+          ))}
+          {band && (
+            <text x={xp(band.from) + 8} y={T + 16} fontSize={12} fill="var(--color-ink)" {...halo}>
+              {band.label}
+            </text>
+          )}
+          {mark && (
+            <g fontSize={12}>
+              <circle cx={mark.x} cy={mark.y} r={5} fill={mark.color} stroke="var(--color-bench)" strokeWidth={2} />
+              <text x={mark.x + 9} y={mark.labelY} fill="var(--color-ink)" {...halo}>
+                {marker!.label}
+              </text>
+            </g>
+          )}
+          {ends.map((e) => (
+            <text key={e.name} x={e.x} y={e.y + 4} fontSize={13} fontWeight={500} fill="var(--color-ink)" {...halo}>
+              {e.name}
+            </text>
+          ))}
+          {stops.map((x, k) => {
+            const before = k ? xp(stops[k - 1]) : L;
+            const after = k < stops.length - 1 ? xp(stops[k + 1]) : W - R;
+            const bx = xp(x) > (L + W - R) / 2 ? xp(x) - 200 : xp(x) + 10;
+            return (
+              <g key={x} className="group" fontSize={12}>
+                <rect x={(before + xp(x)) / 2} y={T} width={(after - before) / 2} height={H - T - B} fill="transparent" />
+                <line x1={xp(x)} x2={xp(x)} y1={T} y2={H - B} stroke="var(--color-ink-soft)" strokeDasharray="3 4" className="pointer-events-none opacity-0 group-hover:opacity-100" />
+                <g className="pointer-events-none opacity-0 group-hover:opacity-100">
+                  {series.map((s, j) => {
+                    if (x > lastX(s) + 1e-9) return null;
+                    const p = near(s.points, x);
+                    return <circle key={s.name} cx={xp(p[0])} cy={yp(p[1])} r={4} fill={colorOf(s, j)} stroke="var(--color-bench)" strokeWidth={2} />;
+                  })}
+                  <rect x={bx} y={T + 4} width={190} height={boxH} rx={6} fill="#ffffff" stroke="var(--color-rule)" />
+                  <text x={bx + 10} y={T + 22} fill="var(--color-ink-soft)">
+                    {xLabel.split(",")[0]}: {x}
+                  </text>
+                  {series.map((s, j) => {
+                    const p = near(s.points, x);
+                    return (
+                      <text key={s.name} x={bx + 10} y={T + 40 + j * 18} fill="var(--color-ink)">
+                        {s.name} {x > lastX(s) + 1e-9 ? "ended" : n(p[1])}
+                      </text>
+                    );
+                  })}
+                </g>
+              </g>
+            );
+          })}
+          <text x={L} y={H - 6} fontSize={12} fill="var(--color-ink-soft)">
+            {xLabel}
+          </text>
+        </svg>
+      </div>
+    </ChartCard>
+  );
+}
+
 // A count of whole things, drawn as that many squares, because "how many fit" is the point.
 export function Seats({ rows, caption }: { rows: { name: string; count: number; shown: string; first?: boolean }[]; caption: string }) {
   return (

@@ -162,7 +162,8 @@ export const pdFix = {
   // same three turns (Qwen3 4B, UltraChat-200k-2): the pause set by hand with 6 or 4 threads after
   // 10,000 spins; unpaused decode after 10,000 as a share of the stock wait's on the turns it slowed;
   // the pause after 1,000,000 spins (6 and 4 threads).
-  yield: { paused10k: [3.0, 3.6], normal10kShare: [20, 62], paused1m: [0.6, 1.2], stockPaused2: 6.9 },
+  // r23 (phone B, the same three turns): unpaused decode with 6 and with 2 threads, tok/s, the stock wait.
+  yield: { paused10k: [3.0, 3.6], normal10kShare: [20, 62], paused1m: [0.6, 1.2], stockPaused2: 6.9, normal6: [18.0, 18.2], normal2: [11.2, 11.3] },
   // r34, r38 and r39 on phone D: the engine's own test, a 1,751-token prompt, up to 1,024 tokens of
   // reply, 4 threads, the pause set by hand 10 s into decode. Rates in tok/s; times in s.
   guard: {
