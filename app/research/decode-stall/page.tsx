@@ -327,7 +327,7 @@ export default function DecodeStall() {
           id="use"
           title="Our chat sessions never reached the hard throttle"
           lede="The board sensor that trips the hard throttle, through three chat sessions on the Snapdragon."
-          note="Mean of each 30 s. Phone D in the rack, screen on, Qwen3 4B, 4 threads, the guard on, the study's nine conversations with each reply kept in the history. The heaviest was still warming slowly when its conversations ran out."
+          note="Mean of each 30 s. Phone D in the rack, screen on, Qwen3 4B, 4 threads, the guard on, the study's nine conversations with each reply kept in the history. The heaviest was still warming slowly when its conversations ran out. The natural hard throttles in this post came from the benchmark instead: about an hour and a half of nonstop work on the CPU, GPU and NPU, with no time to cool between runs."
         >
           <TimeLines
             series={sessionHeat.map((s) => ({ name: s.pause === "none" ? "No break" : `${s.pause} between turns`, points: s.points }))}
