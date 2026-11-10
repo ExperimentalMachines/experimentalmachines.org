@@ -248,17 +248,21 @@ export const pdFix = {
   },
   // r41 on the owner's MediaTek POCO X8 Pro Max (MT6991), the same prompt and length, on USB power.
   poco: { four: [6.77, 7.22], two: [4.86, 5.07], decodeCostPct: 29, prefillCostPct: 49, firstToken4S: [128, 140], firstToken2S: [249, 278] },
-  // r33, r39, r37 and r41: the study's conversations chatted through on one loaded engine, each reply
+  // r33, r39, r37, r41 and r46: the study's conversations chatted through on one loaded engine, each reply
   // the model's own (up to 512 tokens), with a pause before each next message. Decode is the median
   // tok/s over the turns; first token the median and the longest in seconds.
   sessions: [
     { phone: "Snapdragon, phone D", pause: "30 s", turns: 29, minutes: 40.7, peak: "XO 64.2 °C", hard: "none in 1,876 samples", decode: 12.8, first: "4.8 (119.3)" },
     { phone: "Snapdragon, phone D", pause: "5 s", turns: 31, minutes: 30.4, peak: "XO 73.7 °C", hard: "none in 1,453", decode: 13.3, first: "4.8 (119.4)" },
     { phone: "Snapdragon, phone D", pause: "none", turns: 34, minutes: 30.6, peak: "XO 76.4 °C", hard: "none in 1,709, all eleven switches read", decode: 12.7, first: "4.9 (119.4)" },
+    // r46 on phone A: the same session three times back to back, the first after a cooling gate.
+    { phone: "Snapdragon, phone A", pause: "none, 1st of 3 back to back", turns: 34, minutes: 29.4, peak: "XO 75.4 °C", hard: "none in 1,512, all eleven read", decode: 12.9, first: "4.9 (99.9)" },
+    { phone: "Snapdragon, phone A", pause: "none, 2nd of 3", turns: 34, minutes: 33.5, peak: "XO 77.6 °C", hard: "none in 1,710", decode: 11.4, first: "5.3 (119.8)" },
+    { phone: "Snapdragon, phone A", pause: "none, 3rd of 3", turns: 34, minutes: 34.0, peak: "XO 77.9 °C", hard: "none in 1,737", decode: 11.2, first: "5.3 (119.8)" },
     { phone: "MediaTek POCO, charging", pause: "30 s", turns: 17, minutes: 30.9, peak: "CPU 73.8 °C", hard: "Android status 0 throughout", decode: 8.2, first: "3.2 (108.4)" },
     { phone: "MediaTek POCO, charging", pause: "none", turns: 34, minutes: 42.8, peak: "CPU 85.4 °C", hard: "Android status 0 throughout", decode: 8.1, first: "6.4 (138.2)" },
   ],
-  sessionTurns: 145,
+  sessionTurns: 247,
   // r19 and r22: the same greedy tokens on the same teacher-forced context, 33 turns a cell.
   agreement: { sameCount: 33, changed: 23, of: 33, firstDiverge: [13, 305] },
   // The engine's own mem lines: Qwen3 4B Q4_0 resident, 2,048 to 8,192 tokens of window, two phones.

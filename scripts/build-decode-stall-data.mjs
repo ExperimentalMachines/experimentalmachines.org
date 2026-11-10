@@ -9,7 +9,8 @@
 //  - A 30 s pause (r39-1 with the guard, r34-9 without): tokens a second in 2 s bins around the pause,
 //    from logcat-r39.txt and logcat-r34.txt, with the guard's own fallback and return lines.
 //  - Three chat sessions on phone D (r33-A, r33-B, r39-S): the XO thermistor each 30 s from the
-//    session's start, from the 1 s logger trig-r31.txt.
+//    session's start, from the 1 s logger trig-r31.txt; and r46's three on phone A, back to back.
+//  - The hard throttle forced by heat on phone A (r47, r48): tokens written each second from the trip.
 // A run is found by its chain log's start line and the one START line its process logged after it.
 import { execFileSync } from "node:child_process";
 import { readFileSync, writeFileSync } from "node:fs";
@@ -232,6 +233,118 @@ const benchmarkHeat = {
   points: benchPoints,
 };
 
+// The loggers of r46 to r48 (trig46.sh to trig48.sh): "epoch xo_milliC cpu_milliC" then the eleven pause devices,
+// about once a second; trig48.txt carries more columns after them, read by none of this.
+const trigOf = (name) =>
+  file(name)
+    .split("\n")
+    .map((l) => l.trim().split(/\s+/))
+    .filter((p) => /^\d+$/.test(p[0]) && /^\d+$/.test(p[1]))
+    .map((p) => ({ t: Number(p[0]), xo: Number(p[1]) / 1000, cpu: Number(p[2]) / 1000, on: p.slice(3, 14).some((x) => x !== "0") }));
+
+// r46 on phone A: three chat sessions with no pause between turns, back to back, from the first's start to the
+// third's end: the XO's mean over each 30 s, each session's start, the peak and the samples with a device on.
+const trig46 = trigOf("trig46.txt");
+const longFrom = chainTime("chain46.log", /^\d+ session r46-S1 think/);
+const longTo = chainTime("chain46.log", /^\d+ session r46-S3 end/);
+const longPoints = [];
+for (let t = longFrom; t <= longTo; t += 30) {
+  const w = trig46.filter((x) => x.t >= t && x.t < t + 30);
+  if (w.length) longPoints.push([round((t - longFrom) / 60, 2), round(w.reduce((a, x) => a + x.xo, 0) / w.length, 1)]);
+}
+const longIn = trig46.filter((x) => x.t >= longFrom && x.t <= longTo);
+const longSession = {
+  minutes: round((longTo - longFrom) / 60, 1),
+  starts: ["S1", "S2", "S3"].map((k) => round((chainTime("chain46.log", new RegExp(`^\\d+ session r46-${k} think`)) - longFrom) / 60, 1)),
+  peak: round(Math.max(...longIn.map((x) => x.xo)), 1),
+  samples: longIn.length,
+  samplesOn: longIn.filter((x) => x.on).length,
+  points: longPoints,
+};
+
+// r47 and r48 on phone A: heated with busy loops and dd loops until a pause device read non-zero by itself, then
+// ThreadCountBenchmark's 19-token prompt and up to 256 tokens. The pause's edges are the logger's first sample with
+// a device on and its first after with all off. Each run's process is the one whose START line falls between the
+// chain's start and end lines for it; times are seconds from the first sample with a device on.
+function tripRun(n, label) {
+  const chain = `chain${n}.log`;
+  const tr = trigOf(`trig${n}.txt`);
+  const heatOn = chainTime(chain, /^\d+ heat on:/);
+  const first = tr.find((x) => x.t >= heatOn && x.on);
+  const off = tr.find((x) => x.t > first.t && !x.on);
+  const started = chainTime(chain, new RegExp(`^\\d+ run ${label} guard`));
+  const ended = chainTime(chain, new RegExp(`^\\d+ run ${label} end`));
+  const lines = logcat(`logcat-r${n}.txt`).filter((x) => x.t >= started - 1 && x.t <= ended + 2);
+  const starts = lines.filter((x) => x.tag === "OpenWeightsBench" && x.msg.startsWith("START"));
+  if (starts.length !== 1) throw new Error(`${label}: ${starts.length} START lines`);
+  const pid = starts[0].pid;
+  const mine = lines.filter((x) => x.pid === pid);
+  const prog = mine.filter((x) => x.msg.startsWith("PROGRESS")).map((x) => ({ t: x.t - first.t, f: fields(x.msg) }));
+  const decoding = prog.filter((x) => x.f.reading === "false" && x.f.decodeMs !== "null").map((x) => [x.t, Number(x.f.generated)]);
+  const pauseS = off.t - first.t;
+  const inside = decoding.filter(([t]) => t >= 0 && t < pauseS);
+  const tokS = (xs) => (xs.length > 1 ? round((xs.at(-1)[1] - xs[0][1]) / (xs.at(-1)[0] - xs[0][0]), 2) : null);
+  const guard = mine.filter((x) => x.tag === "OpenWeights" && x.msg.includes("decode steps stalled")).map((x) => round(x.t - first.t, 1));
+  const bench = fields(mine.find((x) => x.msg.startsWith("BENCH")).msg.replace(/ tok\/s/g, ""));
+  const count = (t) => {
+    const seen = decoding.filter(([x]) => x <= t);
+    return seen.length ? seen.at(-1)[1] : 0;
+  };
+  const points = [];
+  for (let t = 0; t <= Math.ceil(decoding.at(-1)[0]); t += 1) points.push([t, count(t)]);
+  return {
+    label,
+    heatMinutes: round((first.t - heatOn) / 60, 1),
+    heatFromC: round(tr.find((x) => x.t >= heatOn).xo, 1),
+    onC: round(first.xo, 3),
+    offC: round(off.xo, 3),
+    pauseS,
+    startS: started - first.t,
+    promptMs: Number(prog.find((x) => x.f.prefillMs !== "null").f.prefillMs),
+    inPause: tokS(inside),
+    afterFallback: guard.length ? tokS(inside.filter(([t]) => t >= guard[0])) : null,
+    guard,
+    decode: Number(bench.decode),
+    points,
+  };
+}
+// The cool runs before heating, r47-B0 (guard off) and r47-B1 (on): decode rate and the prompt's reading time, from
+// the same progress records as the hot runs.
+const coolRuns = ["r47-B0", "r47-B1"].map((label) => {
+  const started = chainTime("chain47.log", new RegExp(`^\\d+ run ${label} guard`));
+  const ended = chainTime("chain47.log", new RegExp(`^\\d+ run ${label} end`));
+  const mine = logcat("logcat-r47.txt").filter((x) => x.t >= started && x.t <= ended + 2);
+  const b = mine.find((x) => x.msg.startsWith("BENCH"));
+  const read = mine.find((x) => x.msg.startsWith("PROGRESS") && fields(x.msg).prefillMs !== "null");
+  return { label, decode: Number(fields(b.msg.replace(/ tok\/s/g, "")).decode), promptMs: Number(fields(read.msg).prefillMs) };
+});
+// r47-P1, with the guard, started after r47's pause had released. The stall runs from the progress record before
+// the first slow gap between records (over 1.5 s of decode) to the guard's line; the CPU zone is the logger's
+// sample at the stall's start and its lowest during it; the board temperature is the chain's at the run's start.
+const afterTrip = (() => {
+  const startLine = file("chain47.log").split("\n").find((l) => /^\d+ run r47-P1 guard/.test(l));
+  const started = Number(startLine.split(" ")[0]);
+  const ended = chainTime("chain47.log", /^\d+ run r47-P1 end/);
+  const mine = logcat("logcat-r47.txt").filter((x) => x.t >= started && x.t <= ended);
+  const g = mine.find((x) => x.msg.includes("decode steps stalled"));
+  const m = /stalled \((\d+) ms against (\d+)\)/.exec(g.msg);
+  const prog = mine.filter((x) => x.msg.startsWith("PROGRESS") && fields(x.msg).decodeMs !== "null").map((x) => ({ t: x.t, ms: Number(fields(x.msg).decodeMs) }));
+  const k = prog.findIndex((x, i) => i > 0 && x.ms - prog[i - 1].ms > 1500 && x.t <= g.t + 1);
+  const from = prog[k - 1].t;
+  const tr = trigOf("trig47.txt");
+  const during = tr.filter((x) => x.t >= Math.floor(from) && x.t <= g.t);
+  return {
+    stepMs: Number(m[1]),
+    normalMs: Number(m[2]),
+    sampled: during.length,
+    anyOn: during.some((x) => x.on),
+    cpuBefore: during[0].cpu,
+    cpuLow: round(Math.min(...during.map((x) => x.cpu)), 1),
+    xo: round(Number(/ xo (\d+)/.exec(startLine)[1]) / 1000, 1),
+  };
+})();
+const forced = { off: tripRun(47, "r47-P0"), on: tripRun(48, "r48-P1"), cool: coolRuns, afterTrip };
+
 const out = `// Generated by scripts/build-decode-stall-data.mjs from OpenWeights at ${commit.slice(0, 12)}
 // (${DIR}). Do not edit: change the script or the results and run it again.
 
@@ -269,10 +382,38 @@ export const benchmarkHeat = {
   points: ${JSON.stringify(benchmarkHeat.points)} as [number, number][],
 };
 
+// r46 on phone A: three chat sessions with no pause, back to back; the XO's 30 s means in minutes from the first's
+// start, each session's start, the peak, and how many logger samples had any pause device on.
+export const longSession = ${JSON.stringify(longSession)} as { minutes: number; starts: number[]; peak: number; samples: number; samplesOn: number; points: [number, number][] };
+
+// r47 and r48 on phone A: the hard throttle forced by heat, the same short decode inside it without the guard (off)
+// and with it (on); tokens written each second from the first logger sample with a pause device on.
+export const forcedTrip = ${JSON.stringify(forced)} as {
+  off: ForcedRun;
+  on: ForcedRun;
+  cool: { label: string; decode: number; promptMs: number }[];
+  afterTrip: { stepMs: number; normalMs: number; sampled: number; anyOn: boolean; cpuBefore: number; cpuLow: number; xo: number };
+};
+type ForcedRun = {
+  label: string;
+  heatMinutes: number;
+  heatFromC: number;
+  onC: number;
+  offC: number;
+  pauseS: number;
+  startS: number;
+  promptMs: number;
+  inPause: number;
+  afterFallback: number | null;
+  guard: number[];
+  decode: number;
+  points: [number, number][];
+};
+
 // Chat sessions on phone D: the XO thermistor's mean over each 30 s, minutes from the session's start.
 export const sessionHeat: { label: string; pause: string; minutes: number; peak: number; points: [number, number][] }[] = ${JSON.stringify(sessions, null, 2)};
 `;
 writeFileSync(new URL("../lib/decode-stall-data.ts", import.meta.url), out);
 console.log(
-  `lib/decode-stall-data.ts from ${commit.slice(0, 12)}: held ${held.with.progress.length}/${held.without.progress.length} progress lines, guard ${JSON.stringify(held.with.guard)}; short guard ${JSON.stringify(short.with.guard)}; sessions ${sessions.map((s) => `${s.label} ${s.minutes} min peak ${s.peak}`).join(", ")}; placement ${JSON.stringify(threadPlacement)}; bench ${JSON.stringify({ ...benchmarkHeat, points: benchmarkHeat.points.length })}`,
+  `lib/decode-stall-data.ts from ${commit.slice(0, 12)}: held ${held.with.progress.length}/${held.without.progress.length} progress lines, guard ${JSON.stringify(held.with.guard)}; short guard ${JSON.stringify(short.with.guard)}; sessions ${sessions.map((s) => `${s.label} ${s.minutes} min peak ${s.peak}`).join(", ")}; placement ${JSON.stringify(threadPlacement)}; bench ${JSON.stringify({ ...benchmarkHeat, points: benchmarkHeat.points.length })}; long ${JSON.stringify({ ...longSession, points: longSession.points.length })}; forced ${JSON.stringify({ off: { ...forced.off, points: forced.off.points.length }, on: { ...forced.on, points: forced.on.points.length }, cool: forced.cool, afterTrip: forced.afterTrip })}`,
 );

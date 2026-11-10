@@ -2,14 +2,14 @@ import { grouped } from "@/components/openweights/pd-parts";
 import { Aligned, PairBars, Stack, TimeLines } from "@/components/research/Compare";
 import Post, { Figure, Findings, More, Note, postMetadata, Row, Rows, Section, Table } from "@/components/research/Post";
 import { PhoneSpecs, ThreadChoice, ThreadLife, ThreadPlacement, WaitLanes } from "@/components/research/ThreadFigures";
-import { benchmarkHeat, heldPause, sessionHeat, shortPause, threadPlacement } from "@/lib/decode-stall-data";
+import { benchmarkHeat, forcedTrip, heldPause, longSession, sessionHeat, shortPause, threadPlacement } from "@/lib/decode-stall-data";
 import { pdFix, pdLinks, pdPhone, pdSpecs, pdStall, pdTrigger } from "@/lib/prefill-decode";
 
 const href = "/research/decode-stall/";
 
 export const metadata = postMetadata(
   href,
-  "On a Snapdragon 8 Elite Gen 5 the hard throttle takes six of eight cores out of use, and llama.cpp with more threads than the two left nearly stops writing the reply. A profile of the cause, the guard OpenWeights now carries, a llama.cpp change that did not work both ways, and chat sessions against the throttle.",
+  "On a Snapdragon 8 Elite Gen 5 the hard throttle takes six of eight cores out of use, and llama.cpp with more threads than the two left nearly stops writing the reply. A profile of the cause, the guard OpenWeights now carries, a llama.cpp change that did not work both ways, chat sessions against the throttle, and the throttle forced by heat.",
 );
 
 const at = (n: number) => pdFix.byThreads.find((r) => r.threads === n)!;
@@ -23,7 +23,10 @@ const y = pdFix.yield;
 const mid = (r: number[]) => (r[0] + r[1]) / 2;
 const slower = (a: number[], b: number[]) => Math.round(100 * (1 - mid(a) / mid(b)));
 const later = (a: number[], b: number[]) => Math.round(100 * (mid(a) / mid(b) - 1));
-const hottest = Math.max(...sessionHeat.map((s) => s.peak));
+const hottest = Math.max(longSession.peak, ...sessionHeat.map((s) => s.peak));
+const ft = forcedTrip;
+const coolRange = `${Math.min(...ft.cool.map((c) => c.decode))} to ${Math.max(...ft.cool.map((c) => c.decode))}`;
+const secs = (ms: number) => (ms / 1000).toFixed(1);
 const heldFall = heldPause.with.guard[0];
 const shortFall = shortPause.with.guard.find((e) => e.event === "fell back")!;
 const shortBack = shortPause.with.guard.find((e) => e.event === "back")!;
@@ -79,7 +82,7 @@ export default function DecodeStall() {
         { label: "Raw results, MediaTek", href: pdLinks.pocoResults },
         { label: "OpenWeights", href: "/openweights/" },
       ]}
-      sourcesNote="Every figure here is in the OpenWeights report. The two time charts are generated from its raw logs at a pinned commit."
+      sourcesNote="Every figure here is in the OpenWeights report. The time charts are generated from its raw logs at a pinned commit."
     >
       <Section id="findings" title="What we found">
         <Findings
@@ -94,15 +97,15 @@ export default function DecodeStall() {
             },
             {
               headline: "The app's engine now drops to 2 threads when a step stalls",
-              line: `With six cores taken out of use by hand, earlier builds of this guard wrote ${g.pausedOn[0]} to ${g.pausedOn[1]} tokens a second against ${g.pausedOff[0]} to ${g.pausedOff[1]} without it, and it never dropped in ${pdFix.sessionTurns} turns of ordinary chat.`,
+              line: `In two runs where heat took six cores out of use on its own, the one with this guard wrote ${ft.on.afterFallback} tokens a second after falling back, the one without ${ft.off.inPause} (${coolRange} cool); one run each, from separate heats.`,
             },
             {
               headline: "Making waiting threads give up their core was a trade-off",
               line: `Giving it up early kept ${range(y.paused10k)} tokens a second with six cores out of use but cut some normal replies to as little as ${y.normal10kShare[0]}% of their usual speed; giving it up late cost nothing measurable but kept only ${range(y.paused1m)}.`,
             },
             {
-              headline: "Our chat sessions never reached the hard throttle",
-              line: `The heaviest, with no break between turns, peaked ${(pdTrigger.onC - hottest).toFixed(1)} °C below the ${pdTrigger.onC} °C trip point after ${sessionHeat.find((x) => x.pause === "none")!.minutes} minutes on the Snapdragon.`,
+              headline: "No chat session was seen to reach the hard throttle",
+              line: `The heaviest, three sessions with no break between turns run back to back, peaked ${(pdTrigger.onC - hottest).toFixed(1)} °C below the ${pdTrigger.onC} °C trip point over ${Math.round(longSession.minutes)} minutes, and the guard never dropped in ${pdFix.sessionTurns} turns of chat.`,
             },
             {
               headline: "Four threads with the guard, not two all the time",
@@ -351,25 +354,55 @@ export default function DecodeStall() {
 
         <Figure
           id="use"
-          title="Our chat sessions never reached the hard throttle"
-          lede="The board sensor that trips the hard throttle, through three chat sessions on the Snapdragon."
-          note="Mean of each 30 s. Phone D in the rack, screen on, Qwen3 4B, 4 threads, the guard on, the study's nine conversations with each reply kept in the history. The heaviest was still warming slowly when its conversations ran out. The benchmark run above did reach it."
+          title="No chat session was seen to reach the hard throttle"
+          lede="The board sensor that trips the hard throttle, through three chat sessions on one Snapdragon phone and three more run back to back on another."
+          note={`Mean of each 30 s. Phones D and A in the rack, screen on, Qwen3 4B, 4 threads, the guard on, the study's nine conversations with each reply kept in the history. On phone A each session started the moment the one before ended, at minutes ${longSession.starts[1]} and ${longSession.starts[2]}, so that line counts from the first session's start; none of the phone's eleven switches of this kind was seen on in any of its ${grouped(longSession.samples)} samples, about one a second, though a crossing shorter than the gap between samples would not show. The benchmark run above did reach the trip.`}
         >
           <TimeLines
-            series={sessionHeat.map((s) => ({ name: s.pause === "none" ? "No break" : `${s.pause} between turns`, points: s.points }))}
-            xMax={42}
-            xStep={10}
-            yMin={40}
+            series={[
+              ...sessionHeat.map((s) => ({ name: s.pause === "none" ? "No break" : `${s.pause} between turns`, points: s.points })),
+              { name: "No break, 3 in a row", points: longSession.points },
+            ]}
+            xMax={100}
+            xStep={20}
+            yMin={30}
             yMax={80}
             yStep={10}
             unit="°C"
-            xLabel="Minutes into the session"
-            hover="Minute {x} of the session"
+            xLabel="Minutes since the session began"
+            hover="Minute {x}"
             hoverUnit="°C"
-            summary={`The XO thermistor through three chat sessions: with 30 s between turns it peaked at ${sessionHeat[0].peak} °C, with 5 s at ${sessionHeat[1].peak}, with none at ${sessionHeat[2].peak}; the hard throttle trips at ${pdTrigger.onC}.`}
+            summary={`The XO thermistor through chat sessions: with 30 s between turns it peaked at ${sessionHeat[0].peak} °C, with 5 s at ${sessionHeat[1].peak}, with none at ${sessionHeat[2].peak}, and through three with none back to back, ${Math.round(longSession.minutes)} minutes, at ${longSession.peak}; the hard throttle trips at ${pdTrigger.onC}.`}
             rule={{ y: pdTrigger.onC, label: `Hard throttle trips at ${pdTrigger.onC} °C` }}
-            stops={[0, 5, 10, 15, 20, 25, 30, 35, 40]}
+            stops={[0, 10, 20, 30, 40, 50, 60, 70, 80, 90]}
             digits={1}
+          />
+        </Figure>
+
+        <Figure
+          id="forced"
+          title="In two throttles forced by heat, the run with the guard kept writing"
+          lede="Tokens written after the phone took six cores out of use on its own, in two runs heated until it did: one without the guard, one with it."
+          note={`Snapdragon phone A, Qwen3 4B, 4 threads, a 19-token prompt and up to 256 tokens. Heated with busy loops and memory-copy loops at full brightness: ${ft.off.heatMinutes} minutes from ${ft.off.heatFromC} °C for the run without the guard, ${ft.on.heatMinutes} from ${ft.on.heatFromC} for the one with it. The cores were first seen out of use at ${ft.off.onC.toFixed(2)} and ${ft.on.onC.toFixed(2)} °C and back below 70 °C, ${ft.off.pauseS} and ${ft.on.pauseS} s later. Reading the prompt took ${secs(ft.off.promptMs)} and ${secs(ft.on.promptMs)} s, against about 0.2 cool, where the same work ran at ${coolRange} tokens a second. One run each on one phone, from separate heats, stopped at 256 tokens; the heaters stopped when a switch was seen on, so these pause lengths say nothing of how long the model's own load would keep one going. The lines step to each logged progress count, about four a second.`}
+        >
+          <TimeLines
+            series={[
+              { name: "With the guard", points: ft.on.points },
+              { name: "Without it", points: ft.off.points },
+            ]}
+            xMax={75}
+            xStep={15}
+            yMax={256}
+            yStep={64}
+            unit="Tokens"
+            xLabel="Seconds since the cores went out of use"
+            hover="{x} s after the cores went out of use"
+            hoverUnit="tokens written"
+            summary={`Tokens written after heat took six cores out of use, one run each: with the guard, ${ft.on.afterFallback} a second between progress records after it fell back to 2 threads; without it, ${ft.off.inPause} a second until the cores were seen back ${ft.off.pauseS} s in.`}
+            band={{ from: 0, to: ft.off.pauseS, label: "Out of use in both runs" }}
+            spans={{ at: [{ from: ft.off.pauseS, to: ft.on.pauseS }], label: "Still out of use in the run with the guard" }}
+            marker={{ series: "With the guard", x: ft.on.guard[0], label: "Falls back to 2 threads" }}
+            stops={[0, 10, 20, 30, 40, 50, 60, 70]}
           />
         </Figure>
 
@@ -483,6 +516,36 @@ export default function DecodeStall() {
             the time. A sample shows only the last core a thread ran on.
           </Note>
           <Table
+            label="The hard throttle forced by heat"
+            head={["Run", "Heated", "Cores out of use", "Reading the 19-token prompt", "Writing while out of use", "The guard"]}
+            min="52rem"
+            rows={[
+              [
+                "Without the guard",
+                `${ft.off.heatMinutes} min from ${ft.off.heatFromC} °C`,
+                `First seen at ${ft.off.onC.toFixed(1)} °C, about ${ft.off.pauseS} s`,
+                `${secs(ft.off.promptMs)} s`,
+                `${ft.off.inPause} tok/s`,
+                "Off",
+              ],
+              [
+                "With the guard",
+                `${ft.on.heatMinutes} min from ${ft.on.heatFromC} °C`,
+                `First seen at ${ft.on.onC.toFixed(1)} °C, about ${ft.on.pauseS} s`,
+                `${secs(ft.on.promptMs)} s`,
+                `${ft.on.inPause} tok/s, ${ft.on.afterFallback} after the fall-back`,
+                `Fell back ${ft.on.guard[0]} s in`,
+              ],
+              ["Cool, before heating", "", "", `${ft.cool.map((c) => c.promptMs).join(" and ")} ms`, `${ft.cool.map((c) => c.decode).join(" and ")} tok/s`, "Off, then on"],
+            ]}
+          />
+          <Note>
+            Snapdragon phone A, the build with the guard&apos;s final rules. The edges of each stretch come from a log read about once a second. In a third run with the guard,
+            started after the cores had come back (board at {ft.afterTrip.xo} °C), a decode step took {(ft.afterTrip.stepMs / 1000).toFixed(1)} s against a normal{" "}
+            {ft.afterTrip.normalMs} ms with none of the eleven switches seen on in the {ft.afterTrip.sampled} samples during the stall, while the hottest CPU sensor fell from{" "}
+            {ft.afterTrip.cpuBefore} to {ft.afterTrip.cpuLow} °C; the guard fell back, and the cause is not known.
+          </Note>
+          <Table
             label="Chat sessions against the throttle"
             head={["Phone", "Between turns", "Turns", "Hottest", "Hard throttle (Snapdragon) or Android status (POCO)", "Decode, tok/s", "First token, s, median (longest)"]}
             min="52rem"
@@ -511,8 +574,8 @@ export default function DecodeStall() {
       <Section id="method" title="How we ran it">
         <Rows>
           <Row label="Phones">
-            {pdPhone.soc} phones B, C, D and E, Qualcomm&apos;s reference design, in Qualcomm Device Cloud&apos;s rack, root shell, AC power, 3 to 10 November 2026. A POCO X8 Pro
-            Max (MediaTek Dimensity 9500s) on USB power for two sessions and 2 threads against 4. Their specifications are in{" "}
+            {pdPhone.soc} phones A, B, C, D and E, Qualcomm&apos;s reference design, in Qualcomm Device Cloud&apos;s rack, root shell, AC power, 3 to 10 November 2026. A POCO X8
+            Pro Max (MediaTek Dimensity 9500s) on USB power for two sessions and 2 threads against 4. Their specifications are in{" "}
             <a href="#phones" className="underline decoration-ink/30 underline-offset-4 hover:decoration-ink">
               the first figure
             </a>
@@ -520,11 +583,13 @@ export default function DecodeStall() {
           </Row>
           <Row label="Cores out of use">
             The phone does it on its own at 78 °C. For the tests we flipped the same two switches by hand after letting the phone cool, as root on the rack phones, which an app
-            cannot do, and checked that work then ran only on cores 0 and 1.
+            cannot do, and checked that work then ran only on cores 0 and 1. Twice, on phone A, we heated it with busy loops and memory-copy loops until the switches came on by
+            themselves.
           </Row>
           <Row label="Runtime">
             llama.cpp {pdPhone.llamacpp}: its benchmark on B and C for the natural-heat runs, on B for the first runs by hand, and on E and D for the profile and the llama.cpp
-            change; the app&apos;s own engine, every decode step timed, on E for the thread counts and on D for the guard and the sessions.
+            change; the app&apos;s own engine, every decode step timed, on E for the thread counts, on D for the guard and the sessions, and on A for the longest sessions and the
+            forced throttle.
           </Row>
           <Row label="Model">Qwen3 4B in Q4_0 for every run set up for this post; the six logged throttles came from the matrix, on Qwen3 1.7B and 4B.</Row>
           <Row label="The guard">
@@ -540,14 +605,20 @@ export default function DecodeStall() {
             Taking cores out of use is a Qualcomm mechanism, measured on the SM8850 only. The MediaTek phone checked what 2 threads cost and that the guard stays quiet.
           </Row>
           <Row label="Cores taken out by hand">
-            No natural hard throttle came while the guard ran, and those runs used earlier builds: the final rules have not yet run with cores out of use. One of {g.pausesSet}{" "}
-            attempts by hand did not hold and two more probably did not; those runs are left out.
+            The final rules have met cores out of use once, in a throttle forced by heat rather than by chat, on one phone, a 19-token prompt and 256 tokens, against one run
+            without the guard from a separate heat; the runs with cores taken out by hand used earlier builds. One of {g.pausesSet} attempts by hand did not hold and two more
+            probably did not; those runs are left out.
           </Row>
           <Row label="What the guard misses">
-            Cores going out of use while the prompt is being read. And in one run with none of the logged switches set it fell back after two steps of about 4 s whose cause is not
-            known: the logger read three of the phone&apos;s eleven switches of this kind.
+            Cores going out of use while the prompt is being read: in the forced throttle 19 tokens took {secs(ft.on.promptMs)} s with the guard on. And twice it fell back on steps
+            of about 4 s with none of the logged switches on, once when the logger read three of the phone&apos;s eleven switches of this kind and once when it read all eleven; the
+            cause is not known.
           </Row>
-          <Row label="The sessions">A rack phone and a phone on a desk, not in a hand or a pocket. A longer session than the heaviest might have reached the trip.</Row>
+          <Row label="The sessions">
+            Rack phones and a phone on a desk, not in a hand or a pocket. The longest, {Math.round(longSession.minutes)} minutes with no break on phone A, came within{" "}
+            {(pdTrigger.onC - longSession.peak).toFixed(1)} °C of the trip with no switch seen on; gaps between samples could hide a brief crossing, and a longer session, a warmer
+            room or a phone in a hand was not tested.
+          </Row>
           <Row label="Not measured">Energy and battery; which version of a reply the thread count changed is better.</Row>
         </Rows>
       </Section>
