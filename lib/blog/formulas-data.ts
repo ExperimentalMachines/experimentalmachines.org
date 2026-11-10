@@ -105,6 +105,8 @@ export type Device = {
   computeNote?: string;
   // Where a number is derived rather than printed by the vendor, how.
   note?: string;
+  // A few words on a figure that is not like the others, shown on its card.
+  badge?: string;
   source: string;
 };
 
@@ -123,6 +125,7 @@ export const devices: Device[] = [
     tflops: null,
     computeNote: "no TOPS published",
     note: "Up to 24 GB. Bandwidth derived: Qualcomm's 5,300 MHz memory clock moves 2 transfers a cycle, 10,600 MT/s, on a 64-bit bus (4 channels of 16), which Qualcomm does not print.",
+    badge: "bandwidth is our estimate",
     source: "https://www.qualcomm.com/content/dam/qcomm-martech/dm-assets/documents/Snapdragon-8-Elite-Gen-5-product-brief.pdf",
   },
   {
@@ -196,6 +199,7 @@ export const devices: Device[] = [
     bandwidthGBs: 4800,
     tflops: 989,
     note: "Dense derived: half of the 1,979 TFLOP/s NVIDIA prints with sparsity.",
+    badge: "compute derived",
     source: "https://www.nvidia.com/en-us/data-center/h200/",
   },
   {
@@ -208,6 +212,7 @@ export const devices: Device[] = [
     bandwidthGBs: 8000,
     tflops: 2250,
     note: "Dense derived: NVIDIA prints 36 PFLOP/s sparse for 8 GPUs, and dense as half.",
+    badge: "compute derived",
     source: "https://docs.nvidia.com/enterprise-reference-architectures/hgx-ai-factory/latest/components.html",
   },
   {
@@ -279,6 +284,7 @@ export const devices: Device[] = [
     tflops: null,
     computeNote: "not published per chip",
     note: "A model is spread across many chips; a rack holds 128 GB of SRAM.",
+    badge: "a model spans many chips",
     source: "https://www.nvidia.com/en-us/data-center/lpx/",
   },
   {
@@ -292,6 +298,7 @@ export const devices: Device[] = [
     tflops: null,
     computeNote: "125 PFLOP/s, sparse only",
     note: "One wafer-sized chip.",
+    badge: "one wafer-sized chip",
     source: "https://cdn.sanity.io/files/e4qjo92p/production/864133620041e5af418074842e42a669c137fa23.pdf",
   },
 ];

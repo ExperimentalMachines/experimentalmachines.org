@@ -15,7 +15,6 @@ import {
   weightsReadGB,
   trainDays,
   trainFLOPs,
-  trainStateBytesPerParam,
   trainStateGB,
   weightsGB,
 } from "@/lib/blog/arith";
@@ -29,6 +28,7 @@ export const ORANGE = "#d9480f";
 export const TEAL = "#008f7a";
 export const VIOLET = "#6741d9";
 const GREY = "#868e96";
+const INKSOFT = "#545b73";
 
 export const Card = ({ children }: { children: React.ReactNode }) => <div className="rounded-[1.5rem] bg-bench p-5 sm:p-6">{children}</div>;
 
@@ -110,6 +110,30 @@ export const Readout = ({ label, value, note, tone }: { label: string; value: st
   </div>
 );
 
+// The panel's one primary result: a big number and what it is.
+export const Big = ({ label, value, note, tone }: { label: string; value: string; note?: string; tone?: "bad" }) => (
+  <div>
+    <p className="text-sm text-ink-soft">{label}</p>
+    <p className={`display mt-0.5 text-4xl font-medium tracking-[-0.02em] tabular-nums ${tone === "bad" ? "text-[#c92a2a]" : "text-ink"}`}>{value}</p>
+    {note && <p className="mt-1 text-sm leading-6 text-ink-soft">{note}</p>}
+  </div>
+);
+
+// The controls a reader rarely needs, folded so the panel has one obvious thing to change.
+export function Assumptions({ children }: { children: React.ReactNode }) {
+  return (
+    <details className="group mt-5 rounded-xl bg-white">
+      <summary className="flex cursor-pointer list-none items-center justify-between px-4 py-2.5 text-sm text-ink-soft hover:text-ink [&::-webkit-details-marker]:hidden">
+        Change assumptions
+        <span aria-hidden className="text-base leading-none transition-transform group-open:rotate-45">
+          +
+        </span>
+      </summary>
+      <div className="grid gap-4 border-t border-rule px-4 py-4 md:grid-cols-2">{children}</div>
+    </details>
+  );
+}
+
 // Plays only while on screen and when the reader has not asked for less motion.
 export function usePlaying(ref: React.RefObject<HTMLElement | null>) {
   const [on, setOn] = useState(false);
@@ -146,7 +170,7 @@ export const deviceOptions = (devices: Device[]) => devices.map((d) => ({ id: d.
 // 1. How fast can it write? Weights against capacity, and decode's two ceilings, with a sweep per token.
 export function DecodeLab({ models, devices }: { models: ModelPreset[]; devices: Device[] }) {
   const [modelId, setModel] = useState(models[1].id);
-  const [prec, setPrec] = useState<string>("BF16 / FP16");
+  const [prec, setPrec] = useState<string>("4-bit");
   const [devId, setDev] = useState(devices.find((d) => d.kind === "consumer")?.id ?? devices[0].id);
   const m = models.find((x) => x.id === modelId)!;
   const d = devices.find((x) => x.id === devId)!;
@@ -167,24 +191,19 @@ export function DecodeLab({ models, devices }: { models: ModelPreset[]; devices:
   const blocks = 24;
   return (
     <Card>
-      <div className="grid gap-4 md:grid-cols-3">
-        <Chips label="Model" options={models.map((x) => ({ id: x.id, label: x.short }))} value={modelId} onChange={setModel} />
-        <Chips label="Precision" options={precisions.map((p) => ({ id: p.name, label: p.name }))} value={prec} onChange={setPrec} />
-        <Chips label="Device" options={deviceOptions(devices)} value={devId} onChange={setDev} />
-      </div>
-      <div ref={ref} className="mt-6 grid gap-3 sm:grid-cols-3">
-        <Readout
-          label="Weights in memory"
-          value={`${fmt(stored)} GB`}
-          note={fits ? `of the ${d.short}'s ${fmt(d.memoryGB)} GB` : `more than the ${d.short}'s ${fmt(d.memoryGB)} GB: it does not fit`}
-          tone={fits ? undefined : "bad"}
-        />
-        <Readout label="Read per token" value={`${fmt(readPerToken)} GB`} note={m.activeB ? `only the ${fmt(m.activeB)}B parameters each token uses` : "every weight, once"} />
-        <Readout
-          label="Bandwidth ceiling"
+      <Chips label="Device" options={deviceOptions(devices)} value={devId} onChange={setDev} />
+      <div ref={ref} className="mt-6">
+        <Big
+          label={`Fastest it could write ${m.short}, ${prec}`}
           value={fits ? `${fmt(tokS)} tokens/s` : "does not fit"}
-          note={fits ? (comp !== null && comp < bw ? "compute is the limit" : `memory bandwidth is the limit: ${fmt(d.bandwidthGBs)} GB/s ÷ ${fmt(readPerToken)} GB`) : undefined}
-          tone={fits ? "good" : "bad"}
+          note={
+            !fits
+              ? `${fmt(stored)} GB of weights, more than ${fmt(d.memoryGB)} GB`
+              : comp !== null && comp < bw
+                ? `An ideal ceiling, not a measured speed. Here compute is the lower one: ${fmt(comp)} against ${fmt(bw)} from bandwidth`
+                : `An ideal ceiling, not a measured speed: ${fmt(d.bandwidthGBs)} GB/s ÷ ${fmt(readPerToken)} GB a token`
+          }
+          tone={fits ? undefined : "bad"}
         />
       </div>
       <div className="mt-6" aria-hidden>
@@ -205,6 +224,10 @@ export function DecodeLab({ models, devices }: { models: ModelPreset[]; devices:
           ))}
         </div>
       </div>
+      <Assumptions>
+        <Chips label="Model" options={models.map((x) => ({ id: x.id, label: x.short }))} value={modelId} onChange={setModel} />
+        <Chips label="Precision" options={precisions.map((p) => ({ id: p.name, label: p.name }))} value={prec} onChange={setPrec} />
+      </Assumptions>
     </Card>
   );
 }
@@ -227,27 +250,14 @@ export function KvLab({ models, devices }: { models: ModelPreset[]; devices: Dev
   const mha = kvBytesPerToken(m.layers, m.heads, m.headDim, kvB);
   return (
     <Card>
-      <div className="grid gap-4 md:grid-cols-3">
-        <Chips label="Model" options={models.map((x) => ({ id: x.id, label: x.short }))} value={modelId} onChange={setModel} />
-        <Chips
-          label="Cache precision"
-          options={[
-            { id: "BF16 / FP16" as const, label: "BF16" },
-            { id: "FP8 / INT8" as const, label: "FP8" },
-          ]}
-          value={kvPrec}
-          onChange={setKvPrec}
+      <Slider label="Conversation length, tokens" value={ctx} min={512} max={131072} log step={512} shown={fmt(ctx)} onChange={setCtx} />
+      <div className="mt-6 grid gap-5 sm:grid-cols-[1.3fr_1fr]">
+        <Big
+          label={`KV cache, ${m.short}${batch > 1 ? `, ${batch} conversations` : ""}`}
+          value={`${fmt(kv)} GB`}
+          note={`${fmt(perTok / 1024)} KiB a token × ${fmt(ctx)} tokens${batch > 1 ? ` × ${batch}` : ""}`}
         />
-        <Chips label="Device" options={deviceOptions(devices)} value={devId} onChange={setDev} />
-      </div>
-      <div className="mt-5 grid gap-4 sm:grid-cols-2">
-        <Slider label="Context, tokens" value={ctx} min={512} max={131072} log step={512} shown={fmt(ctx)} onChange={setCtx} />
-        <Slider label="Conversations at once (batch)" value={batch} min={1} max={128} log step={1} shown={String(batch)} onChange={setBatch} />
-      </div>
-      <div className="mt-6 grid gap-3 sm:grid-cols-3">
-        <Readout label="KV cache per token" value={`${fmt(perTok / 1024)} KiB`} note={`2 × ${m.layers} layers × ${m.kvHeads} KV heads × ${m.headDim} × ${kvB} bytes`} />
-        <Readout label="KV cache in all" value={`${fmt(kv)} GB`} note={`× ${fmt(ctx)} tokens × ${batch}`} />
-        <Readout label="Without grouped-query attention" value={`${fmt(mha / perTok)}× as much`} note={`one KV head per query head (${m.heads}) instead of ${m.kvHeads}`} />
+        <Readout label="Without grouped-query attention" value={`${fmt(mha / perTok)}× as much`} note={`a KV head per query head (${m.heads}), not ${m.kvHeads}`} />
       </div>
       <div className="mt-6" aria-label={`Weights ${fmt(w)} GB and KV cache ${fmt(kv)} GB against ${fmt(d.memoryGB)} GB`} role="img">
         <div className="relative h-7 overflow-hidden rounded-md bg-white">
@@ -270,6 +280,20 @@ export function KvLab({ models, devices }: { models: ModelPreset[]; devices: Dev
           </span>
         </p>
       </div>
+      <Assumptions>
+        <Chips label="Model" options={models.map((x) => ({ id: x.id, label: x.short }))} value={modelId} onChange={setModel} />
+        <Chips label="Device" options={deviceOptions(devices)} value={devId} onChange={setDev} />
+        <Chips
+          label="Cache precision"
+          options={[
+            { id: "BF16 / FP16" as const, label: "BF16" },
+            { id: "FP8 / INT8" as const, label: "FP8" },
+          ]}
+          value={kvPrec}
+          onChange={setKvPrec}
+        />
+        <Slider label="Conversations at once (batch)" value={batch} min={1} max={128} log step={1} shown={String(batch)} onChange={setBatch} />
+      </Assumptions>
     </Card>
   );
 }
@@ -315,21 +339,17 @@ export function RooflineLab({ models, devices }: { models: ModelPreset[]; device
   const xticks = [1, 10, 100, 1000, 10000, 100000].filter((x) => x >= xmin && x <= xmax);
   return (
     <Card>
-      <div className="grid gap-4 md:grid-cols-2">
-        <Chips label="Device" options={deviceOptions(usable)} value={devId} onChange={setDev} />
-        <Chips label="Model (BF16)" options={models.map((x) => ({ id: x.id, label: x.short }))} value={modelId} onChange={setModel} />
-      </div>
-      <div className="mt-5 grid gap-4 sm:grid-cols-2">
-        <Slider label="Decode batch: conversations sharing one read of the weights" value={batch} min={1} max={1024} log step={1} shown={String(batch)} onChange={setBatch} />
-        <Slider
-          label="Prompt length: read in one pass, then the context each reply is written at"
-          value={prompt}
-          min={16}
-          max={32768}
-          log
-          step={16}
-          shown={`${fmt(prompt)} tokens`}
-          onChange={setPrompt}
+      <Slider label="Conversations sharing one read of the weights (the batch)" value={batch} min={1} max={1024} log step={1} shown={String(batch)} onChange={setBatch} />
+      <div className="mt-6">
+        <Big
+          label={`Tokens a second, all ${batch > 1 ? `${batch} conversations` : "of one conversation"}, ${m.short} on an ${d.short}`}
+          value={fits ? `${fmt(tokS)}` : "does not fit"}
+          note={
+            fits
+              ? `${fmt(tokS / batch)} for each one. ${dec < r ? "Below the ridge: waiting on memory." : "Past the ridge: waiting on compute."}`
+              : `Weights + ${batch} KV caches: ${fmt(needGB)} GB, over ${fmt(d.memoryGB)} GB`
+          }
+          tone={fits ? undefined : "bad"}
         />
       </div>
       <div className="mt-5 overflow-x-auto" role="region" aria-label="Roofline chart, scrolls sideways on small screens" tabIndex={0}>
@@ -381,93 +401,123 @@ export function RooflineLab({ models, devices }: { models: ModelPreset[]; device
           ))}
         </svg>
       </div>
-      <div className="mt-4 grid gap-3 sm:grid-cols-3">
-        <Readout
-          label="Decode, all conversations"
-          value={fits ? `${fmt(tokS)} tokens/s` : "does not fit"}
-          note={
-            fits
-              ? dec < r
-                ? "below the ridge: waiting on memory"
-                : "past the ridge: compute bound"
-              : `weights + ${batch} KV caches: ${fmt(needGB)} GB, over ${fmt(d.memoryGB)} GB`
-          }
-          tone={fits ? undefined : "bad"}
+      <Assumptions>
+        <Chips label="Device" options={deviceOptions(usable)} value={devId} onChange={setDev} />
+        <Chips label="Model (BF16)" options={models.map((x) => ({ id: x.id, label: x.short }))} value={modelId} onChange={setModel} />
+        <Slider
+          label="Prompt length, then the context each reply is written at"
+          value={prompt}
+          min={16}
+          max={32768}
+          log
+          step={16}
+          shown={`${fmt(prompt)} tokens`}
+          onChange={setPrompt}
         />
         <Readout
-          label="Decode, each conversation"
-          value={fits ? `${fmt(tokS / batch)} tokens/s` : "does not fit"}
-          note="batching raises the total, not each reply's speed"
-          tone={fits ? undefined : "bad"}
-        />
-        <Readout
-          label="Prefill time, estimated"
+          label="Reading that prompt, estimated"
           value={preFits ? fmtTime(preSeconds) : "does not fit"}
-          note={
-            preFits
-              ? preMemory > preCompute
-                ? "reading the weights takes longer than the arithmetic at 50% of peak"
-                : "the arithmetic at 50% of peak takes longer than reading the weights"
-              : `weights + this prompt's KV cache: over ${fmt(d.memoryGB)} GB`
-          }
+          note={preFits ? (preMemory > preCompute ? "reading the weights is the slower part" : "the arithmetic, at 50% of peak, is the slower part") : `over ${fmt(d.memoryGB)} GB`}
           tone={preFits ? undefined : "bad"}
         />
-      </div>
+      </Assumptions>
     </Card>
   );
 }
 
-// 4. One training step, animated: forward, loss, backward and the update, sized by their share of the work.
+// 4. One training step, four buttons: the reader picks a stage, or plays them in order at a pace that leaves time to
+// read. The picture is the same five layers each time, with what that stage does to them; the costs are the usual
+// estimates, not timings.
+const STAGES = [
+  { id: "Forward", color: BLUE, work: "About 2 × N operations per token", what: "The text runs through every layer and comes out as a guess at each next token." },
+  { id: "Loss", color: GREY, work: "Small next to the rest", what: "Each guess is scored against the token that really came next." },
+  { id: "Backward", color: ORANGE, work: "About 4 × N operations per token", what: "The error runs back through the layers, working out how each weight should change." },
+  { id: "Update", color: TEAL, work: "Once per step, however many tokens", what: "The optimiser moves every weight a little, and the next step begins." },
+] as const;
+
+function StagePicture({ stage }: { stage: number }) {
+  const layers = [0, 1, 2, 3, 4];
+  const forward = stage === 0;
+  const backward = stage === 2;
+  return (
+    <svg viewBox="0 0 520 120" className="w-full" role="img" aria-label={`${STAGES[stage].id}: ${STAGES[stage].what}`}>
+      {layers.map((k) => (
+        <g key={k}>
+          <rect x={30 + k * 92} y={28} width={58} height={64} rx={8} fill={BLUE} fillOpacity={stage === 3 ? 0.25 : 0.14} />
+          {stage === 3 && <path d={`M${44 + k * 92} 60H${74 + k * 92}`} stroke={TEAL} strokeWidth={5} strokeLinecap="round" />}
+        </g>
+      ))}
+      {(forward || backward) &&
+        layers
+          .slice(0, 4)
+          .map((k) => (
+            <path
+              key={k}
+              d={forward ? `M${92 + k * 92} 60H${118 + k * 92}m-8 -7l8 7l-8 7` : `M${118 + k * 92} 60H${92 + k * 92}m8 -7l-8 7l8 7`}
+              fill="none"
+              stroke={forward ? BLUE : ORANGE}
+              strokeWidth={3}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          ))}
+      {stage === 1 && (
+        <g>
+          <circle cx={498} cy={44} r={9} fill={BLUE} />
+          <circle cx={498} cy={78} r={9} fill="none" stroke={INKSOFT} strokeWidth={3} />
+          <path d="M498 55v12" stroke={ORANGE} strokeWidth={3} strokeLinecap="round" />
+        </g>
+      )}
+    </svg>
+  );
+}
+
 export function TrainStepLab() {
-  const ref = useRef<HTMLDivElement>(null);
-  const playing = usePlaying(ref);
-  const t = useClock(playing, 5200);
-  const parts = [
-    { id: "Forward", ops: "2N per token", share: 2, color: BLUE, note: "Multiply the inputs through every layer to get a prediction." },
-    { id: "Loss", ops: "small", share: 0.15, color: GREY, note: "Score each prediction against the token that really came next (cross-entropy)." },
-    {
-      id: "Backward",
-      ops: "4N per token",
-      share: 4,
-      color: ORANGE,
-      note: "Work out every weight's gradient, which way and how far to move it: about twice the forward pass's work.",
-    },
-    { id: "Update", ops: "once per step", share: 0.6, color: TEAL, note: "The optimiser nudges each weight, once per step however many tokens it had." },
-  ];
-  const total = parts.reduce((a, p) => a + p.share, 0);
-  const phase = (t % 1) * total;
-  let acc = 0;
-  const activeIdx = parts.findIndex((p) => {
-    const inside = phase >= acc && phase < acc + p.share;
-    acc += p.share;
-    return inside;
-  });
+  const [stage, setStage] = useState(0);
+  const [playing, setPlaying] = useState(false);
+  useEffect(() => {
+    if (!playing) return;
+    // 4.5 s a stage: long enough to read the one sentence that goes with it.
+    const id = setInterval(() => setStage((x) => (x + 1) % STAGES.length), 4500);
+    return () => clearInterval(id);
+  }, [playing]);
+  const s = STAGES[stage];
+  const btn = "rounded-full border border-rule bg-white px-3 py-1.5 text-sm hover:border-ink";
   return (
     <Card>
-      <div ref={ref} role="img" aria-label="One training step: forward pass 2N operations per token, loss, backward pass 4N, then the parameter update.">
-        <div className="flex h-10 gap-1">
-          {parts.map((p, i) => (
-            <span
-              key={p.id}
-              className="flex items-center justify-center rounded-md text-xs font-medium text-white transition-opacity duration-300"
-              style={{ width: `${(p.share / total) * 100}%`, minWidth: "3.2rem", backgroundColor: p.color, opacity: activeIdx === -1 || activeIdx === i ? 1 : 0.35 }}
-            >
-              {p.id}
-            </span>
-          ))}
-        </div>
-        <ul className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          {parts.map((p, i) => (
-            <li key={p.id} className={`rounded-xl bg-white p-3.5 transition-shadow ${activeIdx === i ? "shadow-[0_0_0_2px_var(--color-ink)]" : ""}`}>
-              <p className="flex items-center gap-2 text-sm font-medium">
-                <span className="h-2.5 w-2.5 rounded-sm" style={{ backgroundColor: p.color }} />
-                {p.id}
-              </p>
-              <p className="mt-1 text-sm tabular-nums">{p.ops}</p>
-              <p className="mt-1 text-xs leading-5 text-ink-soft">{p.note}</p>
-            </li>
-          ))}
-        </ul>
+      <div role="group" aria-label="The four stages of a training step" className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+        {STAGES.map((x, i) => (
+          <button
+            key={x.id}
+            type="button"
+            aria-pressed={stage === i}
+            onClick={() => {
+              setStage(i);
+              setPlaying(false);
+            }}
+            className={`flex items-center gap-2 rounded-xl px-3 py-2.5 text-left text-sm font-medium transition-colors ${stage === i ? "bg-ink text-white" : "bg-white hover:bg-white/70"}`}
+          >
+            <span className="h-2.5 w-2.5 shrink-0 rounded-sm" style={{ backgroundColor: x.color }} />
+            {i + 1}. {x.id}
+          </button>
+        ))}
+      </div>
+      <div aria-live="polite" className="mt-4 rounded-xl bg-white p-4 sm:p-5">
+        <StagePicture stage={stage} />
+        <p className="mt-3 text-lg leading-7">{s.what}</p>
+        <p className="mt-1 text-sm text-ink-soft tabular-nums">{s.work}</p>
+      </div>
+      <p className="mt-3 text-sm text-ink-soft">Forward and backward together: about 6 × N operations per token, where N is the number of parameters.</p>
+      <div className="mt-4 flex flex-wrap items-center gap-2">
+        <button type="button" className={btn} onClick={() => (setPlaying(false), setStage((x) => (x + STAGES.length - 1) % STAGES.length))}>
+          Previous
+        </button>
+        <button type="button" className={btn} onClick={() => setPlaying((p) => !p)} aria-pressed={playing}>
+          {playing ? "Pause" : "Play"}
+        </button>
+        <button type="button" className={btn} onClick={() => (setPlaying(false), setStage((x) => (x + 1) % STAGES.length))}>
+          Next
+        </button>
       </div>
     </Card>
   );
@@ -489,34 +539,31 @@ export function TrainLab({ models, devices }: { models: ModelPreset[]; devices: 
   const minChips = Math.ceil(state / d.memoryGB);
   return (
     <Card>
-      <div className="grid gap-4 md:grid-cols-2">
-        <Chips label="Model" options={models.map((x) => ({ id: x.id, label: x.short }))} value={modelId} onChange={setModel} />
-        <Chips label="Chip" options={deviceOptions(usable)} value={devId} onChange={setDev} />
-      </div>
-      <div className="mt-5 grid gap-4 sm:grid-cols-3">
+      <Chips label="Model" options={models.map((x) => ({ id: x.id, label: x.short }))} value={modelId} onChange={setModel} />
+      <div className="mt-5 grid gap-4 sm:grid-cols-2">
         <Slider label="Training tokens" value={tokensB} min={10} max={36000} log step={10} shown={`${fmt(tokensB)}B`} onChange={setTokens} />
-        <Slider label="Chips" value={chips} min={1} max={16384} log step={1} shown={fmt(chips)} onChange={setChips} />
-        <Slider label="Utilisation (MFU)" value={mfu} min={0.15} max={0.65} step={0.01} shown={`${Math.round(mfu * 100)}%`} onChange={setMfu} />
+        <Slider label={`${d.short} chips`} value={chips} min={1} max={16384} log step={1} shown={fmt(chips)} onChange={setChips} />
       </div>
-      <div className="mt-6 grid gap-3 sm:grid-cols-3">
-        <Readout label="Compute, 6 × N × D" value={`${sci(flops, 3)} FLOPs`} note={`${fmt(m.activeB ?? m.paramsB)}B × ${fmt(tokensB)}B tokens × 6`} />
-        <Readout
-          label="Time"
+      <div className="mt-6 grid gap-5 sm:grid-cols-[1.3fr_1fr]">
+        <Big
+          label="Time to train, estimated"
           value={minChips > chips ? "not enough memory" : fmtTime(days * 86400)}
           note={
-            minChips > chips
-              ? `${fmt(chips)} chip${chips === 1 ? "" : "s"} cannot hold the training state`
-              : `${fmt(chips)} × ${fmt(d.tflops!)} TFLOP/s at ${Math.round(mfu * 100)}%`
+            minChips > chips ? `${fmt(chips)} chip${chips === 1 ? "" : "s"} cannot hold the training state` : `${sci(flops, 3)} operations at ${Math.round(mfu * 100)}% of peak`
           }
           tone={minChips > chips ? "bad" : undefined}
         />
         <Readout
           label="Chips just to hold the state"
           value={String(minChips)}
-          note={`${fmt(state)} GB: ${trainStateBytesPerParam.weights} + ${trainStateBytesPerParam.gradients} + ${trainStateBytesPerParam.optimiser} bytes × ${fmt(m.paramsB)}B, before activations, over ${fmt(d.memoryGB)} GB each`}
+          note={`${fmt(state)} GB at 16 bytes a parameter, before activations`}
           tone={minChips > chips ? "bad" : undefined}
         />
       </div>
+      <Assumptions>
+        <Chips label="Chip" options={deviceOptions(usable)} value={devId} onChange={setDev} />
+        <Slider label="Utilisation (MFU)" value={mfu} min={0.15} max={0.65} step={0.01} shown={`${Math.round(mfu * 100)}%`} onChange={setMfu} />
+      </Assumptions>
     </Card>
   );
 }

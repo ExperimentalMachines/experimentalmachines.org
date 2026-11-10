@@ -3,7 +3,7 @@
 import { useRef, useState } from "react";
 import { decodeCeiling, fmt, kvBytesPerToken, kvGB, paramCount, precisions, sci, trainFLOPs, weightsGB, type Shape } from "@/lib/blog/arith";
 import type { Device, ModelPreset } from "@/lib/blog/formulas-data";
-import { BLUE, Card, Chips, deviceOptions, ORANGE, Readout, Slider, TEAL, useClock, usePlaying } from "@/components/blog/formulas/Widgets";
+import { Assumptions, Big, BLUE, Card, Chips, deviceOptions, ORANGE, Readout, Slider, TEAL, useClock, usePlaying } from "@/components/blog/formulas/Widgets";
 
 // The model-building part of the post: a model's shape on sliders, every consequence computed from it, and two
 // smaller pictures (prefill against decode, and the spec sheets side by side).
@@ -75,58 +75,26 @@ export function ModelBuilder({ models, devices }: { models: ModelPreset[]; devic
           setS(toShape(m));
         }}
       />
-      <div className="mt-5 grid gap-x-6 gap-y-4 md:grid-cols-2">
-        <Slider label="Layers" value={s.layers} min={2} max={128} step={1} shown={String(s.layers)} onChange={(v) => set({ layers: v })} />
-        <Slider label="Width (model dimension)" value={s.dModel} min={512} max={16384} log step={128} shown={fmt(s.dModel)} onChange={(v) => set({ dModel: v })} />
-        <Slider
-          label={moe ? "Feed-forward width, each expert" : "Feed-forward width"}
-          value={s.ffn}
-          min={256}
-          max={65536}
-          log
-          step={128}
-          shown={fmt(s.ffn)}
-          onChange={(v) => set({ ffn: v })}
+      <div className="mt-6 grid gap-5 sm:grid-cols-[1.2fr_1fr]">
+        <Big label="Parameters" value={`${fmt(c.total / 1e9)} billion`} note={moe ? `${fmt(c.active / 1e9)} billion used per token` : "all used for every token"} />
+        <Readout
+          label={`Memory on the ${d.short}, ${prec}`}
+          value={`${fmt(stored + kv)} GB`}
+          note={fits ? `weights ${fmt(stored)} + KV cache ${fmt(kv)}, of ${fmt(d.memoryGB)} GB` : `more than its ${fmt(d.memoryGB)} GB`}
+          tone={fits ? undefined : "bad"}
         />
-        <Slider label="Vocabulary" value={s.vocab} min={16000} max={262144} log step={64} shown={fmt(s.vocab)} onChange={(v) => set({ vocab: v })} />
+        <Readout
+          label="Bandwidth ceiling for a reply"
+          value={fits ? `${fmt(tokS)} tokens/s` : "does not fit"}
+          note={fits ? `${fmt(d.bandwidthGBs)} GB/s ÷ ${fmt(read + kv)} GB a token` : undefined}
+          tone={fits ? undefined : "bad"}
+        />
+        <Readout
+          label="Training it on 20 tokens a parameter"
+          value={`${sci(train)} operations`}
+          note={moe ? "Chinchilla's 20 was found for dense models" : `6 × ${fmt(c.active / 1e9)}B × ${fmt(tokensB)}B tokens`}
+        />
       </div>
-      <div className="mt-5 grid gap-x-6 gap-y-4 md:grid-cols-2">
-        <Chips
-          label="Query heads (128 wide each)"
-          options={pow2(8, 128).map((x) => ({ id: String(x), label: String(x) }))}
-          value={String(s.heads)}
-          onChange={(v) => set({ heads: Number(v) })}
-        />
-        <Chips
-          label="KV heads: fewer means a smaller KV cache"
-          options={pow2(1, s.heads).map((x) => ({ id: String(x), label: String(x) }))}
-          value={String(s.kvHeads)}
-          onChange={(v) => set({ kvHeads: Number(v) })}
-        />
-        <Slider label="Experts (1 = a dense model)" value={s.experts ?? 1} min={1} max={256} log step={1} shown={String(s.experts ?? 1)} onChange={(v) => set({ experts: v })} />
-        {moe ? (
-          <Slider
-            label="Experts each token uses"
-            value={s.activeExperts ?? 1}
-            min={1}
-            max={Math.min(16, s.experts ?? 1)}
-            step={1}
-            shown={String(s.activeExperts ?? 1)}
-            onChange={(v) => set({ activeExperts: v })}
-          />
-        ) : (
-          <Chips
-            label="Output layer"
-            options={[
-              { id: "own", label: "Its own weights" },
-              { id: "tied", label: "Reuses the input table" },
-            ]}
-            value={s.tied ? "tied" : "own"}
-            onChange={(v) => set({ tied: v === "tied" })}
-          />
-        )}
-      </div>
-
       <div className="mt-6" role="img" aria-label={parts.map((p) => `${p.name} ${fmt(p.value / 1e9)} billion`).join(", ")}>
         <p className="text-xs text-ink-soft">Where the {fmt(c.total / 1e9)} billion parameters sit</p>
         <div className="mt-2 flex h-7 gap-[2px] overflow-hidden rounded-md">
@@ -144,31 +112,81 @@ export function ModelBuilder({ models, devices }: { models: ModelPreset[]; devic
         </p>
       </div>
 
-      <div className="mt-6 grid gap-x-6 gap-y-4 border-t border-rule pt-5 md:grid-cols-3">
+      <details className="group mt-5 rounded-xl bg-white">
+        <summary className="flex cursor-pointer list-none items-center justify-between px-4 py-2.5 text-sm text-ink-soft hover:text-ink [&::-webkit-details-marker]:hidden">
+          Change the shape
+          <span aria-hidden className="text-base leading-none transition-transform group-open:rotate-45">
+            +
+          </span>
+        </summary>
+        <div className="border-t border-rule px-4 pb-4">
+          <div className="mt-4 grid gap-x-6 gap-y-4 md:grid-cols-2">
+            <Slider label="Layers" value={s.layers} min={2} max={128} step={1} shown={String(s.layers)} onChange={(v) => set({ layers: v })} />
+            <Slider label="Width (model dimension)" value={s.dModel} min={512} max={16384} log step={128} shown={fmt(s.dModel)} onChange={(v) => set({ dModel: v })} />
+            <Slider
+              label={moe ? "Feed-forward width, each expert" : "Feed-forward width"}
+              value={s.ffn}
+              min={256}
+              max={65536}
+              log
+              step={128}
+              shown={fmt(s.ffn)}
+              onChange={(v) => set({ ffn: v })}
+            />
+            <Slider label="Vocabulary" value={s.vocab} min={16000} max={262144} log step={64} shown={fmt(s.vocab)} onChange={(v) => set({ vocab: v })} />
+          </div>
+          <div className="mt-4 grid gap-x-6 gap-y-4 md:grid-cols-2">
+            <Chips
+              label="Query heads (128 wide each)"
+              options={pow2(8, 128).map((x) => ({ id: String(x), label: String(x) }))}
+              value={String(s.heads)}
+              onChange={(v) => set({ heads: Number(v) })}
+            />
+            <Chips
+              label="KV heads: fewer means a smaller KV cache"
+              options={pow2(1, s.heads).map((x) => ({ id: String(x), label: String(x) }))}
+              value={String(s.kvHeads)}
+              onChange={(v) => set({ kvHeads: Number(v) })}
+            />
+            <Slider
+              label="Experts (1 = a dense model)"
+              value={s.experts ?? 1}
+              min={1}
+              max={256}
+              log
+              step={1}
+              shown={String(s.experts ?? 1)}
+              onChange={(v) => set({ experts: v })}
+            />
+            {moe ? (
+              <Slider
+                label="Experts each token uses"
+                value={s.activeExperts ?? 1}
+                min={1}
+                max={Math.min(16, s.experts ?? 1)}
+                step={1}
+                shown={String(s.activeExperts ?? 1)}
+                onChange={(v) => set({ activeExperts: v })}
+              />
+            ) : (
+              <Chips
+                label="Output layer"
+                options={[
+                  { id: "own", label: "Its own weights" },
+                  { id: "tied", label: "Reuses the input table" },
+                ]}
+                value={s.tied ? "tied" : "own"}
+                onChange={(v) => set({ tied: v === "tied" })}
+              />
+            )}
+          </div>
+        </div>
+      </details>
+      <Assumptions>
         <Chips label="Run it at" options={precisions.map((p) => ({ id: p.name, label: p.name }))} value={prec} onChange={setPrec} />
         <Chips label="On" options={deviceOptions(devices)} value={devId} onChange={setDev} />
         <Slider label="Context, tokens" value={ctx} min={512} max={131072} log step={512} shown={fmt(ctx)} onChange={setCtx} />
-      </div>
-      <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <Readout label="Parameters" value={`${fmt(c.total / 1e9)}B`} note={moe ? `${fmt(c.active / 1e9)}B used per token` : "all used for every token"} />
-        <Readout
-          label="Memory: weights + KV cache"
-          value={`${fmt(stored + kv)} GB`}
-          note={fits ? `${fmt(stored)} + ${fmt(kv)} GB of ${fmt(d.memoryGB)} GB, before the runtime's own` : `${fmt(stored)} + ${fmt(kv)} GB: more than the ${fmt(d.memoryGB)} GB`}
-          tone={fits ? undefined : "bad"}
-        />
-        <Readout
-          label="Fastest possible writing"
-          value={fits ? `${fmt(tokS)} tokens/s` : "does not fit"}
-          note={fits ? `${fmt(d.bandwidthGBs)} GB/s ÷ ${fmt(read + kv)} GB read per token` : undefined}
-          tone={fits ? undefined : "bad"}
-        />
-        <Readout
-          label="Training it, 20 tokens per parameter"
-          value={`${sci(train)} FLOPs`}
-          note={`6 × ${fmt(c.active / 1e9)}B × ${fmt(tokensB)}B tokens${moe ? "; Chinchilla's 20 was found for dense models" : ""}`}
-        />
-      </div>
+      </Assumptions>
     </Card>
   );
 }

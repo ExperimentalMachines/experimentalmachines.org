@@ -16,6 +16,17 @@ const tones: Record<BlogPost["cover"]["tone"], string> = {
 export const partLabel = (p: BlogPost) => (p.part ? `${p.date}, part ${p.part.n} of ${p.part.of}` : p.date);
 
 export function Cover({ post, large }: { post: BlogPost; large?: boolean }) {
+  if (post.banner)
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img
+        src={post.banner}
+        alt=""
+        width={2048}
+        height={1024}
+        className={`block w-full object-cover transition-transform motion-safe:group-hover:scale-[1.01] ${large ? "h-full min-h-64" : "aspect-[2/1]"}`}
+      />
+    );
   return (
     <div
       aria-hidden
