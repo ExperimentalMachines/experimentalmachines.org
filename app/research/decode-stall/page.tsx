@@ -2,7 +2,7 @@ import { grouped } from "@/components/openweights/pd-parts";
 import { Aligned, PairBars, Stack, TimeLines } from "@/components/research/Compare";
 import Post, { Figure, Findings, More, Note, postMetadata, Row, Rows, Section, Table } from "@/components/research/Post";
 import { PhoneSpecs, SchedTrace, ThreadChoice, ThreadLife } from "@/components/research/ThreadFigures";
-import { benchmarkHeat, forcedTrip, heldPause, longSession, schedTraces, sessionHeat, shortPause, threadMatrix, threadPlacement } from "@/lib/decode-stall-data";
+import { benchmarkHeat, earlyTry, forcedTrip, heldPause, longSession, schedTraces, sessionHeat, shortPause, threadMatrix, threadPlacement } from "@/lib/decode-stall-data";
 import { pdFix, pdLinks, pdPhone, pdSpecs, pdStall, pdTrigger } from "@/lib/prefill-decode";
 
 const href = "/research/decode-stall/";
@@ -58,6 +58,13 @@ const pausedCores = [0, 1].map((cpu) => ({ cpu, shares: tr.paused.shares.filter(
 const pctSpan = (xs: number[]) => (pct(Math.min(...xs)) === pct(Math.max(...xs)) ? `about ${pct(xs[0])}%` : `${pct(Math.min(...xs))}% to ${pct(Math.max(...xs))}%`);
 const coreLine = (c: { cpu: number; shares: number[] }) => `${c.shares.length} on core ${c.cpu} at ${pctSpan(c.shares)} of it each`;
 const parkedCores = pdSpecs[0].parked!;
+// The guard's early try (r50, r50b on an SM8550): each run's return to 4 threads after the cores came back, and
+// the tries made in pauses that stayed. Early-try runs first, then the schedule-only ones, each fastest first.
+const returns = earlyTry.filter((r) => r.arm === "W" && r.backS !== null).sort((a, b) => Number(b.early) - Number(a.early) || a.backS! - b.backS!);
+const heldEarly = earlyTry.filter((r) => r.arm === "M" && r.early);
+const heldTimer = earlyTry.filter((r) => r.arm === "M" && !r.early);
+const span = (xs: number[]) => (Math.min(...xs) === Math.max(...xs) ? `${Math.min(...xs)}` : `${Math.min(...xs)} to ${Math.max(...xs)}`);
+const quiet = earlyTry.find((r) => r.arm === "N")!;
 // How many times longer one token took at 6 threads with six cores parked.
 const slowdown6 = Math.round(at(6).normal / at(6).paused);
 export default function DecodeStall() {
@@ -87,6 +94,15 @@ export default function DecodeStall() {
             {
               headline: "The app's engine now drops to 2 threads when a step stalls",
               line: `In two runs where heat took six cores out of use on its own, the one with this guard wrote ${ft.on.afterFallback} tokens a second after falling back, the one without ${ft.off.inPause} (${coolRange} cool); one run each, from separate heats.`,
+            },
+            {
+              headline: "In two hand-set pauses on one phone, it came back within half a second",
+              line: `On a Snapdragon 8 Gen 2, trying 4 threads as soon as its 2-thread steps sped up brought the guard back ${returns
+                .filter((r) => r.early && r.exact)
+                .map((r) => r.backS!.toFixed(1))
+                .join(
+                  " and ",
+                )} s after a log marker written just after the switch was turned off (two runs, the pause set by hand), against about 14 to 22 s on its 30 s schedule alone; it cost one false try, about 10 s, in each 9-minute pause.`,
             },
             {
               headline: "Making waiting threads give up their core was a trade-off",
@@ -181,6 +197,26 @@ export default function DecodeStall() {
             band={{ from: 0, to: 300, label: "Six cores out of use" }}
             marker={{ series: "With the guard", x: heldFall.at, label: "Falls back to 2 threads" }}
             stops={[0, 30, 60, 90, 120, 150, 180, 210, 240, 270, 300]}
+          />
+        </Figure>
+
+        <Figure
+          id="return"
+          title="With the pause set by hand on a Snapdragon 8 Gen 2, the early try came back within about a second"
+          lede="How long after the cores came back the app's engine was writing with 4 threads again: with the guard trying as soon as its steps speed up, and with only its try every 30 s."
+          note={`Snapdragon 8 Gen 2 (a different phone and chip from the rest of this post), Qwen3 4B, a ${grouped(1751)}-token prompt, the phone's own pause switch set by hand for 30 s, leaving its three little cores. Bars marked "ms marker" are timed from a log line written just after the switch, to the millisecond; the others are approximate, measured from a whole-second timestamp logged after the switch. In pauses that stayed for about 9 minutes, the early try made ${span(heldEarly.map((r) => r.earlyTries))} false try in each run beside its ${span(heldEarly.map((r) => r.tries - r.earlyTries))} scheduled ones (${span(heldTimer.map((r) => r.tries))} with the schedule alone), each a stalled step of about ${Math.round(Math.min(...heldEarly.flatMap((r) => r.failedMs)) / 1000)} to ${Math.round(Math.max(...heldEarly.flatMap((r) => r.failedMs)) / 1000)} s; with no pause it made ${quiet.tries === 0 ? "none" : quiet.tries}.`}
+        >
+          <Aligned
+            label="Run"
+            head={["Back to 4 threads"]}
+            rows={returns.map((r, i) => {
+              const n = returns.slice(0, i + 1).filter((x) => x.early === r.early).length;
+              return {
+                label: `${r.early ? "Early try" : "30 s schedule only"}, run ${n}${r.exact ? ", ms marker" : ", approx."}`,
+                on: r.early,
+                cells: [{ value: r.backS!, shown: `${r.backS!.toFixed(1)} s` }],
+              };
+            })}
           />
         </Figure>
 
@@ -562,8 +598,9 @@ export default function DecodeStall() {
           <Row label="Model">Qwen3 4B in Q4_0 for every run set up for this post; the six logged throttles came from the matrix, on Qwen3 1.7B and 4B.</Row>
           <Row label="The guard">
             Two slow steps in a row (over a quarter of a second, and more than 8 times the recent normal step or more than 2 s over it) drop decode and prompt reading to 2 threads;
-            after at least 30 s and four steps at 2 threads it tries its count again, or at once when two 2-thread steps in a row come 1.6 times faster than usual, which on a
-            Snapdragon 8 Gen 2 brought it back 0.3 and 0.4 s after a pause ended, against about 14 to 22 s on the schedule alone. Codex reviewed it ten times.
+            after at least 30 s and four steps at 2 threads it tries its count again, or at once when two 2-thread steps in a row come 1.6 times faster than usual, which in two
+            runs on a Snapdragon 8 Gen 2, with the pause set by hand, came back 0.3 and 0.4 s after a log marker written just after the switch, against about 14 to 22 s on the
+            schedule alone. Codex reviewed it ten times.
           </Row>
         </Rows>
       </Section>
