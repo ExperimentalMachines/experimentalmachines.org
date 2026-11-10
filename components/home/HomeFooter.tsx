@@ -26,6 +26,9 @@ export default function HomeFooter() {
           <Link href="/research/" className="font-medium text-ink hover:text-blue-deep">
             Research
           </Link>
+          <Link href="/blog/" className="font-medium text-ink hover:text-blue-deep">
+            Blog
+          </Link>
           <Link href="/conferences/" className="font-medium text-ink hover:text-blue-deep">
             Conferences
           </Link>

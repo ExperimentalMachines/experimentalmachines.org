@@ -6,22 +6,22 @@ import { links } from "@/lib/home";
 // scroll. On the homepage (`home`) its links scroll to the sections; every other
 // page in the organisation's look (components/home/HomeShell.tsx) links back to
 // them, and a project's own pages name it as `current`, which links that project
-// to its page and marks it. Research and Conferences are first and in stronger type because they are places
+// to its page and marks it. Research, Blog and Conferences are first and in stronger type because they are places
 // of their own rather than homepage sections, and first keeps them in view in the row that scrolls on phones.
 // ExecuPack's page keeps the address it had as the table of ExecuTorch exports, so its link is named here.
 const sections: { id: string; label: string; page?: string }[] = [
   { id: "openweights", label: "OpenWeights" },
   { id: "execuserve", label: "ExecuServe" },
   { id: "execupack", label: "ExecuPack", page: "/executorch/" },
-  { id: "upstream", label: "Upstream" },
   { id: "people", label: "People" },
 ];
 
-export type Current = "openweights" | "execuserve" | "execupack" | "research" | "conferences";
+export type Current = "openweights" | "execuserve" | "execupack" | "research" | "blog" | "conferences";
 
 export default function HomeHeader({ home = false, current }: { home?: boolean; current?: Current }) {
   const items = [
     { id: "research", label: "Research", href: "/research/", here: current === "research", strong: true },
+    { id: "blog", label: "Blog", href: "/blog/", here: current === "blog", strong: true },
     { id: "conferences", label: "Conferences", href: "/conferences/", here: current === "conferences", strong: true },
     ...sections.map((s) => ({
       ...s,
