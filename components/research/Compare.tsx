@@ -156,6 +156,40 @@ function Bar({ reading, top, color, name, missing }: { reading: Reading; top: nu
   );
 }
 
+// The hover box for the line charts: a dot in each line's colour, its name, and its value right-aligned, sized to its
+// longest line (Inter at 12 units runs under 6.6 units a character), beside the hovered column rather than over it,
+// and kept inside the chart.
+const charW = 6.6;
+function Tip({ x, mid, W, top, header, rows }: { x: number; mid: number; W: number; top: number; header?: string; rows: { name: string; value: string; color: string }[] }) {
+  const nameW = Math.max(...rows.map((r) => r.name.length)) * charW;
+  const valueW = Math.max(...rows.map((r) => r.value.length)) * charW;
+  const w = Math.ceil(Math.max(header ? header.length * charW : 0, 14 + nameW + 18 + valueW) + 24);
+  const first = header ? 42 : 22;
+  const h = first + (rows.length - 1) * 18 + 12;
+  const bx = Math.max(4, Math.min(x > mid ? x - w - 12 : x + 12, W - w - 4));
+  return (
+    <g className="pointer-events-none opacity-0 transition-opacity group-hover:opacity-100 group-focus:opacity-100" fontSize={12}>
+      <rect x={bx} y={top} width={w} height={h} rx={6} fill="#ffffff" stroke="var(--color-rule)" />
+      {header && (
+        <text x={bx + 12} y={top + 20} fill="var(--color-ink-soft)">
+          {header}
+        </text>
+      )}
+      {rows.map((r, j) => (
+        <g key={r.name}>
+          <circle cx={bx + 16} cy={top + first + j * 18 - 4} r={4} fill={r.color} />
+          <text x={bx + 26} y={top + first + j * 18} fill="var(--color-ink)">
+            {r.name}
+          </text>
+          <text x={bx + w - 12} y={top + first + j * 18} textAnchor="end" fontWeight={500} fill="var(--color-ink)">
+            {r.value}
+          </text>
+        </g>
+      ))}
+    </g>
+  );
+}
+
 // One measure as the load rises, on a log scale of load. Hover a column for its numbers. Colors keep their order
 // from chart to chart, so a line stays one color across a post. End labels are pushed apart where lines converge.
 const lineColors = [seriesA, seriesB, "#008f7a", "#6741d9", "#d6336c"];
@@ -191,7 +225,6 @@ export function Lines({
   ends.forEach((e, k) => {
     if (k && e.y - ends[k - 1].y < 16) e.y = ends[k - 1].y + 16;
   });
-  const boxH = 12 + series.length * 18;
   return (
     <ChartCard>
       <p className="flex flex-wrap gap-x-5 gap-y-1 text-sm">
@@ -226,9 +259,9 @@ export function Lines({
           {x.map((c, i) => {
             const before = i ? xp(i - 1) : xp(i);
             const after = i < x.length - 1 ? xp(i + 1) : xp(i);
-            const bx = i > x.length / 2 ? xp(i) - 190 : xp(i) + 10;
             return (
-              <g key={c} className="group" fontSize={12}>
+              // Focusable so a tap on a phone shows the same values a mouse does.
+              <g key={c} className="group outline-none" fontSize={12} tabIndex={-1}>
                 <rect x={(before + xp(i)) / 2} y={T} width={(after - before) / 2} height={H - T - B} fill="transparent" />
                 <line
                   x1={xp(i)}
@@ -237,7 +270,7 @@ export function Lines({
                   y2={H - B}
                   stroke="var(--color-ink-soft)"
                   strokeDasharray="3 4"
-                  className="pointer-events-none opacity-0 group-hover:opacity-100"
+                  className="pointer-events-none opacity-0 group-hover:opacity-100 group-focus:opacity-100"
                 />
                 {series.map((s, j) => (
                   <circle key={s.name} cx={xp(i)} cy={yp(s.ys[i])} r={4} fill={colorOf(s, j)} stroke="var(--color-bench)" strokeWidth={2} />
@@ -245,14 +278,7 @@ export function Lines({
                 <text x={xp(i)} y={H - B + 18} textAnchor="middle" fill="var(--color-ink-soft)">
                   {c}
                 </text>
-                <g className="pointer-events-none opacity-0 group-hover:opacity-100">
-                  <rect x={bx} y={T + 4} width={180} height={boxH} rx={6} fill="#ffffff" stroke="var(--color-rule)" />
-                  {series.map((s, j) => (
-                    <text key={s.name} x={bx + 10} y={T + 22 + j * 18} fill="var(--color-ink)">
-                      {s.name} {n(s.ys[i])}
-                    </text>
-                  ))}
-                </g>
+                <Tip x={xp(i)} mid={(L + W - R) / 2} W={W} top={T + 4} rows={series.map((s, j) => ({ name: s.name, value: n(s.ys[i]), color: colorOf(s, j) }))} />
               </g>
             );
           })}
@@ -284,6 +310,8 @@ export function TimeLines({
   marker,
   stops,
   digits = 0,
+  hover,
+  hoverUnit,
 }: {
   series: { name: string; points: [number, number][]; color?: number }[];
   xMax: number;
@@ -300,6 +328,10 @@ export function TimeLines({
   // The x positions a reader can hover for every line's value.
   stops: number[];
   digits?: number;
+  // The hover box's first line, with {x} for the column's position, such as "{x} s into the pause".
+  hover?: string;
+  // Written after each value in the hover box, such as "tokens".
+  hoverUnit?: string;
 }) {
   const [W, H, L, R, T, B] = [720, 330, 62, 128, 30, 46];
   const xp = (v: number) => L + (v / xMax) * (W - L - R);
@@ -308,7 +340,10 @@ export function TimeLines({
   const colorOf = (s: { color?: number }, i: number) => lineColors[s.color ?? i];
   const inside = (pts: [number, number][]) => pts.filter(([x]) => x >= 0 && x <= xMax);
   const near = (pts: [number, number][], x: number) => inside(pts).reduce((a, p) => (Math.abs(p[0] - x) < Math.abs(a[0] - x) ? p : a));
-  const path = (pts: [number, number][]) => inside(pts).map(([x, y], i) => `${i ? "L" : "M"}${xp(x).toFixed(1)} ${yp(y).toFixed(1)}`).join(" ");
+  const path = (pts: [number, number][]) =>
+    inside(pts)
+      .map(([x, y], i) => `${i ? "L" : "M"}${xp(x).toFixed(1)} ${yp(y).toFixed(1)}`)
+      .join(" ");
   const yTicks = Array.from({ length: Math.floor((yMax - yMin) / yStep) + 1 }, (_, i) => yMin + i * yStep);
   const xTicks = Array.from({ length: Math.floor(xMax / xStep) + 1 }, (_, i) => i * xStep);
   // End labels sit just past each line's own last point, pushed apart where they would overlap and kept inside the
@@ -328,17 +363,18 @@ export function TimeLines({
   }
   const lastX = (s: { points: [number, number][] }) => inside(s.points).at(-1)![0];
   const halo = { paintOrder: "stroke" as const, stroke: "var(--color-bench)", strokeWidth: 4, strokeLinejoin: "round" as const };
-  const boxH = 30 + series.length * 18;
   // The event's label goes above its dot, or below it where that would land on the band's or the rule's label.
-  const mark = marker && (() => {
-    const s = series.find((v) => v.name === marker.series)!;
-    const p = near(s.points, marker.x);
-    const x = xp(p[0]);
-    const y = yp(p[1]);
-    const clash = (ly: number, lx: number) => Math.abs(y - 9 - ly) < 16 && Math.abs(x + 9 - lx) < 160;
-    const below = (band && clash(T + 16, xp(band.from) + 8)) || (rule && clash(yp(rule.y) - 7, L + 8));
-    return { x, y, labelY: below ? y + 20 : y - 9, color: colorOf(s, series.indexOf(s)) };
-  })();
+  const mark =
+    marker &&
+    (() => {
+      const s = series.find((v) => v.name === marker.series)!;
+      const p = near(s.points, marker.x);
+      const x = xp(p[0]);
+      const y = yp(p[1]);
+      const clash = (ly: number, lx: number) => Math.abs(y - 9 - ly) < 16 && Math.abs(x + 9 - lx) < 160;
+      const below = (band && clash(T + 16, xp(band.from) + 8)) || (rule && clash(yp(rule.y) - 7, L + 8));
+      return { x, y, labelY: below ? y + 20 : y - 9, color: colorOf(s, series.indexOf(s)) };
+    })();
   return (
     <ChartCard>
       <p className="flex flex-wrap gap-x-5 gap-y-1 text-sm">
@@ -400,30 +436,38 @@ export function TimeLines({
           {stops.map((x, k) => {
             const before = k ? xp(stops[k - 1]) : L;
             const after = k < stops.length - 1 ? xp(stops[k + 1]) : W - R;
-            const bx = xp(x) > (L + W - R) / 2 ? xp(x) - 200 : xp(x) + 10;
             return (
-              <g key={x} className="group" fontSize={12}>
+              // Focusable so a tap on a phone shows the same values a mouse does.
+              <g key={x} className="group outline-none" fontSize={12} tabIndex={-1}>
                 <rect x={(before + xp(x)) / 2} y={T} width={(after - before) / 2} height={H - T - B} fill="transparent" />
-                <line x1={xp(x)} x2={xp(x)} y1={T} y2={H - B} stroke="var(--color-ink-soft)" strokeDasharray="3 4" className="pointer-events-none opacity-0 group-hover:opacity-100" />
-                <g className="pointer-events-none opacity-0 group-hover:opacity-100">
+                <line
+                  x1={xp(x)}
+                  x2={xp(x)}
+                  y1={T}
+                  y2={H - B}
+                  stroke="var(--color-ink-soft)"
+                  strokeDasharray="3 4"
+                  className="pointer-events-none opacity-0 group-hover:opacity-100 group-focus:opacity-100"
+                />
+                <g className="pointer-events-none opacity-0 group-hover:opacity-100 group-focus:opacity-100">
                   {series.map((s, j) => {
                     if (x > lastX(s) + 1e-9) return null;
                     const p = near(s.points, x);
                     return <circle key={s.name} cx={xp(p[0])} cy={yp(p[1])} r={4} fill={colorOf(s, j)} stroke="var(--color-bench)" strokeWidth={2} />;
                   })}
-                  <rect x={bx} y={T + 4} width={190} height={boxH} rx={6} fill="#ffffff" stroke="var(--color-rule)" />
-                  <text x={bx + 10} y={T + 22} fill="var(--color-ink-soft)">
-                    {xLabel.split(",")[0]}: {x}
-                  </text>
-                  {series.map((s, j) => {
-                    const p = near(s.points, x);
-                    return (
-                      <text key={s.name} x={bx + 10} y={T + 40 + j * 18} fill="var(--color-ink)">
-                        {s.name} {x > lastX(s) + 1e-9 ? "ended" : n(p[1])}
-                      </text>
-                    );
-                  })}
                 </g>
+                <Tip
+                  x={xp(x)}
+                  mid={(L + W - R) / 2}
+                  W={W}
+                  top={T + 4}
+                  header={hover ? hover.replace("{x}", n(x)) : `${xLabel.split(",")[0]}: ${n(x)}`}
+                  rows={series.map((s, j) => ({
+                    name: s.name,
+                    value: x > lastX(s) + 1e-9 ? "ended" : `${n(near(s.points, x)[1])}${hoverUnit ? ` ${hoverUnit}` : ""}`,
+                    color: colorOf(s, j),
+                  }))}
+                />
               </g>
             );
           })}
@@ -685,6 +729,20 @@ const stackColors = ["#6741d9", "#008f7a", "#e0a100", "#d6336c"];
 
 export function Stack({ parts, rows, unsplit }: { parts: string[]; rows: { label: string; shares: (number | null)[]; unsplit?: number }[]; unsplit: string }) {
   const lower = (x: string) => x.charAt(0).toLowerCase() + x.slice(1);
+  // Each row's pieces in drawing order, with where each one's middle falls along the bar, in percent.
+  const segments = (r: { shares: (number | null)[]; unsplit?: number }) => {
+    const total = r.shares.reduce<number>((sum, x) => sum + (x ?? 0), r.unsplit ?? 0);
+    const pieces = [
+      ...(r.unsplit ? [{ name: unsplit, value: r.unsplit, color: "#868e96" }] : []),
+      ...parts.flatMap((p, i) => (r.shares[i] === null ? [] : [{ name: p, value: r.shares[i] as number, color: stackColors[i] }])),
+    ];
+    let start = 0;
+    return pieces.map((g) => {
+      const mid = ((start + g.value / 2) / total) * 100;
+      start += g.value;
+      return { ...g, mid };
+    });
+  };
   return (
     <ChartCard>
       <p className="flex flex-wrap gap-x-5 gap-y-1 text-sm">
@@ -707,9 +765,27 @@ export function Stack({ parts, rows, unsplit }: { parts: string[]; rows: { label
             <li key={r.label} className="grid gap-x-4 gap-y-1 md:grid-cols-[15rem_minmax(0,1fr)] md:items-center">
               <p className="text-sm leading-5">{r.label}</p>
               <div>
-                <div className="flex h-3 gap-0.5 overflow-hidden rounded">
-                  {r.unsplit ? <span className="h-full" style={{ width: `${(r.unsplit / total) * 100}%`, backgroundColor: "#868e96" }} /> : null}
-                  {r.shares.map((x, i) => (x === null ? null : <span key={i} className="h-full" style={{ width: `${(x / total) * 100}%`, backgroundColor: stackColors[i] }} />))}
+                <div className="flex h-3 gap-0.5">
+                  {segments(r).map((g, k, all) => (
+                    // Focusable so a tap on a phone shows the same box a mouse does. The box is anchored to the bar's
+                    // end nearest the segment, so a sliver at either edge does not push it out of the card. Only the
+                    // inner bar grows on hover: a transform on the outer span would stretch the box's text with it.
+                    <span key={g.name} tabIndex={-1} className="group relative h-full outline-none" style={{ width: `${(g.value / total) * 100}%` }}>
+                      <span
+                        aria-hidden
+                        className={`absolute inset-0 origin-center transition-transform group-hover:scale-y-150 group-focus:scale-y-150 ${k === 0 ? "rounded-l" : ""} ${k === all.length - 1 ? "rounded-r" : ""}`}
+                        style={{ backgroundColor: g.color }}
+                      />
+                      <span
+                        role="tooltip"
+                        className={`pointer-events-none absolute bottom-full z-10 mb-2 whitespace-nowrap rounded-md border border-rule bg-white px-2.5 py-1 text-xs text-ink opacity-0 shadow-sm transition-opacity group-hover:opacity-100 group-focus:opacity-100 ${
+                          g.mid < 25 ? "left-0" : g.mid > 75 ? "right-0" : "left-1/2 -translate-x-1/2"
+                        }`}
+                      >
+                        {g.name} <span className="font-medium tabular-nums">{g.value}%</span>
+                      </span>
+                    </span>
+                  ))}
                 </div>
                 <p className="mt-1 text-xs leading-5 tabular-nums text-ink-soft">{words.join(", ")}</p>
               </div>

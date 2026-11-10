@@ -118,7 +118,7 @@ function Grid({ m, caption, children }: { m: PdModel; caption: string; children:
 const Corner = ({ m, c, fastest, order = true }: { m: PdModel; c: PdCell; fastest: boolean; order?: boolean }) =>
   elsewhere(m, c) || order ? (
     <>
-      <span aria-hidden className={`absolute right-1.5 top-1 text-[0.65rem] ${fastest ? "text-white/70" : "text-ink-soft"}`}>
+      <span aria-hidden className={`absolute right-1.5 top-1 text-[0.72rem] leading-none ${fastest ? "text-white/70" : "text-ink-soft"}`}>
         {elsewhere(m, c) ? c.phone : c.order}
       </span>
       <span className="sr-only">{elsewhere(m, c) ? `, run on phone ${c.phone}` : `, ran ${ordinal(c.order)}`}</span>
@@ -222,7 +222,7 @@ function TimeTable() {
                           {grouped(c.seconds)} s{stuck(c) && <Star what={`including ${Math.round(c.frozenSeconds)} s with decode stuck`} />}
                           {elsewhere(m, c) && (
                             <>
-                              <sup aria-hidden className="ml-0.5 text-[0.65rem] font-normal text-ink-soft">
+                              <sup aria-hidden className="ml-0.5 text-[0.72rem] font-normal text-ink-soft">
                                 {c.phone}
                               </sup>
                               <span className="sr-only">, run on phone {c.phone}</span>
