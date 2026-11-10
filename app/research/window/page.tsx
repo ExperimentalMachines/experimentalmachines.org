@@ -31,7 +31,7 @@ const minutes = [
 const verdicts = [
   {
     headline: "Answers: no consistent effect",
-    line: "From 2k to 32k tokens (a token is a piece of a word), grades moved about as much as between two runs of the same file.",
+    line: "From 2k to 32k tokens (a token is a small piece of text), grades moved about as much as between two runs of the same file.",
   },
   {
     headline: "Speed: close, except Qwen3 at 32k",

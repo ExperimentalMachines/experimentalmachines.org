@@ -84,7 +84,7 @@ export default function Gguf() {
         <Figure
           id="throughput"
           title="Every quantized format generated faster than BF16 and read prompts slower"
-          lede="Speed in tokens a second (tok/s), a token being a piece of a word, the unit a model reads and writes."
+          lede="Speed in tokens a second (tok/s), a token being a small piece of text, the unit a model reads and writes."
           note={`Mean of ${ggufConditions.repetitions} llama-bench repetitions; whiskers are one standard deviation. The dashed line is BF16. Prompt throughput is shown at 2,048 tokens because the 512-token runs had a standard deviation of up to ${Math.round(ggufConditions.pp512MaxRelSd * 100)}% of their mean.`}
         >
           <ThroughputFigure />

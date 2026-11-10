@@ -23,7 +23,7 @@ export default function Laptops() {
           items={[
             {
               headline: "The M5 wins every llama.cpp GPU test",
-              line: "With the same llama.cpp release and identical model files, the M5's GPU ran prefill, reading the prompt, 2.1× to 3.1× as fast as the X2 Elite's GPU, and decode, writing the reply one token (a piece of a word) at a time, 1.4× to 1.9× as fast.",
+              line: "With the same llama.cpp release and identical model files, the M5's GPU ran prefill, reading the prompt, 2.1× to 3.1× as fast as the X2 Elite's GPU, and decode, writing the reply one token (a small piece of text) at a time, 1.4× to 1.9× as fast.",
             },
             {
               headline: "The X2 Elite wins every llama.cpp CPU test",

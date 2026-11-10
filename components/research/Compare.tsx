@@ -368,6 +368,7 @@ export function TimeLines({
     if (ends[k].y > floor) ends[k].y = floor;
   }
   const lastX = (s: { points: [number, number][] }) => inside(s.points).at(-1)![0];
+  const firstX = (s: { points: [number, number][] }) => inside(s.points)[0][0];
   const halo = { paintOrder: "stroke" as const, stroke: "var(--color-bench)", strokeWidth: 4, strokeLinejoin: "round" as const };
   // The event's label goes above its dot, or below it where that would land on the band's or the rule's label.
   const mark =
@@ -466,7 +467,7 @@ export function TimeLines({
                 />
                 <g className="pointer-events-none opacity-0 group-hover:opacity-100 group-focus:opacity-100">
                   {series.map((s, j) => {
-                    if (x > lastX(s) + 1e-9) return null;
+                    if (x > lastX(s) + 1e-9 || x < firstX(s) - 1e-9) return null;
                     const p = near(s.points, x);
                     return <circle key={s.name} cx={xp(p[0])} cy={yp(p[1])} r={4} fill={colorOf(s, j)} stroke="var(--color-bench)" strokeWidth={2} />;
                   })}
@@ -479,7 +480,7 @@ export function TimeLines({
                   header={hover ? hover.replace("{x}", n(x)) : `${xLabel.split(",")[0]}: ${n(x)}`}
                   rows={series.map((s, j) => ({
                     name: s.name,
-                    value: x > lastX(s) + 1e-9 ? "ended" : `${n(near(s.points, x)[1])}${hoverUnit ? ` ${hoverUnit}` : ""}`,
+                    value: x > lastX(s) + 1e-9 ? "ended" : x < firstX(s) - 1e-9 ? "not recorded" : `${n(near(s.points, x)[1])}${hoverUnit ? ` ${hoverUnit}` : ""}`,
                     color: colorOf(s, j),
                   }))}
                 />

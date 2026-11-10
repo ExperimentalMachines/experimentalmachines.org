@@ -94,7 +94,7 @@ export const studies: Study[] = [
     title: "Why CPU decode stalls when a phone throttles",
     date: "3 to 10 November 2026",
     project: "OpenWeights",
-    line: "When a Snapdragon 8 Elite Gen 5 phone overheats, it parks six of its eight cores, and llama.cpp, the engine that runs the model, nearly stops writing the reply if it uses more than two threads. Why, the fix OpenWeights now carries, and whether ordinary chat gets that hot.",
+    line: "When a Snapdragon 8 Elite Gen 5 phone overheats, it stops using six of its eight cores, and llama.cpp, the engine that runs the model, nearly stops writing the reply if it uses more than two threads. Why, the fix OpenWeights now carries, and whether ordinary chat gets that hot.",
     hook: `${Math.round((100 * appThreads.paused) / appThreads.normal)}%`,
     hookLabel: `of its writing speed left: the app's engine at ${appThreads.threads} threads, with six of its eight cores taken out of use by hand`,
     viz: {

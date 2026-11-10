@@ -57,7 +57,7 @@ export default function Gpus() {
           id="winners"
           title="The H200 wins smaller work; the MI300X wins the 70B under load"
           lede="The MI300X takes over when the 70B model and its KV cache crowd the H200's memory."
-          note="Concurrency is how many requests run at once. Prefill is reading the prompt; decode is writing the reply, one token (a piece of a word) at a time. A dense model uses all its weights for every token; a mixture-of-experts model uses only some."
+          note="Concurrency is how many requests run at once. Prefill is reading the prompt; decode is writing the reply, one token (a small piece of text) at a time. A dense model uses all its weights for every token; a mixture-of-experts model uses only some."
         >
           <Duel
             a="MI300X"

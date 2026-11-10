@@ -33,7 +33,7 @@ export default function Phones() {
             },
             {
               headline: "The best split differs on each chip",
-              line: "Prefill, reading the prompt, ran fastest on the Snapdragon's GPU but on the Dimensity's CPU. Decode, writing the reply one token (a piece of a word) at a time, ran fastest on the Snapdragon's CPU; on the Dimensity the GPU's about 27 tokens a second sits inside the CPU's 22 to 31, so neither clearly wins.",
+              line: "Prefill, reading the prompt, ran fastest on the Snapdragon's GPU but on the Dimensity's CPU. Decode, writing the reply one token (a small piece of text) at a time, ran fastest on the Snapdragon's CPU; on the Dimensity the GPU's about 27 tokens a second sits inside the CPU's 22 to 31, so neither clearly wins.",
             },
             {
               headline: "Cooling mattered more than a performance mode",

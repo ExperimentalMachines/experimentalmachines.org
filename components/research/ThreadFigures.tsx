@@ -171,7 +171,7 @@ export function WaitLanes({ panels, caption }: { panels: { title: string; note: 
         </span>
         <span className="inline-flex items-center gap-2">
           <Swatch color={WAITS} hatched />
-          Waiting at the checkpoint, still holding its core
+          In the wait function, still holding its core
         </span>
         <span className="inline-flex items-center gap-2">
           <Swatch color={OTHER} />

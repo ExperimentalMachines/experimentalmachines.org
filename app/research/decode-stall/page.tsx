@@ -9,7 +9,7 @@ const href = "/research/decode-stall/";
 
 export const metadata = postMetadata(
   href,
-  "On a Snapdragon 8 Elite Gen 5 the hard throttle parks six of eight cores, and llama.cpp with more decode threads than the two left nearly stops. A profile of the cause, the guard OpenWeights now carries, a llama.cpp change that did not work both ways, and chat sessions against the throttle.",
+  "On a Snapdragon 8 Elite Gen 5 the hard throttle takes six of eight cores out of use, and llama.cpp with more threads than the two left nearly stops writing the reply. A profile of the cause, the guard OpenWeights now carries, a llama.cpp change that did not work both ways, and chat sessions against the throttle.",
 );
 
 const at = (n: number) => pdFix.byThreads.find((r) => r.threads === n)!;
@@ -86,7 +86,7 @@ export default function DecodeStall() {
           items={[
             {
               headline: "When six cores go out of use, the reply nearly stops",
-              line: `With six of the eight cores out of use, as the phone does on its own at ${pdTrigger.onC} °C, the app's engine writing with ${app.threads} threads fell from ${app.normal.toFixed(1)} to ${app.paused} tokens a second; with 2 threads it kept ${Math.round(kept(two))}% of its speed.`,
+              line: `With six of the eight cores out of use, as the phone does on its own at ${pdTrigger.onC} °C, the app's engine writing with ${app.threads} threads fell from ${app.normal.toFixed(1)} to ${app.paused} tokens a second (a token is a small piece of text); with 2 threads it kept ${Math.round(kept(two))}% of its speed.`,
             },
             {
               headline: "Waiting threads hold the cores the working ones need",
@@ -242,7 +242,7 @@ export default function DecodeStall() {
               { title: "Normally", caption: "Each thread on a core of its own, about a whole core each.", threads: placed.normal.sample.threads, parked: [] },
               {
                 title: "Six cores out of use",
-                caption: `All six on cores 0 and 1, a median ${Math.round(placed.paused.share * 100)}% of a core per thread across every sample.`,
+                caption: `All six on cores 0 and 1, a median ${Math.round(placed.paused.share * 100)}% of a core per thread, over every sample with all six busy and cores out of use.`,
                 threads: placed.paused.sample.threads,
                 parked: parkedCores,
               },
@@ -253,7 +253,7 @@ export default function DecodeStall() {
         <Figure
           id="cause"
           title="A finished thread keeps its core while the others wait for one"
-          lede="A token is hundreds of small operations, whether written or read; after each one, every thread waits at a checkpoint for the rest, and a waiting thread keeps checking on its core instead of giving it up."
+          lede="A token is hundreds of small operations, whether written or read; between them, every thread waits at a checkpoint for the rest, and a waiting thread keeps checking on its core instead of giving it up."
           note={`A 6-thread decode's CPU time, sampled 1,000 times a second with six cores out of use and normally: Snapdragon test phone E, llama.cpp's benchmark tool, ${pdFix.profile.normalCores} cores busy on average normally and ${pdFix.profile.pausedCores} with six out of use. The samples were kept by function, so how that function's time splits between the wait and its other work is not known.`}
         >
           <div className="space-y-4">
@@ -269,13 +269,13 @@ export default function DecodeStall() {
                   when: "For each token",
                   gist: "Hundreds of small operations, one after another",
                   picture: "ops",
-                  detail: `One token of Llama 3.2 3B lists ${pdStall.graphNodes}, some skipped or combined. Reading a chunk of the prompt works the same way.`,
+                  detail: `Llama 3.2 3B's plan for one token has ${pdStall.graphNodes} steps; some are skipped or combined when it runs. Reading a chunk of the prompt works the same way.`,
                 },
                 {
                   when: "For each operation",
                   gist: "Each thread does its slice, then waits at a checkpoint",
                   picture: "checkpoint",
-                  detail: "Most operations are split one slice per thread. When every thread is done, all start the next.",
+                  detail: "Most operations are split one slice per thread, and the threads meet at a checkpoint between them. When every thread is done, all start the next.",
                 },
                 {
                   when: "Between tokens",
@@ -287,7 +287,7 @@ export default function DecodeStall() {
               footnote="Writing the reply (decode) and reading the prompt (prefill) both work this way, and both slow down with more threads than cores: the thread-count figure above shows each."
             />
             <WaitLanes
-              caption={`An illustration, not a recording, and which thread runs where is made up: three of a token's operations normally, one with only 2 cores left. Each panel's split between work and waiting follows the profile below, which counts time by function. With only 2 cores left, a token took about ${slowdown6} times as long at 6 threads.`}
+              caption={`An illustration, not a recording, and which thread runs where is made up: three of a token's operations normally, one with only 2 cores left. Each panel's split between work and time in the wait function follows the profile below. With only 2 cores left, a token took about ${slowdown6} times as long at 6 threads.`}
               panels={[
                 {
                   title: "Normally",
@@ -297,7 +297,7 @@ export default function DecodeStall() {
                 },
                 {
                   title: "Six cores out of use",
-                  note: "Here three threads share each core. One that has done its slice can keep its core while it waits at the checkpoint, so threads with work left wait for a turn. This repeats at every operation.",
+                  note: "Here three threads share each core. One that has done its slice can keep its core while it waits at the checkpoint, so threads with work left wait for a turn. This repeats at operation after operation.",
                   cores: [0, 1],
                   ops: lanes.parked,
                 },
@@ -344,7 +344,7 @@ export default function DecodeStall() {
             summary={`The board sensor through a nonstop benchmark run: it reached ${pdTrigger.onC} °C ${Math.round(benchmarkHeat.firstThrottle)} minutes in, and the hard throttle came on ${benchmarkHeat.throttles.length} times.`}
             rule={{ y: pdTrigger.onC, label: `Hard throttle trips at ${pdTrigger.onC} °C` }}
             spans={{ at: benchmarkHeat.throttles, label: "Hard throttle on" }}
-            stops={[60, 70, 80, 90, 100, 110, 120, 130, 140, 150]}
+            stops={[70, 80, 90, 100, 110, 120, 130, 140, 150]}
             digits={1}
           />
         </Figure>
@@ -393,7 +393,7 @@ export default function DecodeStall() {
                 b: { value: slower(pdFix.poco.two, pdFix.poco.four), shown: `${slower(pdFix.poco.two, pdFix.poco.four)}% slower` },
               },
               {
-                label: "The first word",
+                label: "The first token of the reply",
                 detail: "How much later it comes with 2 threads",
                 a: { value: later(g.firstToken2S, g.firstToken4S), shown: `${later(g.firstToken2S, g.firstToken4S)}% later` },
                 b: { value: later(pdFix.poco.firstToken2S, pdFix.poco.firstToken4S), shown: `${later(pdFix.poco.firstToken2S, pdFix.poco.firstToken4S)}% later` },
@@ -494,7 +494,7 @@ export default function DecodeStall() {
           </Note>
           <Table
             label="2 threads against 4, no cores taken out of use"
-            head={["Phone", "Writing, tok/s, 4 then 2 threads", "First word, s, 4 then 2 threads"]}
+            head={["Phone", "Writing, tok/s, 4 then 2 threads", "First token, s, 4 then 2 threads"]}
             min="36rem"
             rows={[
               ["Snapdragon", `${g.noPause4.join(", ")}; ${g.noPause2.join(", ")}`, `${g.firstToken4S.join(" to ")}; ${g.firstToken2S.join(" to ")}`],
@@ -511,8 +511,8 @@ export default function DecodeStall() {
       <Section id="method" title="How we ran it">
         <Rows>
           <Row label="Phones">
-            {pdPhone.soc} phones B, D and E, Qualcomm&apos;s reference design, in Qualcomm Device Cloud&apos;s rack, root shell, AC power, 3 to 10 November 2026. A POCO X8 Pro Max
-            (MediaTek Dimensity 9500s) on USB power for two sessions and 2 threads against 4. Their specifications are in{" "}
+            {pdPhone.soc} phones B, C, D and E, Qualcomm&apos;s reference design, in Qualcomm Device Cloud&apos;s rack, root shell, AC power, 3 to 10 November 2026. A POCO X8 Pro
+            Max (MediaTek Dimensity 9500s) on USB power for two sessions and 2 threads against 4. Their specifications are in{" "}
             <a href="#phones" className="underline decoration-ink/30 underline-offset-4 hover:decoration-ink">
               the first figure
             </a>
@@ -523,13 +523,13 @@ export default function DecodeStall() {
             cannot do, and checked that work then ran only on cores 0 and 1.
           </Row>
           <Row label="Runtime">
-            llama.cpp {pdPhone.llamacpp}: its benchmark on B for the natural-heat runs and the first runs by hand, and on E and D for the profile and the llama.cpp change; the
-            app&apos;s own engine, every decode step timed, on E for the thread counts and on D for the guard and the sessions.
+            llama.cpp {pdPhone.llamacpp}: its benchmark on B and C for the natural-heat runs, on B for the first runs by hand, and on E and D for the profile and the llama.cpp
+            change; the app&apos;s own engine, every decode step timed, on E for the thread counts and on D for the guard and the sessions.
           </Row>
           <Row label="Model">Qwen3 4B in Q4_0 for every run set up for this post; the six logged throttles came from the matrix, on Qwen3 1.7B and 4B.</Row>
           <Row label="The guard">
             Two slow steps in a row (over a quarter of a second, and more than 8 times the recent normal step or more than 2 s over it) drop decode and prompt reading to 2 threads;
-            every 30 s it tries its count again. Codex reviewed it seven times.
+            after at least 30 s and four steps at 2 threads it tries its count again. Codex reviewed it seven times.
           </Row>
         </Rows>
       </Section>
