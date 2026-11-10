@@ -96,7 +96,7 @@ export const studies: Study[] = [
     project: "OpenWeights",
     line: "When a Snapdragon 8 Elite Gen 5 phone overheats, it parks six of its eight cores, and llama.cpp, the engine that runs the model, nearly stops writing the reply if it uses more than two threads. Why, the fix OpenWeights now carries, and whether ordinary chat gets that hot.",
     hook: `${Math.round((100 * appThreads.paused) / appThreads.normal)}%`,
-    hookLabel: `of its writing speed left: the app's engine at ${appThreads.threads} threads, with six cores parked by hand`,
+    hookLabel: `of its writing speed left: the app's engine at ${appThreads.threads} threads, with six of its eight cores taken out of use by hand`,
     viz: {
       kind: "bars",
       rows: pdFix.byThreads.map((r) => ({ label: `${r.threads} threads`, value: r.paused, shown: `${r.paused} tok/s`, on: r.threads === 2 })),

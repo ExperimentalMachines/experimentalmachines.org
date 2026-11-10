@@ -84,11 +84,11 @@ export function PhoneSpecs({ phones }: { phones: PhoneSpec[] }) {
             </ul>
             {parked.length > 0 && (
               <>
-                <p className="mt-5 text-sm font-medium">In the hard throttle</p>
+                <p className="mt-5 text-sm font-medium">When it overheats</p>
                 <div className="mt-2">
-                  <Cores groups={groups} state={(c) => (parked.includes(c) ? "parked" : "run")} label={`In the hard throttle, ${span(parked).toLowerCase()} are parked`} />
+                  <Cores groups={groups} state={(c) => (parked.includes(c) ? "parked" : "run")} label={`When it overheats, ${span(parked).toLowerCase()} are out of use`} />
                 </div>
-                <p className="mt-2 text-sm text-ink-soft">{span(parked)} parked. The two left are from the slower cluster.</p>
+                <p className="mt-2 text-sm text-ink-soft">{span(parked)} out of use. The two left are from the slower cluster.</p>
               </>
             )}
             <dl className="mt-5 grid grid-cols-[5.5rem_minmax(0,1fr)] gap-x-3 gap-y-1.5 border-t border-rule pt-4 text-sm">
@@ -116,7 +116,7 @@ export function ThreadPlacement({ panels }: { panels: { title: string; caption: 
       <Key
         items={[
           { color: RUNS, label: "A core a thread ran on" },
-          { color: PARKED, label: "Parked", hatched: true },
+          { color: PARKED, label: "Out of use", hatched: true },
         ]}
       />
       <div className="mt-5 grid gap-8 md:grid-cols-2">
@@ -196,6 +196,61 @@ export function WaitLanes({ panels, caption }: { panels: { title: string; note: 
           </div>
         ))}
       </div>
+    </ChartCard>
+  );
+}
+
+const Dots = ({ n }: { n: number }) => (
+  <span aria-hidden className="inline-flex gap-1">
+    {Array.from({ length: n }, (_, i) => (
+      <span key={i} className="h-3 w-3 rounded-full" style={{ backgroundColor: RUNS }} />
+    ))}
+  </span>
+);
+
+// How the app picks its thread count: a real sequence, so the steps are numbered, and each shows its count as
+// dots, one a thread.
+const Step = ({ n, title, children }: { n: number; title: string; children: React.ReactNode }) => (
+  <li className="min-w-0">
+    <p className="flex items-center gap-2 text-sm font-medium">
+      <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-ink text-xs text-white">{n}</span>
+      {title}
+    </p>
+    <div className="mt-3 space-y-2 text-sm leading-6">{children}</div>
+  </li>
+);
+const Row = ({ label, count, text }: { label: string; count?: number; text: string }) => (
+  <p className="grid grid-cols-[6.5rem_minmax(0,1fr)] items-center gap-2">
+    <span className="text-ink-soft">{label}</span>
+    <span className="flex flex-wrap items-center gap-2">
+      {count ? <Dots n={count} /> : null}
+      <span>{text}</span>
+    </span>
+  </p>
+);
+
+export function ThreadChoice({ normal, warm, hot, fallback, retrySeconds }: { normal: number; warm: number; hot: number; fallback: number; retrySeconds: number }) {
+  return (
+    <ChartCard>
+      <ol className="grid gap-8 md:grid-cols-3">
+        <Step n={1} title="Before each reply">
+          <Row label="Normally" count={normal} text={`${normal} threads`} />
+          <p className="text-ink-soft">Half the CPU&apos;s cores, never under 2 or over 6. These phones have 8.</p>
+        </Step>
+        <Step n={2} title="If Android says the phone is hot">
+          <Row label="Warm" count={warm} text={`${warm} threads`} />
+          <Row label="Hot" count={hot} text={`${hot} threads`} />
+          <Row label="Very hot" text="Does not start the reply" />
+        </Step>
+        <Step n={3} title="If the reply stalls">
+          <Row label="Two slow steps" count={fallback} text={`${fallback} threads`} />
+          <p className="text-ink-soft">Every {retrySeconds} s it tries the count from steps 1 and 2 again, and keeps it if that step is close to the 2-thread pace.</p>
+        </Step>
+      </ol>
+      <p className="mt-6 border-t border-rule pt-4 text-sm leading-6">
+        Why step 3: on the Snapdragon we checked, the list of cores an app may use still showed all eight while six were out of use, so the app cannot tell from it. The guard
+        watches how long each step takes instead.
+      </p>
     </ChartCard>
   );
 }

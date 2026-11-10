@@ -51,7 +51,7 @@ export const pdSpecs: PhoneSpec[] = [
   {
     name: "Qualcomm reference phone",
     chip: "Snapdragon 8 Elite Gen 5 (SM8850)",
-    used: "Phones B, D and E: every pause, the guard and the chat sessions",
+    used: "Phones B, D and E: every test with cores out of use, the guard and the chat sessions",
     clusters: [
       { cores: [0, 1, 2, 3, 4, 5], type: "Oryon", ghz: 3.63 },
       { cores: [6, 7], type: "Oryon", ghz: 4.61 },
