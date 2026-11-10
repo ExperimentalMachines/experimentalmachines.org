@@ -60,14 +60,30 @@ const span = (cores: number[]) => (cores.length === 1 ? `Core ${cores[0]}` : cor
 
 // One card per kind of phone: its CPU as eight tiles by cluster, what the hard throttle parks where it was
 // seen, and the rest of its specification.
-export function PhoneSpecs({ phones }: { phones: PhoneSpec[] }) {
+// One card a phone. With a single phone the card spans the column and splits in two on wider screens (the CPU on
+// the left, the rest of the specification on the right), so it does not sit alone in half a grid. `throttle`
+// adds the row of cores the hard throttle takes out of use, where the phone has one recorded.
+export function PhoneSpecs({ phones, throttle = true }: { phones: PhoneSpec[]; throttle?: boolean }) {
+  const single = phones.length === 1;
   return (
-    <div className="grid gap-4 md:grid-cols-2">
+    <div className={single ? "" : "grid gap-4 md:grid-cols-2"}>
       {phones.map((p) => {
         const groups = p.clusters.map((c) => c.cores);
-        const parked = p.parked ?? [];
-        return (
-          <ChartCard key={p.name}>
+        const parked = throttle ? (p.parked ?? []) : [];
+        const rows = (
+          <dl
+            className={`grid grid-cols-[5.5rem_minmax(0,1fr)] gap-x-3 gap-y-1.5 text-sm ${single ? "border-t border-rule pt-4 md:border-l md:border-t-0 md:pl-8 md:pt-0" : "mt-5 border-t border-rule pt-4"}`}
+          >
+            {p.rows.map(([k, v]) => (
+              <div key={k} className="contents">
+                <dt className="text-ink-soft">{k}</dt>
+                <dd>{v}</dd>
+              </div>
+            ))}
+          </dl>
+        );
+        const cpu = (
+          <div>
             <p className="text-sm text-ink-soft">{p.used}</p>
             <p className="display mt-2 text-xl leading-snug">{p.name}</p>
             <p className="text-sm">{p.chip}</p>
@@ -91,14 +107,21 @@ export function PhoneSpecs({ phones }: { phones: PhoneSpec[] }) {
                 <p className="mt-2 text-sm text-ink-soft">{span(parked)} out of use. The two left are from the slower cluster.</p>
               </>
             )}
-            <dl className="mt-5 grid grid-cols-[5.5rem_minmax(0,1fr)] gap-x-3 gap-y-1.5 border-t border-rule pt-4 text-sm">
-              {p.rows.map(([k, v]) => (
-                <div key={k} className="contents">
-                  <dt className="text-ink-soft">{k}</dt>
-                  <dd>{v}</dd>
-                </div>
-              ))}
-            </dl>
+          </div>
+        );
+        return (
+          <ChartCard key={p.name}>
+            {single ? (
+              <div className="grid gap-6 md:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)] md:items-center">
+                {cpu}
+                {rows}
+              </div>
+            ) : (
+              <>
+                {cpu}
+                {rows}
+              </>
+            )}
           </ChartCard>
         );
       })}

@@ -3,6 +3,7 @@ import { link } from "@/components/home/ui";
 import PairingViews from "@/components/openweights/PairingViews";
 import { Scroll, grouped, label, slower, td, th, thNum } from "@/components/openweights/pd-parts";
 import Post, { Figure, Findings, More, Note, postMetadata, Row, Rows, Section, Table } from "@/components/research/Post";
+import { PhoneSpecs } from "@/components/research/ThreadFigures";
 import {
   name,
   pairs,
@@ -13,6 +14,7 @@ import {
   pdPhone,
   pdReplyTokens,
   pdSensors,
+  pdSpecs,
   pdSpread,
   pdStall,
   pdStuck,
@@ -176,6 +178,15 @@ export default function PrefillDecode() {
       </Section>
 
       <Section id="results" title="The results">
+        <Figure
+          id="phone"
+          title="Five phones of one kind: Qualcomm's reference design for the Snapdragon 8 Elite Gen 5"
+          lede="The phone every pairing ran on, as read from the phones themselves."
+          note="Core types and top clocks from the phones' CPU registers and clock limits; the memory is the report's reading."
+        >
+          <PhoneSpecs phones={[{ ...pdSpecs[0], used: "Phones A to E: every run in this post" }]} throttle={false} />
+        </Figure>
+
         <Figure
           id="fastest"
           title="The fastest pairing for each model"
