@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 import { fmt, kvBytesPerToken } from "@/lib/blog/arith";
+import { h100 } from "@/lib/blog/formulas-shared";
 import { BLUE, Card, Chips, ORANGE, Readout, Slider, TEAL, useClock, usePlaying } from "@/components/blog/formulas/Widgets";
 
 // Where the spec sheet's numbers come from: bandwidth from the memory bus, compute from the matrix units, and a
@@ -235,36 +236,79 @@ export function HybridLab() {
   );
 }
 
-// The memory a chip reads from, fastest and smallest first, with the bus the decode formula is about marked.
+// The path the weights travel, left to right: from storage into main memory once, then across the one link the spec
+// sheet's bandwidth describes, into the chip's caches and registers, to the units that do the arithmetic. The chip is
+// one dashed boundary, so the link that crosses it reads as the bottleneck. Sizes are an H100's; a phone's main
+// memory is LPDDR, its bandwidth about a fortieth.
+type Stop = { name: string; what: string; size: string; tone: string };
+
+function StopCard({ s }: { s: Stop }) {
+  return (
+    <div className="min-w-0 flex-1 rounded-xl bg-white p-3.5" style={{ boxShadow: `inset 3px 0 0 ${s.tone}` }}>
+      <p className="text-sm font-medium">{s.name}</p>
+      <p className="mt-0.5 text-xs leading-5 text-ink-soft">{s.what}</p>
+      <p className="mt-1.5 text-xs font-medium tabular-nums">{s.size}</p>
+    </div>
+  );
+}
+
+function Hop({ label, hot, across }: { label: string; hot?: boolean; across?: boolean }) {
+  return (
+    <div
+      className={`flex shrink-0 items-center gap-2 px-1 py-0.5 ${across ? "sm:w-20 sm:flex-col sm:justify-center sm:gap-1 sm:text-center" : ""} ${hot ? "text-[#c92a2a]" : "text-ink-soft"}`}
+    >
+      <span aria-hidden className={`text-lg leading-none ${hot ? "font-semibold" : ""}`}>
+        {across ? (
+          <>
+            <span className="sm:hidden">↓</span>
+            <span className="hidden sm:inline">→</span>
+          </>
+        ) : (
+          "↓"
+        )}
+      </span>
+      <span className={`text-xs leading-4 ${hot ? "font-medium" : ""}`}>{label}</span>
+    </div>
+  );
+}
+
 export function Hierarchy() {
-  const levels = [
-    { name: "Registers", tech: "Flip-flops inside each unit", size: "Kilobytes", color: BLUE },
-    { name: "SRAM caches and scratchpads", tech: "SRAM: six transistors a bit, on the chip itself", size: "Megabytes (an H100 has 50 MB of L2)", color: BLUE },
-    { name: "Main memory: LPDDR, GDDR or HBM", tech: "DRAM: one transistor and a capacitor a bit, refreshed constantly", size: "Gigabytes: where the weights live", color: ORANGE },
-    { name: "Storage", tech: "Flash", size: "Hundreds of gigabytes: where the model file sits until it is loaded", color: "#868e96" },
+  const storage: Stop = { name: "Storage", what: "Flash. The model file sits here until it loads.", size: "Hundreds of GB", tone: "#868e96" };
+  const dram: Stop = { name: "Main memory", what: "DRAM: LPDDR, GDDR or HBM. The weights live here.", size: `${h100.memoryGB} GB on an H100`, tone: ORANGE };
+  const onChip: Stop[] = [
+    { name: "Caches", what: "SRAM, on the chip itself.", size: "50 MB of L2 on an H100", tone: BLUE },
+    { name: "Registers", what: "Small, fast storage the processing units work from.", size: "Kilobytes", tone: BLUE },
+    { name: "Arithmetic units", what: "Where the multiply-adds happen.", size: `up to ${fmt(h100.tflops!)} trillion 16-bit operations a second on an H100`, tone: BLUE },
   ];
   return (
     <Card>
-      <ol className="space-y-2">
-        {levels.map((l, i) => (
-          <li key={l.name}>
-            <div className="flex items-stretch gap-3 rounded-xl bg-white p-3.5" style={{ marginLeft: `${i * 4}%`, marginRight: `${(3 - i) * 4}%` }}>
-              <span className="w-1.5 shrink-0 rounded-full" style={{ backgroundColor: l.color }} />
-              <div>
-                <p className="text-sm font-medium">{l.name}</p>
-                <p className="text-xs leading-5 text-ink-soft">
-                  {l.tech}. {l.size}.
-                </p>
-              </div>
-            </div>
-            {i === 1 && (
-              <p className="my-1.5 text-center text-xs font-medium text-[#c92a2a]" style={{ marginLeft: `${(i + 0.5) * 4}%`, marginRight: `${(2.5 - i) * 4}%` }}>
-                ↑ the memory bandwidth on the spec sheet is this link: in decode, the weights cross it about once per token
-              </p>
-            )}
-          </li>
-        ))}
-      </ol>
+      <div
+        className="mx-auto flex max-w-3xl flex-col gap-1.5"
+        role="img"
+        aria-label="The weights travel from storage into main memory once, when the model loads; then, writing a reply for one conversation with a dense model, about once per token across the memory bus into the chip's caches and registers to the arithmetic units. The memory bandwidth on a spec sheet is the speed of that one link."
+      >
+        <StopCard s={storage} />
+        <Hop label="once, when the model loads" />
+        <StopCard s={dram} />
+        <Hop
+          label={`memory bandwidth, the spec-sheet number (${fmt(h100.bandwidthGBs / 1000)} TB/s on an H100): for one conversation with a dense model, the weights cross here about once per token`}
+          hot
+        />
+        <div className="rounded-2xl border-2 border-dashed border-ink/25 p-2">
+          <p className="px-1 pb-1.5 text-xs text-ink-soft">The chip</p>
+          <div className="flex flex-col gap-1.5 sm:flex-row sm:items-stretch">
+            <StopCard s={onChip[0]} />
+            <Hop label="faster" across />
+            <StopCard s={onChip[1]} />
+            <Hop label="faster" across />
+            <StopCard s={onChip[2]} />
+          </div>
+        </div>
+      </div>
+      <p className="mx-auto mt-4 max-w-3xl text-sm leading-6 text-ink-soft">
+        Everything past the red arrow is fast. Writing a reply for one conversation, the arrow is usually the speed limit; batches, caches and the arithmetic itself can change
+        that.
+      </p>
     </Card>
   );
 }

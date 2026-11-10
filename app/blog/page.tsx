@@ -13,7 +13,7 @@ export const metadata: Metadata = {
 
 const [latest, ...rest] = posts;
 
-// One feed, newest first: the latest post as a feature, the rest under it.
+// One feed: the first post as a feature, the rest under it.
 export default function Blog() {
   return (
     <main id="main" className="mx-auto max-w-7xl scroll-mt-28 px-4 pb-16 pt-12 sm:px-6 sm:pb-20 sm:pt-16 lg:scroll-mt-16">
@@ -25,7 +25,7 @@ export default function Blog() {
       {rest.length > 0 && (
         <section aria-labelledby="more" className="mt-16">
           <h2 id="more" className="display text-2xl font-normal tracking-[-0.02em]">
-            More posts
+            {rest.every((p) => p.part && p.part.series === latest.part?.series) ? "The rest of the series" : "More posts"}
           </h2>
           <div className="mt-6">
             <BlogGrid posts={rest} />

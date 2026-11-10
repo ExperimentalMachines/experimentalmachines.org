@@ -1,7 +1,7 @@
 import Go from "@/components/home/Go";
 import { link } from "@/components/home/ui";
-import { Byline, Cover } from "@/components/blog/BlogCards";
-import type { BlogPost } from "@/lib/blog";
+import { Byline, Cover, partLabel } from "@/components/blog/BlogCards";
+import { seriesParts, type BlogPost } from "@/lib/blog";
 
 // The parts a long blog post is built from: a header, sections whose headings carry an anchor, short paragraphs,
 // formulas set apart, plain tables and a list of sources. Prose sits in a readable column; figures and tables
@@ -13,7 +13,7 @@ export function ArticleHeader({ post }: { post: BlogPost }) {
       <Go href="/blog/" className={`${link} text-sm`}>
         All posts
       </Go>
-      <p className="mt-8 text-sm text-ink-soft">{post.date}</p>
+      <p className="mt-8 text-sm text-ink-soft">{partLabel(post)}</p>
       <h1 className="display mt-2 text-balance text-4xl font-medium leading-[1.05] tracking-[-0.03em] sm:text-5xl">{post.title}</h1>
       <p className="mt-5 text-xl leading-8 text-ink-soft">{post.summary}</p>
       <div className="mt-6">
@@ -38,6 +38,9 @@ export function Section({ id, title, children }: { id: string; title: string; ch
     </section>
   );
 }
+
+// A bold lead-in to a bullet.
+export const Strong = ({ children }: { children: React.ReactNode }) => <strong className="font-medium text-ink">{children}</strong>;
 
 export const H3 = ({ children }: { children: React.ReactNode }) => <h3 className="display mx-auto max-w-3xl pt-4 text-2xl font-normal tracking-[-0.01em]">{children}</h3>;
 
@@ -81,10 +84,11 @@ export const Wide = ({ children, note }: { children: React.ReactNode; note?: Rea
   </figure>
 );
 
-export function DataTable({ head, rows, label, right = [] }: { head: string[]; rows: React.ReactNode[][]; label: string; right?: number[] }) {
+// `min` is the width under which the table scrolls sideways rather than squeeze its columns.
+export function DataTable({ head, rows, label, right = [], min = "36rem" }: { head: string[]; rows: React.ReactNode[][]; label: string; right?: number[]; min?: string }) {
   return (
     <div className="overflow-x-auto rounded-2xl border border-rule" role="region" aria-label={`${label}, scrolls sideways on small screens`} tabIndex={0}>
-      <table className="w-full min-w-[36rem] text-sm tabular-nums">
+      <table className="w-full text-sm tabular-nums" style={{ minWidth: min }}>
         <caption className="sr-only">{label}</caption>
         <thead className="bg-bench">
           <tr>
@@ -129,5 +133,42 @@ export function Sources({ items }: { items: { label: string; href: string; note:
         </li>
       ))}
     </ol>
+  );
+}
+
+// The parts of a series, each linked except the one being read, with the next part called out.
+export function SeriesNav({ post, end }: { post: BlogPost; end?: boolean }) {
+  if (!post.part) return null;
+  const parts = seriesParts(post.part.series);
+  const next = parts.find((p) => p.part!.n === post.part!.n + 1);
+  return (
+    <nav aria-label="The parts of this series" className={`mx-auto max-w-3xl rounded-2xl border border-rule bg-white px-5 py-4 ${end ? "mt-16" : "mt-10"}`}>
+      {end && next ? (
+        <p className="text-lg leading-8">
+          Next, part {next.part!.n}:{" "}
+          <Go href={`/blog/${next.slug}/`} className={link}>
+            {next.title}
+          </Go>
+        </p>
+      ) : (
+        <p className="text-sm text-ink-soft">
+          This post is part {post.part.n} of {post.part.of}:
+        </p>
+      )}
+      <ol className={`${end && next ? "mt-3" : "mt-2"} space-y-1 text-base leading-7`}>
+        {parts.map((p) => (
+          <li key={p.slug} className="flex gap-2">
+            <span className="w-14 shrink-0 text-ink-soft">Part {p.part!.n}</span>
+            {p.slug === post.slug ? (
+              <span className="font-medium">{p.title} (this post)</span>
+            ) : (
+              <Go href={`/blog/${p.slug}/`} className={link}>
+                {p.title}
+              </Go>
+            )}
+          </li>
+        ))}
+      </ol>
+    </nav>
   );
 }

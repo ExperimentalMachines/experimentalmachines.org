@@ -12,6 +12,9 @@ const tones: Record<BlogPost["cover"]["tone"], string> = {
   night: "#052B42",
 };
 
+// The date, and for a post in a series its place in it.
+export const partLabel = (p: BlogPost) => (p.part ? `${p.date}, part ${p.part.n} of ${p.part.of}` : p.date);
+
 export function Cover({ post, large }: { post: BlogPost; large?: boolean }) {
   return (
     <div
@@ -49,7 +52,7 @@ export function BlogFeature({ post }: { post: BlogPost }) {
         <Cover post={post} large />
       </div>
       <div className="flex flex-col justify-center p-7 sm:p-10">
-        <p className="text-sm text-ink-soft">{post.date}</p>
+        <p className="text-sm text-ink-soft">{partLabel(post)}</p>
         <h2 className="display mt-3 text-3xl leading-tight tracking-[-0.02em] sm:text-4xl">
           <Go href={`/blog/${post.slug}/`} className={`${cardLink} decoration-2 underline-offset-[6px] after:rounded-[1.75rem]`}>
             {post.title}
@@ -72,7 +75,7 @@ export function BlogGrid({ posts }: { posts: BlogPost[] }) {
           <div className="overflow-hidden rounded-[1.25rem]">
             <Cover post={p} />
           </div>
-          <p className="mt-4 text-sm text-ink-soft">{p.date}</p>
+          <p className="mt-4 text-sm text-ink-soft">{partLabel(p)}</p>
           <p className="display mt-1 text-xl leading-snug">
             <Go href={`/blog/${p.slug}/`} className={`${cardLink} underline-offset-4 after:rounded-[1.25rem]`}>
               {p.title}

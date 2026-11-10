@@ -1,5 +1,5 @@
-// The blog's posts, newest first. Placeholders until the first post is written: every one says so in its
-// summary and body, so none can be mistaken for a real post if this branch is previewed.
+// The blog's posts, in reading order. The first three are one series, the formulas behind running and training a
+// model: the chip, then inference, then training. Each has its own page under app/blog/<slug>/.
 export type BlogPost = {
   slug: string;
   title: string;
@@ -8,69 +8,41 @@ export type BlogPost = {
   author: string;
   // The cover is drawn, not a photo: a panel in one of the site's colours with one large term on it.
   cover: { tone: "cobalt" | "ink" | "teal" | "night"; mark: string };
-  body: string[];
-  // A post with its own page under app/blog/<slug>/, which the generic template then skips.
-  custom?: boolean;
+  // Its place in a series, shown under the title and linked from the other parts.
+  part?: { n: number; of: number; series: string };
 };
 
 const author = "Alpha Romer Coma";
-const placeholder = ["Placeholder content while the blog is set up. This post has not been written yet."];
+const series = "In formulas";
 
 export const posts: BlogPost[] = [
   {
-    slug: "training-and-inference-formulas",
-    title: "Training and inference, in formulas",
+    slug: "chip-formulas",
+    title: "What a chip's spec sheet means, in formulas",
     date: "November 2026",
-    summary: "Three numbers on a chip's spec sheet, and a handful of formulas, explain how fast a model trains and runs, on a phone or in a datacenter.",
+    summary: "Memory capacity, memory bandwidth and compute: where each number comes from, how to work it out, and which one a model waits on.",
     author,
-    cover: { tone: "cobalt", mark: "6ND" },
-    body: [],
-    custom: true,
+    cover: { tone: "cobalt", mark: "GB/s" },
+    part: { n: 1, of: 3, series },
   },
   {
-    slug: "placeholder-two",
-    title: "Placeholder post two",
-    date: "October 2026",
-    summary: "Placeholder summary.",
+    slug: "inference-formulas",
+    title: "Running a model, in formulas",
+    date: "November 2026",
+    summary: "Reading a long prompt usually waits on compute and writing a reply on memory: the formulas for both, the KV cache, batching, and what changes on a phone.",
     author,
     cover: { tone: "ink", mark: "tok/s" },
-    body: placeholder,
+    part: { n: 2, of: 3, series },
   },
   {
-    slug: "placeholder-three",
-    title: "Placeholder post three",
-    date: "October 2026",
-    summary: "Placeholder summary.",
+    slug: "training-formulas",
+    title: "Training a model, in formulas",
+    date: "November 2026",
+    summary: "Forward, loss, backward and update; why training costs about 6 × N × D operations and 16 bytes a parameter; and the choices that shape a model.",
     author,
-    cover: { tone: "teal", mark: "KV" },
-    body: placeholder,
-  },
-  {
-    slug: "placeholder-four",
-    title: "Placeholder post four",
-    date: "September 2026",
-    summary: "Placeholder summary.",
-    author,
-    cover: { tone: "night", mark: "GB/s" },
-    body: placeholder,
-  },
-  {
-    slug: "placeholder-five",
-    title: "Placeholder post five",
-    date: "September 2026",
-    summary: "Placeholder summary.",
-    author,
-    cover: { tone: "cobalt", mark: "FLOPs" },
-    body: placeholder,
-  },
-  { slug: "placeholder-six", title: "Placeholder post six", date: "August 2026", summary: "Placeholder summary.", author, cover: { tone: "teal", mark: "∂L" }, body: placeholder },
-  {
-    slug: "placeholder-seven",
-    title: "Placeholder post seven",
-    date: "August 2026",
-    summary: "Placeholder summary.",
-    author,
-    cover: { tone: "ink", mark: "Σ" },
-    body: placeholder,
+    cover: { tone: "teal", mark: "6ND" },
+    part: { n: 3, of: 3, series },
   },
 ];
+
+export const seriesParts = (name: string) => posts.filter((p) => p.part?.series === name).sort((a, b) => a.part!.n - b.part!.n);

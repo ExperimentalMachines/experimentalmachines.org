@@ -303,56 +303,91 @@ export const featured = {
   sram: ["lpu", "wse3"],
 };
 
-export const sources: { label: string; href: string; note: string }[] = [
-  { label: "Unikeyic, LPDDR Memory Explained", href: "https://www.unikeyic.com/blog/lpddr-memory.html", note: "LPDDR generations and their data rates, from LPDDR1 to LPDDR6" },
-  { label: "EleutherAI, Transformer Math 101", href: "https://blog.eleuther.ai/transformer-math/", note: "C ≈ 6PD, and the bytes per parameter for training and inference" },
+// Which posts cite each source: the chip, inference or training part of the series.
+export const sources: { for: ("chip" | "inference" | "training")[]; label: string; href: string; note: string }[] = [
   {
+    for: ["chip"],
+    label: "Unikeyic, LPDDR Memory Explained",
+    href: "https://www.unikeyic.com/blog/lpddr-memory.html",
+    note: "LPDDR generations and their data rates, from LPDDR1 to LPDDR6",
+  },
+  {
+    for: ["chip", "inference", "training"],
+    label: "EleutherAI, Transformer Math 101",
+    href: "https://blog.eleuther.ai/transformer-math/",
+    note: "C ≈ 6PD, and the bytes per parameter for training and inference",
+  },
+  {
+    for: ["chip", "inference"],
     label: "kipply, Transformer Inference Arithmetic",
     href: "https://kipp.ly/transformer-inference-arithmetic/",
     note: "the KV cache per token, and where decode turns from memory bound to compute bound",
   },
   {
+    for: ["chip", "inference"],
     label: "Google DeepMind, How to Scale Your Model: All About Rooflines",
     href: "https://jax-ml.github.io/scaling-book/roofline/",
     note: "arithmetic intensity, and the batch a TPU needs to be compute bound",
   },
   {
+    for: ["inference"],
     label: "NVIDIA, Mastering LLM Techniques: Inference Optimization",
     href: "https://developer.nvidia.com/blog/mastering-llm-techniques-inference-optimization/",
     note: "why decode is memory bound, and the KV cache's size",
   },
   {
+    for: ["inference"],
     label: "Databricks, LLM Inference Performance Engineering",
     href: "https://www.databricks.com/blog/llm-inference-performance-engineering-best-practices",
     note: "prefill against decode, and model bandwidth utilisation (MBU)",
   },
   {
+    for: ["inference"],
     label: "Baseten, A guide to LLM inference and performance",
     href: "https://www.baseten.co/blog/llm-transformer-inference-guide/",
     note: "time per token from weight bytes and bandwidth",
   },
   {
+    for: ["inference", "training"],
     label: "Kaplan et al. 2020, Scaling Laws for Neural Language Models",
     href: "https://arxiv.org/abs/2001.08361",
     note: "6N operations per training token, and the attention term",
   },
   {
+    for: ["training"],
     label: "Hoffmann et al. 2022, Training Compute-Optimal Large Language Models",
     href: "https://arxiv.org/abs/2203.15556",
     note: "Chinchilla: scale parameters and tokens together, about 20 tokens per parameter in its Table 3",
   },
   {
+    for: ["training"],
     label: "Rajbhandari et al. 2020, ZeRO",
     href: "https://arxiv.org/abs/1910.02054",
     note: "2 + 2 + 12 = 16 bytes per parameter for mixed-precision Adam, and how to split them across chips",
   },
-  { label: "Llama Team 2024, The Llama 3 Herd of Models", href: "https://arxiv.org/abs/2407.21783", note: "405B trained with 3.8 × 10²⁵ FLOPs on 15.6T tokens at 38% to 43% MFU" },
   {
+    for: ["training"],
+    label: "Llama Team 2024, The Llama 3 Herd of Models",
+    href: "https://arxiv.org/abs/2407.21783",
+    note: "405B trained with 3.8 × 10²⁵ FLOPs on 15.6T tokens at 38% to 43% MFU",
+  },
+  {
+    for: ["training"],
     label: "Meta, Llama 3.1 model card",
     href: "https://github.com/meta-llama/llama-models/blob/main/models/llama3_1/MODEL_CARD.md",
     note: "GPU hours per model: 1.46M, 7.0M and 30.84M",
   },
-  { label: "Gemma Team 2025, Gemma 3 Technical Report", href: "https://arxiv.org/abs/2503.19786", note: "five local sliding-window layers for each global one" },
-  { label: "DeepSeek-AI 2024, DeepSeek-V2", href: "https://arxiv.org/abs/2405.04434", note: "multi-head latent attention" },
-  { label: "ggml, block_q4_0", href: "https://github.com/ggml-org/llama.cpp/blob/master/ggml/src/ggml-common.h", note: "Q4_0 stores 32 weights and one 16-bit scale in 18 bytes" },
+  {
+    for: ["inference"],
+    label: "Gemma Team 2025, Gemma 3 Technical Report",
+    href: "https://arxiv.org/abs/2503.19786",
+    note: "five local sliding-window layers for each global one",
+  },
+  { for: ["inference"], label: "DeepSeek-AI 2024, DeepSeek-V2", href: "https://arxiv.org/abs/2405.04434", note: "multi-head latent attention" },
+  {
+    for: ["chip"],
+    label: "ggml, block_q4_0",
+    href: "https://github.com/ggml-org/llama.cpp/blob/master/ggml/src/ggml-common.h",
+    note: "Q4_0 stores 32 weights and one 16-bit scale in 18 bytes",
+  },
 ];
