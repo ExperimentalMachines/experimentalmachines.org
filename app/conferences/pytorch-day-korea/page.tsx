@@ -37,7 +37,7 @@ export default function Korea() {
       <Section id="evidence" title="The evidence">
         <Figure
           title="The same weights, two builds"
-          note="160 rows an arm, seed 7, on the Dimensitys, Tensor G5, Exynos 2400 and Snapdragon 8 Elite, with web search the only tool offered. Correct answers are left out here: their grading was later revised, and the notes below carry both versions."
+          note="160 rows an arm, seed 7, on the Dimensity 9500s, Tensor G5, Exynos 2400 and Snapdragon 8 Elite, with web search the only tool offered. Correct answers are left out here: their grading was later revised, and the notes below carry both versions."
         >
           <Table
             label="The same weights, two builds"

@@ -18,6 +18,11 @@ const RULE = "var(--color-rule)";
 const xs = (k: number) => L + (k / 10) * PW;
 const yt = (v: number) => TOP + PH - (v / 90) * PH;
 const ya = (v: number) => TOP + PH - ((v - 60) / 40) * PH;
+// The sweep ends at k=10, still rising by 1.4% over k=7 (REPORT-EXTENSIONS §36.2), so the caption says
+// the gain flattens rather than that drafting starts to cost more than it saves.
+const base = specDecode[0];
+const last = specDecode[specDecode.length - 1];
+const knee = specDecode[specDecode.length - 2];
 
 export default function SpecDecodeFigure() {
   const tokPath = specDecode.map((d, i) => `${i ? "L" : "M"}${xs(d.k).toFixed(1)},${yt(d.tok).toFixed(1)}`).join(" ");
@@ -89,7 +94,7 @@ export default function SpecDecodeFigure() {
         </svg>
       </div>
       <figcaption className="mt-3 text-sm text-ink-soft">
-        Single-stream decode on one Trainium1. The 1B draft proposes k tokens and the 8B target verifies them in one pass, so throughput rises until rejected drafts cost more than they save. Agreement is the share of drafted tokens the target kept, a speed statistic, not an accuracy score.
+        {`One stream on one Trainium1. Speed rose ${(last.tok / base.tok).toFixed(1)}× by ${last.k} draft tokens a call, but past ${knee.k} the gain nearly stopped as fewer drafts were accepted. Accepted is a speed statistic, not an accuracy score.`}
       </figcaption>
     </figure>
   );

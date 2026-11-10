@@ -1,6 +1,6 @@
 import { PairBars, Picks } from "@/components/research/Compare";
 import Post, { Figure, Findings, More, Note, postMetadata, Row, Rows, Section, Table } from "@/components/research/Post";
-import { phoneBars, phoneLinks, phoneMatmul, phoneTable } from "@/lib/hardware-studies";
+import { phoneBars, phoneLinks, phoneTable } from "@/lib/hardware-studies";
 
 const href = "/research/8-elite-dimensity/";
 
@@ -21,20 +21,23 @@ export default function Phones() {
           items={[
             {
               headline: "The Snapdragon leads every measured workload",
-              line: `About 3× on NPU int8, about 2.5× on CPU LLM throughput and about 7× on GPU matmul, ${phoneMatmul.elite} against ${phoneMatmul.dimensity} GFLOP/s.`,
-            },
-            { headline: "The NPUs are real, reachable and inference-only", line: "On both chips the gaps are software. NPU training is architecturally impossible on either." },
-            {
-              headline: "They invert on openness",
-              line: "On MediaTek the GPU compute door is Vulkan and OpenCL is walled off. On Qualcomm OpenCL is public and tuned while Vulkan quantized inference is broken. The Snapdragon platform is the more open of the two: public OpenCL, public FastRPC, redistributable QNN.",
+              line: "On a Qualcomm reference phone in the cloud against a retail POCO: about 3× on the NPU (the processor built for AI work), about 2.5× running a language model on the CPU, and about 7× on GPU matrix maths.",
             },
             {
-              headline: "The best recipe is opposite on each",
-              line: "GPU OpenCL prefill with CPU decode on the Snapdragon. CPU prefill with GPU Vulkan decode on the Dimensity.",
+              headline: "Both NPUs run inference, and neither one's public software can train",
+              line: "Inference is running a trained model, and code with no special permissions did it on the NPU of both phones. Neither chip's public NPU software has the steps that update a model, and both fix the weights when the model is compiled.",
             },
             {
-              headline: "Thermal headroom beats a performance mode",
-              line: "Re-benchmarked in HyperOS Ultimate mode while charging, the Dimensity phone gained modestly on the CPU, prefill 74 to 79 tok/s, but GPU matmul fell from 67 to 45 GFLOP/s over a 17-minute back-to-back suite.",
+              headline: "They are open in opposite places",
+              line: "Apps program a phone's GPU through Vulkan or OpenCL. On the Dimensity only Vulkan works, as OpenCL is walled off; on the Snapdragon OpenCL is public and tuned, while Vulkan fails on quantized models, ones stored in fewer bits to be smaller and faster at some cost in accuracy. The Snapdragon is the more open overall, with NPU libraries an app may ship.",
+            },
+            {
+              headline: "The best split differs on each chip",
+              line: "Prefill, reading the prompt, ran fastest on the Snapdragon's GPU but on the Dimensity's CPU. Decode, writing the reply one token (a piece of a word) at a time, ran fastest on the Snapdragon's CPU; on the Dimensity the GPU's about 27 tokens a second sits inside the CPU's 22 to 31, so neither clearly wins.",
+            },
+            {
+              headline: "Cooling mattered more than a performance mode",
+              line: "In HyperOS Ultimate mode while charging, the Dimensity's CPU prefill rose only from 74 to 79 tokens a second, and over 17 minutes of back-to-back tests its GPU matrix maths fell by a third, from 67 to 45 GFLOP/s.",
             },
           ]}
         />
@@ -45,7 +48,7 @@ export default function Phones() {
           id="lead"
           title="The Snapdragon leads every test"
           lede="NPU, CPU and GPU, with the same workloads on both chips. Each row has its own scale."
-          note="Where a result is a range, from benchmarks run twice, the bar is solid to the low end and faint to the high end. Multiples use the middle of each range."
+          note="tok/s is tokens a second; GOPS and GFLOP/s are billions of calculations a second. Ranges come from benchmarks run twice: the bar is solid to the low end and faint to the high end, and multiples use the middle."
         >
           <PairBars
             a="Snapdragon 8 Elite"
@@ -68,16 +71,20 @@ export default function Phones() {
           />
         </Figure>
 
-        <Figure id="gain" title="What each GPU adds over its own CPU" lede="This compares each chip with itself, so it shows how much the GPU is worth on that phone.">
+        <Figure
+          id="gain"
+          title="The Snapdragon's GPU adds far more over its own CPU"
+          lede="This compares each chip with itself, so it shows how much the GPU is worth on that phone."
+        >
           <PairBars
             a="Snapdragon 8 Elite"
             b="Dimensity 9500s"
             shortA="8 Elite"
             shortB="D9500s"
             rows={[
-              { label: "Matmul, 4096³ f32", detail: "GPU as a multiple of the CPU", a: { value: 6.9, shown: "6.9×" }, b: { value: 1.69, shown: "1.69×" } },
+              { label: "Matrix multiplication", detail: "GPU as a multiple of the CPU", a: { value: 6.9, shown: "6.9×" }, b: { value: 1.69, shown: "1.69×" } },
               {
-                label: "Transformer-layer training step",
+                label: "Training step for one model layer",
                 detail: "GPU as a multiple of the CPU",
                 a: { value: 6.5, shown: "6.5×" },
                 b: { value: 1.4, low: 1.1, shown: "1.1× to 1.4×" },
@@ -86,7 +93,8 @@ export default function Phones() {
           />
         </Figure>
 
-        <Figure id="recipe" title="The best recipe is opposite on each chip" lede="Which processor to use for each job, for Gemma 3 1B in tokens per second.">
+        <Figure id="recipe" title="The best processor for each job differs by chip" lede="Gemma 3 1B in tokens per second; on the Dimensity, decode is too close to call.">
+          {/* No pick on the Dimensity's decode: the GPU's single reading falls inside the CPU's two-run range. */}
           <Picks
             machines={[
               {
@@ -122,7 +130,7 @@ export default function Phones() {
                   {
                     job: "Decode",
                     options: [
-                      { name: "GPU, Vulkan", value: 27, shown: "about 27", pick: true },
+                      { name: "GPU, Vulkan", value: 27, shown: "about 27" },
                       { name: "CPU", value: 26.5, shown: "22 to 31" },
                     ],
                   },
@@ -140,7 +148,7 @@ export default function Phones() {
 
       <Section id="method" title="How we ran it">
         <Rows>
-          <Row label="Phones">Dimensity 9500s (mt6991) in a POCO X8 Pro Max. Snapdragon 8 Elite (SM8750) in a QRD reference device on Qualcomm Device Cloud.</Row>
+          <Row label="Phones">Dimensity 9500s (mt6991) in a POCO X8 Pro Max. Snapdragon 8 Elite (SM8750) in a Qualcomm reference phone (QRD) on Qualcomm Device Cloud.</Row>
           <Row label="NPU workload">8 chained int8 fully connected layers, M=32 and K=N=2048, plus a single fp16 layer.</Row>
           <Row label="LLM workload">llama.cpp, Gemma 3 1B Q4_K_M.</Row>
           <Row label="GPU workload">ggml f32 mul_mat at 1024, 2048 and 4096 cubed.</Row>
@@ -151,18 +159,18 @@ export default function Phones() {
       <Section id="limits" title="Limits">
         <Rows>
           <Row label="Access paths">
-            A retail phone through Termux against a QRD through adb and the NDK. Both execute as unprivileged user code; the QDC shell happens to be root, but nothing measured uses
-            root-only facilities.
+            The POCO ran the tests in Termux, a terminal app; the QRD ran them over adb, a debugging connection. Both ran as ordinary user code; the cloud shell had root, but
+            nothing measured used it.
           </Row>
           <Row label="NPU drivers">
-            MediaTek&apos;s Neuron Adapter is called raw. Qualcomm&apos;s QNN is driven through ONNX Runtime&apos;s QNN provider with CPU fallback disabled, because raw QNN graph
-            composition needs gated SDK headers. Both measure a quantized graph fully resident on the NPU.
+            MediaTek&apos;s NPU library was called directly. Qualcomm&apos;s QNN was driven through ONNX Runtime with CPU fallback off, because calling QNN directly needs headers
+            from a gated SDK. Both measure a quantized model running wholly on the NPU.
           </Row>
           <Row label="llama.cpp builds">
             MediaTek numbers were taken on 2026-07-13 on the then-current llama.cpp, Snapdragon numbers on commit 8e8681e on 2026-07-27. Treat small differences between the chips
             accordingly.
           </Row>
-          <Row label="Thermals">The phone was benched warm and cold, and the ranges are reported. The QDC QRD idles cool and varied under 4% across runs.</Row>
+          <Row label="Thermals">The POCO was tested warm and cold, and the ranges are reported. The QRD in the cloud idles cool and varied under 4% across runs.</Row>
         </Rows>
       </Section>
     </Post>

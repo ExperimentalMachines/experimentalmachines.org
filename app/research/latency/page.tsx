@@ -21,6 +21,15 @@ const cells = latencyModels.flatMap((m) => m.et.map((et, i) => ({ et, llama: m.l
 const sooner = cells.filter((c) => c.et.ttft < c.llama.ttft).length;
 const fasterDecode = cells.filter((c) => c.et.tpot < c.llama.tpot).length;
 const firstTokens = cells.flatMap((c) => [c.et.ttft, c.llama.ttft]);
+// The original said Tensor G5 and Exynos 2400 both decode at about half speed on llama.cpp, but on the Exynos llama.cpp
+// keeps 64 to 92% of ExecuTorch's speed. The Tensor G5 has the widest gap: 43 to 51% for four models, 69% for Llama 3.2.
+// Under 60% counts as about half.
+const tensor = latencyChips.findIndex((c) => c.name === "Tensor G5");
+const tensorHalf = latencyModels.filter((m) => m.et[tensor].tpot / m.llama[tensor].tpot < 0.6).length;
+// SmolLM3's ExecuTorch prefill rate as a share of llama.cpp's, lowest and highest across the chips.
+const smol = latencyModels.find((m) => m.name === "SmolLM3 3B")!;
+const smolShares = smol.et.map((e, i) => Math.round((100 * e.prefill) / smol.llama[i].prefill));
+const smolShare = [Math.min(...smolShares), Math.max(...smolShares)];
 
 export default function Latency() {
   return (
@@ -35,16 +44,16 @@ export default function Latency() {
         <Findings
           items={[
             {
-              headline: `${sooner} of ${cells.length} pairs reached the first token sooner on ExecuTorch`,
-              line: `Time to first token is what a user waits before the reply starts. Across both runtimes it ran from ${Math.min(...firstTokens).toFixed(2)} s to ${Math.max(...firstTokens).toFixed(2)} s.`,
+              headline: `${sooner} of ${cells.length} model and chip pairs read the prompt sooner on ExecuTorch`,
+              line: `Time to first token here is the time the engine took to read the prompt, its part of the wait before a reply starts, not the whole wait: ${Math.min(...firstTokens).toFixed(2)} s to ${Math.max(...firstTokens).toFixed(2)} s across both runtimes.`,
             },
             {
-              headline: `${fasterDecode} of ${cells.length} streamed faster on ExecuTorch`,
-              line: "Time per output token is how fast the reply then streams. Tensor G5 and Exynos 2400 decode at about half speed on llama.cpp against ExecuTorch, cause unknown.",
+              headline: `${fasterDecode} of ${cells.length} wrote the reply faster on ExecuTorch`,
+              line: `Time per output token is how fast the reply streams once it starts. The gap is widest on the Tensor G5, where llama.cpp wrote at about half ExecuTorch's speed for ${tensorHalf} of ${latencyModels.length} models, cause unknown.`,
             },
             {
-              headline: "SmolLM3 is the exception on prefill",
-              line: "On ExecuTorch it prefills at a third of llama.cpp's rate on every chip, which is the compiled model rather than the phones.",
+              headline: "SmolLM3 is the exception when reading the prompt",
+              line: `On ExecuTorch it read prompts at ${smolShare[0]} to ${smolShare[1]}% of llama.cpp's speed on every chip, which points to the compiled model or its runtime, not the phones.`,
             },
           ]}
         />
@@ -57,7 +66,7 @@ export default function Latency() {
         <Figure
           id="numbers"
           title="Every number"
-          lede="Medians per cell, llama.cpp beside ExecuTorch. Bold blue marks the faster runtime on that chip. Prefill is the median rate behind the time to first token."
+          lede="Medians per model and chip, llama.cpp beside ExecuTorch; bold blue marks the faster runtime. Prefill is how fast the engine read the prompt, in tokens a second; time per token is how long each reply token took to write."
         >
           <Scroll label="Latency table">
             <table className="w-full min-w-[40rem] border-collapse text-sm tabular-nums">
@@ -138,15 +147,18 @@ export default function Latency() {
       <Section id="method" title="How we ran it">
         <Rows>
           <Row label="Prompts">
-            The same 90 prompts: 30 GSM8K, 30 IFEval and 30 BFCL, except that Gemma 3 skips BFCL, having no tool syntax. So 60 to 90 per cell, 19 to 772 tokens long and 92 at the
-            median, run greedy with thinking off.
+            The same 90 prompts: 30 GSM8K maths problems, 30 IFEval instruction-following prompts and 30 BFCL function-calling prompts, except that Gemma 3 skips BFCL, having no
+            tool syntax. So 60 to 90 per model and chip, 19 to 772 tokens long and 92 at the median, with the likeliest next token always taken, thinking off, and replies capped at
+            640 tokens, BFCL&apos;s at 384.
           </Row>
           <Row label="Files">
-            llama.cpp ran Q4_K_M GGUFs, Qwen3 at Q8_0. ExecuTorch ran the published XNNPACK INT8/INT4 exports, LFM2.5 as 8da4w and Llama 3.2 as SpinQuant.
+            Each runtime ran its own file format, quantized differently (its numbers stored in fewer bits, smaller and faster at some cost in accuracy): llama.cpp GGUF files at
+            Q4_K_M, Qwen3 at Q8_0; ExecuTorch the published exports for its CPU backend, XNNPACK, with 8-bit activations and 4-bit weights, LFM2.5 as 8da4w and Llama 3.2 as
+            SpinQuant. So each pair compares a whole setup, file and runtime, not the runtime alone.
           </Row>
-          <Row label="Runs">One pass per cell with no repeats, on 3 and 4 September 2026.</Row>
+          <Row label="Runs">One pass per model, chip and runtime with no repeats, on 3 and 4 September 2026.</Row>
           <Row label="Phone time">
-            29 hours in all, plus loading and Test Lab queueing. Generation time per cell ran from 6 minutes (LFM2.5-1.2B on ExecuTorch, 8 Elite) to about 100 minutes (SmolLM3 on
+            29 hours in all, plus loading and Test Lab queueing. Generation time per run ran from 6 minutes (LFM2.5-1.2B on ExecuTorch, 8 Elite) to about 100 minutes (SmolLM3 on
             llama.cpp, Tensor G5).
           </Row>
         </Rows>
@@ -163,8 +175,8 @@ export default function Latency() {
             .
           </Row>
           <Row label="Not matched conditions">
-            The Dimensitys ran in hand under a desk fan. The Snapdragon 8 Gen 3 ran on Qualcomm Device Cloud and the 8 Elite, Tensor G5 and Exynos 2400 on Firebase Test Lab, racked,
-            where phones throttle within about 40 seconds.
+            The Dimensity 9500s ran in hand under a desk fan. The Snapdragon 8 Gen 3 ran on Qualcomm Device Cloud and the 8 Elite, Tensor G5 and Exynos 2400 on Firebase Test Lab,
+            racked, where phones throttle within about 40 seconds.
           </Row>
         </Rows>
       </Section>

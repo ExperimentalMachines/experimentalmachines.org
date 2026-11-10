@@ -2,7 +2,11 @@
 // experimentalmachines.github.io/openweights/latency.html (gh-pages 1f00e53):
 // its DATA and PREFILL tables. Medians from one pass per cell on 2026-09-03 and
 // 04, 60 to 90 benchmark prompts each. Median prefill rates are from the
-// openweights repository's docs/research/benchmark-matrix.md.
+// openweights repository's docs/research/benchmark-matrix.md. Time to first
+// token is each cell's median engine prefill time (prefill_ms in the reports:
+// 301.5 ms for LFM2.5 on ExecuTorch on the 8 Elite, shown as 0.30 s), not a
+// first-token timestamp. The POCO's chip, the original's Dimensity 9400, is
+// named the Dimensity 9500s, as every other post names it.
 
 const repo = "https://github.com/ExperimentalMachines/openweights";
 
@@ -11,7 +15,7 @@ export const latencyLinks = {
 };
 
 export const latencyChips = [
-  { name: "Dimensitys", short: "D9500s" },
+  { name: "Dimensity 9500s", short: "D9500s" },
   { name: "Snapdragon 8 Gen 3", short: "8 Gen 3" },
   { name: "Snapdragon 8 Elite", short: "8 Elite" },
   { name: "Tensor G5", short: "Tensor G5" },

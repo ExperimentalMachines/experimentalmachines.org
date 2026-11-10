@@ -120,11 +120,11 @@ export default function PrefillDecode() {
         <Findings
           items={[
             {
-              headline: "Prefill on the NPU, on every model",
+              headline: "The NPU read the prompt fastest, on every model",
               line: (
                 <>
-                  {range(npuVsCpu)} times as fast as the CPU and {range(npuVsGpu)} times as fast as the GPU, with the first token after a median {Math.round(Math.min(...npuFirst))}{" "}
-                  to {Math.round(Math.max(...npuFirst))} ms against {range(cpuFirst)} s on the CPU.
+                  In these single runs on a warm phone, {range(npuVsCpu)} times as fast as the CPU and {range(npuVsGpu)} times as fast as the GPU, with the first token after a
+                  median {Math.round(Math.min(...npuFirst))} to {Math.round(Math.max(...npuFirst))} ms against {range(cpuFirst)} s on the CPU.
                 </>
               ),
             },
@@ -139,7 +139,7 @@ export default function PrefillDecode() {
               ),
             },
             {
-              headline: "Decode anywhere but the GPU",
+              headline: "The GPU was the slowest at decode",
               line: (
                 <>
                   {gpuDecodeFastest === 0 ? "No model was" : `${gpuDecodeFastest} of ${pdModels.length} models were`} fastest with GPU decode: it was the slowest decoder on{" "}
@@ -182,7 +182,8 @@ export default function PrefillDecode() {
           lede={`Total time for the same ${pdTurns} conversation turns, and how much longer the other pairings took.`}
           note={
             <>
-              CPU → NPU means prefill on the CPU, decode on the NPU.
+              CPU → NPU means prefill on the CPU, decode on the NPU. Q4_0 and Q8_0 store the model in 4 and 8 bits a number; hybrids swap some of a model&apos;s costly attention
+              layers for lighter ones.
               {coolCells.length > 0 && ` ${andList(coolCells.map(({ m, p }) => `${short(m)}'s ${name(p)}`))}, which started cool, is left out.`}
             </>
           }
@@ -240,7 +241,7 @@ export default function PrefillDecode() {
           lede="The stages we saw as it warmed and cooled. Every pairing compared started under the first step, the soft throttle."
           note={
             <>
-              Between {pdTrigger.offC} and {pdTrigger.onC} °C the hard throttle keeps its last state, so it does not flicker. The processors share heat, so the XO thermistor warms
+              Between {pdTrigger.offC} and {pdTrigger.onC} °C the hard throttle keeps its last state, so it does not flicker. The processors share heat, so the board sensor warms
               whichever one works.
             </>
           }
@@ -264,9 +265,9 @@ export default function PrefillDecode() {
               [
                 "Hard throttle on",
                 "CPU cores paused and the NPU slowed, on top of the soft throttle. The GPU's cap stayed at 578 MHz",
-                `XO thermistor reaches ${pdTrigger.onC} °C`,
+                `The board sensor reaches ${pdTrigger.onC} °C`,
               ],
-              ["Hard throttle off, usually about a minute later", "Back to the soft throttle", `XO thermistor below ${pdTrigger.offC} °C`],
+              ["Hard throttle off, usually about a minute later", "Back to the soft throttle", `The board sensor falls below ${pdTrigger.offC} °C`],
               ["Idle again", "Soft throttle off within about 10 minutes, the one time this was timed", ""],
             ]}
           />
@@ -302,7 +303,7 @@ export default function PrefillDecode() {
 
         <Figure
           id="stuck"
-          title="What the stuck CPU decode cost each pairing"
+          title="Time spent in stuck CPU decode steps, pairing by pairing"
           lede={`Time in decode steps over half a second, against a median CPU step of ${Math.min(...cpuStep)} to ${Math.max(...cpuStep)} ms.`}
           note={
             <>
@@ -427,7 +428,7 @@ export default function PrefillDecode() {
           </Row>
           <Row label="Models">
             Qwen3 0.6B, 1.7B and 4B; Gemma 3 1B; Llama 3.2 1B and 3B; LFM2.5 1.2B and 2.6B, all in Q4_0, the 4-bit format all three backends speed up, and Qwen3 1.7B also in Q8_0.
-            The LFM2.5 models are hybrids, in Liquid AI&apos;s own builds.
+            The LFM2.5 models are hybrids, mixing attention with other layer types, in Liquid AI&apos;s own builds.
           </Row>
           <Row label="Conversations">
             Nine from WildChat-1M, UltraChat 200k and Daring-Anteater, {pdTurns} turns in all. Each turn&apos;s prefill covers only its new tokens, {pdNewTokens[0]} to{" "}

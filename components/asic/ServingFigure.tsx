@@ -28,6 +28,8 @@ const path = (vals: (number | null)[]) =>
     .join(" ");
 
 const fmt = (v: number) => v.toLocaleString("en-US", { maximumFractionDigits: 1 });
+const times = (x: number) => `${x.toFixed(1)}×`;
+const [inf2, mi300x, h200] = cost;
 
 function Chart() {
   const step = xs(2) - xs(1);
@@ -165,7 +167,9 @@ export default function ServingFigure() {
       </div>
       <figcaption className="mt-6 text-sm text-ink-soft">
         <p>
-          Inferentia2 stops at 32 streams because 32 GB of device memory holds about 48 resident sequences at 2048 context, and the KV budget is spent. Its decode latency stays flat across the sweep, 63 to 71 ms per token, while aggregate throughput grows 26x. Compared at 32 streams, an Inferentia2 token cost 2.4x an MI300X token and 1.8x an H200 token. At each side&apos;s best point the gap was 5.7x and 4.6x. No GPU ran on AWS in either study, so the like-for-like rental (g6e.xlarge, one L40S, $1.86/hr) is the open comparison.
+          Per token, Inferentia2 cost {times(inf2.matched / mi300x.matched)} an MI300X and {times(inf2.matched / h200.matched)} an H200 at 32 streams, and{" "}
+          {times(inf2.best / mi300x.best)} and {times(inf2.best / h200.best)} against each GPU at its best load. No GPU ran on AWS in either study, so the like-for-like rental, a
+          g6e.xlarge with one L40S at $1.86/hr, is untested.
         </p>
         <table className="mt-4 w-full border-collapse text-xs">
           <thead className="text-left">

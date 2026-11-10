@@ -103,7 +103,7 @@ function MemoryChart({ model, pt }: ChartProps) {
       viewBox={`0 0 ${W} ${H}`}
       role="group"
       aria-label={`Resident memory after load against exported window, ${SHORT[model]} highlighted`}
-      className="w-full min-w-[34rem]"
+      className="mx-auto w-full min-w-[34rem] max-w-3xl"
     >
       {[0, 2, 4, 6, 8].map((gb) => (
         <g key={gb}>
@@ -116,7 +116,7 @@ function MemoryChart({ model, pt }: ChartProps) {
       <WindowAxis l={M.l} r={W - M.r} t={M.t} b={H - M.b} H={H} label="Exported context window, tokens" />
       <line x1={M.l} x2={W - M.r} y1={y(6000)} y2={y(6000)} stroke={SOFT} strokeDasharray="4 4" />
       <text x={M.l + 6} y={y(6000) - 6} fontSize={11.5} fill={SOFT}>
-        Samsung Heimdall threshold seen in the S25 Ultra and S24+ logs, 6 GB
+        6 GB, the memory guards&apos; threshold that stopped Qwen3 at 32k
       </text>
       {BASES.map((m) => {
         const pts = windowProbe
@@ -182,7 +182,7 @@ function SpeedChart({ model, pt }: ChartProps) {
       viewBox={`0 0 ${W} ${H}`}
       role="group"
       aria-label={`${SHORT[model]}: prefill and decode throughput ratio against its smallest window`}
-      className="w-full min-w-[34rem]"
+      className="mx-auto w-full min-w-[34rem] max-w-3xl"
     >
       {[0.8, 0.9, 1, 1.1, 1.2].map((v) => (
         <g key={v}>
@@ -258,7 +258,7 @@ function GradesChart({ model, pt }: ChartProps) {
       viewBox={`0 0 ${W} ${H}`}
       role="group"
       aria-label={`${SHORT[model]}: prompts passed per set against exported window, per chip`}
-      className="w-full min-w-[34rem]"
+      className="mx-auto w-full min-w-[34rem] max-w-3xl"
     >
       {sets.map(([k, label], i) => {
         const l = M.l + i * (cw + gap);
@@ -272,7 +272,7 @@ function GradesChart({ model, pt }: ChartProps) {
               {cens && k !== "bfcl" && (
                 <tspan fontWeight={500} fill={WARN}>
                   {" "}
-                  cap-censored
+                  cut short by the cap
                 </tspan>
               )}
             </text>
@@ -362,16 +362,13 @@ function GradesChart({ model, pt }: ChartProps) {
           </g>
         );
       })}
-      {model.includes("cap") && (
-        <>
-          <text x={M.l + 2 * (cw + gap)} y={(M.t + H - M.b) / 2} fontSize={11.5} fill={SOFT}>
-            BFCL was not rerun: the
+      {/* BFCL kept its own 384-token cap, which its calls reached at most once in 30 per cell, so the rerun left it out. */}
+      {model.includes("cap") &&
+        ["BFCL was not rerun:", "its calls rarely reached", "their 384-token cap"].map((l, j) => (
+          <text key={l} x={M.l + 2 * (cw + gap)} y={(M.t + H - M.b) / 2 + 15 * j} fontSize={11.5} fill={SOFT}>
+            {l}
           </text>
-          <text x={M.l + 2 * (cw + gap)} y={(M.t + H - M.b) / 2 + 15} fontSize={11.5} fill={SOFT}>
-            640-cap calls were already usable
-          </text>
-        </>
-      )}
+        ))}
       {cells.some((c) => !complete(c)) && (
         <text x={W - M.r} y={H - M.b + 32} textAnchor="end" fontSize={11} fill={SOFT}>
           × the run ended before the set did: no grade
@@ -410,7 +407,7 @@ function IdentChart({ model, pt }: ChartProps) {
       viewBox={`0 0 ${W} ${H}`}
       role="group"
       aria-label={`${SHORT[model]}: share of replies identical to the largest window, per phone and window`}
-      className="w-full min-w-[34rem]"
+      className="mx-auto w-full min-w-[34rem] max-w-3xl"
     >
       {kinds.map(([k, label], i) => {
         const l = M.l + i * (cw + gap);
@@ -570,14 +567,14 @@ export default function WindowFigures() {
 
   const hasRep = cellsOf(model).some((c) => c.phone.endsWith(" repeat"));
   const gradesCap =
-    "Prompts passed out of 30 on each set, per chip. Points are joined only where neighbouring windows were both measured; the cloud phones have endpoint measurements only and cannot exclude an effect at 8k or 16k. " +
+    "Prompts passed out of 30 per set: GSM8K maths, IFEval instruction following, BFCL function calling. Lines join only neighbouring windows that were both measured; the cloud phones ran only the smallest and largest, so an effect at 8k or 16k there is not ruled out. " +
     (hasRep
-      ? "Hollow markers are one same-file repeat on the same phone, an observed run-to-run reference rather than a noise bound."
+      ? "Hollow markers are a second run of the same file: how far a grade moved between two identical runs."
       : "No same-file repeat was run for this condition.");
   const identCap =
-    "How many prompts came back byte-identical to the largest window's reply: the raw token stream, the parsed tool calls (BFCL prompts only) and the shown text. " +
+    "How many replies came back exactly the same as the largest window's: every token generated, the function calls the app would run (BFCL prompts only), and the text a user would see. " +
     (hasRep
-      ? "Dashed lines are same-file repeats on the phone of that colour, a reference for observed run-to-run agreement."
+      ? "Dashed lines are the same file run twice on the phone of that colour: how much agreement to expect anyway."
       : "No same-file repeat was run for this condition.");
   const identRows = windowIdent.filter((r) => r.model === model);
   const early = identRows.some((rw) =>
@@ -587,9 +584,9 @@ export default function WindowFigures() {
     }),
   );
   const identFoot = model.includes("cap")
-    ? "No BFCL in the capped rerun; long reasoning replies never match byte for byte"
+    ? "No BFCL in the 2048-cap rerun; long reasoning replies never match token for token"
     : model.includes("2.6B")
-      ? "Raw identity is cap-censored: long reasoning replies rarely match byte for byte"
+      ? "Long reasoning replies, cut short by the cap, rarely match token for token"
       : early
         ? "× a run that ended early: only the 6 to 12 prompts both runs completed are compared"
         : "";
@@ -616,10 +613,10 @@ export default function WindowFigures() {
           </button>
         ))}
       </div>
-      <div className="mt-8 grid items-start gap-6 xl:grid-cols-2">
+      <div className="mt-8 grid items-start gap-6">
         <Panel
           title="Memory after load"
-          caption="Resident memory of the test process right after each export loaded, Dimensitys, from the fixed-prompt probe. The picked model is drawn solid."
+          caption="Memory the test process held right after each export loaded, on the Dimensity 9500s in the speed probe. The picked model is drawn solid."
         >
           <Scroll label="Memory after load">
             <MemoryChart model={model} pt={pt} />
@@ -627,7 +624,7 @@ export default function WindowFigures() {
         </Panel>
         <Panel
           title="Speed, paired probe"
-          caption="Each window's throughput as a ratio of the model's smallest window, same 929-token prompt, same turn against same turn, six pairs per file. Dot is the median, bar the range. Dimensitys only."
+          caption="Each window's speed reading the prompt (prefill) and writing the reply one token at a time (decode), as a ratio of the model's smallest window: one 929-token prompt, turn against turn, six pairs per file, on the Dimensity 9500s. Dot is the median, bar the range."
         >
           <Scroll label="Speed, paired probe">
             <SpeedChart model={model} pt={pt} />

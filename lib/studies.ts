@@ -54,7 +54,7 @@ const ifevalLong = rerunsCaps.map((r) => grade(r.ifeval_2048));
 const gains = rerunsCaps.map((r) => grade(r.ifeval_2048) / grade(r.ifeval_640)).sort((a, b) => a - b);
 const ifevalGain = (gains[Math.floor((gains.length - 1) / 2)] + gains[Math.ceil((gains.length - 1) / 2)]) / 2;
 
-// Window: resident memory after load on the Dimensitys, the phone that ran both windows of both.
+// Window: resident memory after load on the Dimensity 9500s, the phone that ran both windows of both.
 const resident = (model: string, window: string) => {
   const cell = windowCells.find((c) => c.model === model && c.window === window && c.phone.startsWith("D9500s") && c.rss_load !== "-")!;
   return parseInt(cell.rss_load, 10);
@@ -94,9 +94,9 @@ export const studies: Study[] = [
     title: "Why CPU decode stalls when a phone throttles",
     date: "3 to 10 November 2026",
     project: "OpenWeights",
-    line: "A Snapdragon 8 Elite Gen 5 parks six of its eight cores when it overheats, and llama.cpp with more threads than the two left nearly stops. The cause, the guard OpenWeights now carries, and whether real chat gets there.",
+    line: "When a Snapdragon 8 Elite Gen 5 phone overheats, it parks six of its eight cores, and llama.cpp, the engine that runs the model, nearly stops writing the reply if it uses more than two threads. Why, the fix OpenWeights now carries, and whether ordinary chat gets that hot.",
     hook: `${Math.round((100 * appThreads.paused) / appThreads.normal)}%`,
-    hookLabel: `of its decode rate: the app's engine at ${appThreads.threads} threads, with the phone's hard throttle set by hand`,
+    hookLabel: `of its writing speed left: the app's engine at ${appThreads.threads} threads, with six cores parked by hand`,
     viz: {
       kind: "bars",
       rows: pdFix.byThreads.map((r) => ({ label: `${r.threads} threads`, value: r.paused, shown: `${r.paused} tok/s`, on: r.threads === 2 })),
@@ -107,7 +107,7 @@ export const studies: Study[] = [
     title: "Prefill and decode on CPU, GPU and NPU",
     date: "2 to 10 November 2026",
     project: "OpenWeights",
-    line: "Which processor should prefill and which should decode: nine models, every pairing, on a Snapdragon 8 Elite Gen 5.",
+    line: "A model reads the prompt (prefill), then writes the reply a token at a time (decode). Nine models on a Snapdragon 8 Elite Gen 5, with each job on the CPU, the GPU or the NPU, the chip built for AI.",
     hook: `${npuWins} of ${pdModels.length}`,
     hookLabel: "models were fastest with NPU prefill",
     viz: {
@@ -121,7 +121,7 @@ export const studies: Study[] = [
     title: "When is local Copilot worth it?",
     date: "October 2026",
     project: "GGUF",
-    line: "The same Copilot CLI agent on the same real tasks: open-weight GGUF models on an RTX 4090 and a MacBook Air M5, against hosted Copilot.",
+    line: "The same Copilot CLI agent on the same real coding tasks: downloadable models running locally on an RTX 4090 and a MacBook Air M5, against hosted Copilot.",
     hook: `${finished("Qwen3.6 on the RTX 4090")}%`,
     hookLabel: `of 24 real tasks with Qwen3.6 on an RTX 4090, against ${finished("Copilot Pro+, Auto")}% on Copilot Pro+ Auto`,
     viz: {
@@ -136,7 +136,7 @@ export const studies: Study[] = [
     project: "Hardware",
     line: "Qwen3.8-27B on one rented RTX 4090, through five engine setups, rising load and real coding agents.",
     hook: `${agentsOk.agents} agents`,
-    hookLabel: `at a ${agentsOk.p50} s wait per turn on vLLM, with no errors. At 16, waits reach ${rtxCapacity.at(-1)!.p50} s`,
+    hookLabel: `in a simulated coding workload, at a ${agentsOk.p50} s wait per turn on vLLM with no errors. At 16, waits reach ${rtxCapacity.at(-1)!.p50} s`,
     viz: { kind: "columns", groups: rtxCapacity.map((r) => [{ value: r.p50, on: r === agentsOk }]) },
   },
   {
@@ -144,9 +144,9 @@ export const studies: Study[] = [
     title: "A 2B model in ten GGUF formats on one A100",
     date: "12 September 2026",
     project: "GGUF",
-    line: "Size, speed and how many of its decisions each format keeps, and the same weights behind vLLM.",
+    line: "One 2B model saved in ten compressed formats: how big and fast each is, how many of the original's tool-use decisions it keeps, and the same model behind the vLLM server.",
     hook: ggufRecommended,
-    hookLabel: "is the smallest of ten formats to pass the quality gate",
+    hookLabel: "is the smallest of ten formats whose decisions stayed close enough to the original's to pass our test",
     viz: { kind: "columns", groups: bySize.map((r) => [{ value: r.gib, on: r.format === ggufRecommended }]) },
   },
   {
@@ -154,9 +154,9 @@ export const studies: Study[] = [
     title: "Does the exported window matter?",
     date: "7 September 2026",
     project: "OpenWeights",
-    line: "Whether the context window fixed at export, from 2k to 32k, changes anything but memory.",
+    line: "A compiled model fixes its context window, how much text it can hold at once, when it is exported. Does choosing 2k to 32k tokens change anything but memory?",
     hook: "Over 6 GB",
-    hookLabel: "for Qwen3 at 32k, before the first prompt",
+    hookLabel: "of memory for Qwen3 at a 32k window, before the first prompt",
     viz: { kind: "bars", rows: memory.map((m) => ({ ...m, shown: gb(m.value) })) },
   },
   {
@@ -166,7 +166,7 @@ export const studies: Study[] = [
     project: "OpenWeights",
     line: "The model reasons before it answers, so a 640-token cap cut it off. Raising only the cap lifted its scores on every phone. The same day's reruns also tested repeats of one file and a run that had died.",
     hook: `About ${Math.round(ifevalGain)}×`,
-    hookLabel: `the median IFEval gain from raising the reply cap to 2048 tokens: ${Math.min(...ifevalLong)} to ${Math.max(...ifevalLong)} of 30, up from ${Math.min(...ifevalShort)} to ${Math.max(...ifevalShort)}`,
+    hookLabel: `the median score on IFEval, an instruction-following test, once the reply cap rose to 2048 tokens: ${Math.min(...ifevalLong)} to ${Math.max(...ifevalLong)} of 30, up from ${Math.min(...ifevalShort)} to ${Math.max(...ifevalShort)}`,
     viz: { kind: "columns", groups: rerunsCaps.map((r) => [{ value: grade(r.ifeval_640) }, { value: grade(r.ifeval_2048), on: true }]) },
   },
   {
@@ -176,7 +176,7 @@ export const studies: Study[] = [
     project: "OpenWeights",
     line: "How fast five small models answer on five phone chips, in llama.cpp and in ExecuTorch.",
     hook: `${firstToken.filter(Boolean).length} of ${firstToken.length}`,
-    hookLabel: "model and chip pairs reached the first token sooner on ExecuTorch",
+    hookLabel: "model and chip pairs read the prompt sooner on ExecuTorch than on llama.cpp",
     viz: { kind: "grid", cols: latencyModels[0].et.length, cells: firstToken.map((on) => ({ level: on ? 1 : 0, on })) },
   },
   {
@@ -199,7 +199,7 @@ export const studies: Study[] = [
     project: "Hardware",
     line: "One AMD Instinct MI300X against one NVIDIA H200, inference and training, on the same vLLM and PyTorch versions.",
     hook: `${gpuKv.advantage}×`,
-    hookLabel: `the H200's KV cache on an MI300X with 70 GB of weights loaded, from ${gpuKv.memory}× the memory`,
+    hookLabel: `the H200's room for conversation memory (the KV cache) on an MI300X with 70 GB of weights loaded, from ${gpuKv.memory}× the memory`,
     viz: {
       kind: "bars",
       rows: [
@@ -215,7 +215,7 @@ export const studies: Study[] = [
     project: "Hardware",
     line: "A MacBook Air against a Qualcomm reference board on AI work: CPU, GPU and NPU, inference and training, with the same llama.cpp release and byte-identical weights.",
     hook: `${(laptopGemma.m5Gpu / laptopGemma.x2Gpu).toFixed(1)}×`,
-    hookLabel: `the X2 Elite's GPU prefill on the M5, Gemma 3 1B Q4_0. On the CPU, the X2 Elite leads by ${(laptopGemma.x2Cpu / laptopGemma.m5Cpu).toFixed(1)}×`,
+    hookLabel: `the X2 Elite's GPU speed at reading the prompt, on the M5 with Gemma 3 1B. On the CPU, the X2 Elite leads by ${(laptopGemma.x2Cpu / laptopGemma.m5Cpu).toFixed(1)}×`,
     viz: {
       kind: "bars",
       rows: [
@@ -229,9 +229,9 @@ export const studies: Study[] = [
     title: "Snapdragon 8 Elite against Dimensity 9500s",
     date: "13 and 27 July 2026",
     project: "Hardware",
-    line: "What unprivileged code can do for AI on two flagship phone chips: NPU, CPU, GPU and on-device training.",
+    line: "What an app without special permissions can do for AI on two flagship phone chips: the CPU, the GPU, the NPU (the chip built for AI) and training on the phone.",
     hook: `About ${Math.round(phoneMatmul.elite / phoneMatmul.dimensity)}×`,
-    hookLabel: "the GPU matmul of a Dimensity 9500s on a Snapdragon 8 Elite",
+    hookLabel: "the GPU's matrix-multiplication speed of a Dimensity 9500s, on a Snapdragon 8 Elite",
     viz: {
       kind: "bars",
       rows: [

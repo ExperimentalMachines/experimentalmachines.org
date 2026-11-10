@@ -77,7 +77,7 @@ function Caps({ show, hide }: Chart) {
       viewBox={`0 0 ${W} ${H}`}
       role="group"
       aria-label="GSM8K and IFEval passed at a 640 and a 2048 token cap, per phone and window"
-      className="w-full min-w-[34rem]"
+      className="mx-auto w-full min-w-[34rem] max-w-3xl"
     >
       {(
         [
@@ -157,7 +157,7 @@ function Cuts({ show, hide }: Chart) {
       viewBox={`0 0 ${W} ${H}`}
       role="group"
       aria-label="Finished, window-cut and cap-cut replies per phone and window"
-      className="w-full min-w-[34rem]"
+      className="mx-auto w-full min-w-[34rem] max-w-3xl"
     >
       {[0, 15, 30, 45, 60].map((v) => (
         <g key={v}>
@@ -249,7 +249,7 @@ function Lengths({ show, hide }: Chart) {
       viewBox={`0 0 ${W} ${H}`}
       role="group"
       aria-label="Histogram of prompt plus reply length at the 2k and 32k windows"
-      className="w-full min-w-[34rem]"
+      className="mx-auto w-full min-w-[34rem] max-w-3xl"
     >
       {windows.map(([w, label], i) => {
         const top = M.t + i * (ph + gap);
@@ -332,7 +332,7 @@ function Controls({ show, hide }: Chart) {
       viewBox={`0 0 ${W} ${H}`}
       role="group"
       aria-label="Identical replies between two runs of the same file, five controls"
-      className="w-full min-w-[34rem]"
+      className="mx-auto w-full min-w-[34rem] max-w-3xl"
     >
       {[0, 0.25, 0.5, 0.75, 1].map((v) => (
         <g key={v}>
@@ -485,7 +485,7 @@ function Timing({ show, hide }: Chart) {
       viewBox={`0 0 ${W} ${H}`}
       role="group"
       aria-label="Time to first token and time per output token for every rerun cell against its earlier run"
-      className="w-full min-w-[34rem]"
+      className="mx-auto w-full min-w-[34rem] max-w-3xl"
     >
       {rows.map((rw, j) => {
         const y = M.t + rowH * (j + 0.5);
@@ -498,7 +498,7 @@ function Timing({ show, hide }: Chart) {
               {rw.label} {rw.window} &middot; {p.short}
             </text>
             <text x={M.l - 10} y={y + 11} textAnchor="end" fontSize={10.5} fill={SOFT}>
-              {rw.kind === "cap" ? "640 cap then 2048 cap" : "first run then second run"}
+              {rw.kind === "cap" ? "original run then 2048 cap" : "first run then second run"}
             </text>
           </g>
         );
@@ -600,9 +600,9 @@ const Scroll = ({ label, children }: { label: string; children: React.ReactNode 
   </div>
 );
 
-function Panel({ title, wide, children }: { title: string; wide?: boolean; children: React.ReactNode }) {
+function Panel({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <figure className={`min-w-0 rounded-[1.5rem] bg-bench p-5 sm:p-6 ${wide ? "xl:col-span-2" : ""}`}>
+    <figure className="min-w-0 rounded-[1.5rem] bg-bench p-5 sm:p-6">
       <h3 className="display text-xl">{title}</h3>
       {children}
     </figure>
@@ -638,11 +638,11 @@ export default function RerunsFigures() {
   const chart = { show, hide };
   return (
     <div ref={box} className="relative">
-      <div className="grid items-start gap-6 xl:grid-cols-2">
+      <div className="grid items-start gap-6">
         <Panel title="The 2.6B under two reply caps">
           <Caption>
-            Prompts passed out of 30, per phone and window. The hollow marker is the 640-token cap the suite uses, the solid one the 2048-token rerun. BFCL was
-            not rerun; its 640-cap grades and calls stay in the original rows.
+            Prompts passed out of 30, per phone and window: hollow at the suite&apos;s 640-token cap, solid at the 2048-token rerun. BFCL was not rerun: its calls
+            rarely reached their own 384-token cap, and its grades stay in the original rows.
           </Caption>
           <Hint />
           <Scroll label="The 2.6B under two reply caps">
@@ -662,8 +662,8 @@ export default function RerunsFigures() {
         </Panel>
         <Panel title="Where the long replies were cut">
           <Caption>
-            The 60 GSM8K and IFEval replies of each 2048-cap cell: finished, cut by the window (prompt plus reply reached the window&apos;s limit), or cut by the reply
-            cap.
+            The 60 GSM8K and IFEval replies of each phone and window at the 2048 cap: finished, cut by the window (prompt plus reply reached the window&apos;s limit),
+            or cut by the reply cap.
           </Caption>
           <Hint />
           <Scroll label="Where the long replies were cut">
@@ -686,8 +686,8 @@ export default function RerunsFigures() {
         </Panel>
         <Panel title="Reply length at 2k and at 32k">
           <Caption>
-            Dimensitys, 2048 cap, 60 replies per window, both panels on one scale. Each bar is a 128-token bin of prompt plus reply. At 2k, 14 replies end at
-            the window limit, 2,047 tokens in all; at 32k, 10 of 60 reached the reply cap and the rest finished earlier.
+            Dimensity 9500s, 2048 cap, 60 replies per window, both panels on one scale. Each bar counts replies by prompt plus reply length, in steps of 128 tokens.
+            At 2k, 14 replies stop at the window&apos;s limit of 2,047 tokens; at 32k, 10 reach the reply cap and the rest finish earlier.
           </Caption>
           <Hint />
           <Scroll label="Reply length at 2k and at 32k">
@@ -702,8 +702,8 @@ export default function RerunsFigures() {
         </Panel>
         <Panel title="Same file, run twice">
           <Caption>
-            Five controls: the same export, same prompts, same phone, a second time. How many replies came back byte-identical (raw stream and shown text over 90
-            prompts, parsed tool calls over the 30 BFCL prompts), and how far each grade moved.
+            Five controls: the same export, prompts and phone, run a second time. How many replies came back exactly the same: every token generated and the text a
+            user sees, over 90 prompts, and the function calls the app would run, over the 30 BFCL prompts. Hover or tap a mark for the grades.
           </Caption>
           <Hint />
           <Scroll label="Same file, run twice">
@@ -724,11 +724,11 @@ export default function RerunsFigures() {
             </K>
           </Legend>
         </Panel>
-        <Panel title="Qwen3-1.7B at 32k against the 6 GB rule" wide>
+        <Panel title="Qwen3-1.7B at 32k against the 6 GB rule">
           <Caption>
-            Resident memory (RSS) of the test process right after the 32k export loaded, on each phone, with the phone&apos;s RAM. The dashed line is the 6 GB
-            threshold the killed runs&apos; logs reported; that threshold is measured in PSS at kill time, a different measure from the bars, so the bars show
-            which phones were near it, not the moment they crossed it. Three of four processes were stopped within the first dozen prompts.
+            Memory the test process held right after the 32k export loaded, against each phone&apos;s RAM. The dashed line is the 6 GB threshold in the stopped
+            runs&apos; logs. The guards measure a different figure (PSS) at the moment they act, so the bars and the line are not the same measure: the line marks the rule, not a level the bars could be read against.
+            Three of four were stopped within the first dozen prompts.
           </Caption>
           <Hint />
           <Scroll label="Qwen3-1.7B at 32k against the 6 GB rule">
@@ -737,7 +737,7 @@ export default function RerunsFigures() {
           <Legend>
             <K>
               <Dash color={WARN} />
-              6 GB, the PSS threshold Samsung Heimdall and MIUI reported when they stopped the process
+              6 GB, the threshold Samsung&apos;s Heimdall and MIUI logged when they stopped the process
             </K>
             <K>
               <Swatch color={SOFT} h={2} r={0} />
@@ -745,19 +745,18 @@ export default function RerunsFigures() {
             </K>
           </Legend>
         </Panel>
-        <Panel title="Time to first token and time per output token" wide>
+        <Panel title="Time to first token and time per output token">
           <Caption>
-            Every rerun recorded prefill and decode time per prompt. TTFT here is the runtime&apos;s prefill of the whole prompt, the engine&apos;s part of the
-            wait before the first token; TPOT is decode time over generated tokens. Each row pairs a rerun with the earlier run of the same cell: the hollow
-            marker is the earlier run, the solid one the rerun. Medians over the prompts each run completed, so they are per-cell figures, not a paired speed
-            test.
+            Time to first token (TTFT) here is the time the engine took to read the whole prompt: its part of the wait before the reply starts, not the
+            user&apos;s whole wait. Time per output token (TPOT) is how long each reply token took to write. Each row pairs a rerun (solid) with the earlier run
+            of the same phone and window (hollow). Medians over different prompts, so not a paired speed test.
           </Caption>
           <Caption>
-            What to take from it: the capped rerun&apos;s lower TTFT is a prompt-mix effect, not a speed change. Its 60 GSM8K and IFEval prompts are shorter than
-            the 30 BFCL prompts with their tool definitions, which the 640-cap rows include. TPOT, which does not depend on prompt length, agrees within 5% on
-            the Dimensitys and Exynos 2400, differs by 8 to 11% on the 8 Elite and on the Tensor G5 at 4k, and by 26% on the Tensor G5 at 32k (81 then 102
-            ms), the size of the launch-to-launch swing seen on that phone before. Of the five repeats, three agree within 4% on both figures; the 1.2B repeats
-            at 32k on the Dimensity and at 4k on the Exynos were 7 to 12% slower the second time.
+            What to take from it: the 2048-cap rerun read its prompts sooner, likely because they were shorter: the runs are not matched, so a faster phone is not ruled out. It left
+            out the 30 BFCL prompts, which carry long function definitions. TPOT also moves with the prompt mix, so it too is only a rough check: within 5% on
+            the Dimensity and Exynos 2400, 8 to 11% apart on the 8 Elite and on the Tensor G5 at 4k, and 26% on the Tensor G5 at 32k (81 then 102 ms), as much
+            as that phone has swung between launches before. Of the five repeats, three agree within 4% on both figures; the 1.2B repeats at 32k on the
+            Dimensity and at 4k on the Exynos were 7 to 12% slower the second time.
           </Caption>
           <Hint />
           <Scroll label="Time to first token and time per output token">

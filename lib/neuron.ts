@@ -32,7 +32,7 @@ export const cost = [
 ];
 
 export const servingConditions = [
-  ["vLLM", "0.16 on Neuron, the newest DLAMI that boots on NeuronCore-v2", "0.26 on the GPUs"],
+  ["vLLM", "0.16, the newest AWS deep learning image that boots on these chips", "0.26 on the GPUs"],
   ["PyTorch", "2.9.1", "2.11.0"],
   ["Cloud", "AWS us-west-2, on-demand list price", "DigitalOcean (MI300X), Nebius (H200), published GPU-hour rates"],
   ["Device memory", "32 GB", "192 GB (MI300X), 141 GB (H200)"],
@@ -55,16 +55,29 @@ export const trainingCost = {
   trn1: { seq2048: 0.126, seq4096: 0.104 },
 };
 
-// What each training objective did on one Trainium1.
+// What each training objective did on one Trainium1. ORPO's two 30-step lanes measured speed and their
+// loss rose (REPORT-EXTENSIONS §32.4), so it "runs" rather than "works". Pretraining's number is the
+// NeuronTrainer lane on one of two NeuronCores, which held one graph from step 3 on (§32.11,
+// trn1/results/phase4/pretrain_nt_362m_mb8.json); the per-step recompile was a separate hand-written loop (§32.8).
 export const objectives = [
-  { stage: "SFT, LoRA", model: "Llama 3.1 8B", status: "works", number: "2,952 tok/s, 68.3% MFU at seq 2048" },
-  { stage: "ORPO", model: "Llama 3.1 8B", status: "works", number: "1,181 tok/s, 30.2% MFU at length 1024" },
-  { stage: "Pretraining", model: "362M, SmolLM2 shape", status: "runs, unresolved", number: "4,573 tok/s, 7.0% MFU; the hand-written XLA loop recompiles every step" },
-  { stage: "DPO", model: "Llama 3.1 8B", status: "unresolved", number: "the reference forward compiles outside the step and the lane dies in a host transfer" },
-  { stage: "GRPO, RLVR", model: "Qwen3 1.7B", status: "blocked", number: "the training model class has no generate()" },
+  { stage: "Fine-tuning (SFT), LoRA", model: "Llama 3.1 8B", status: "works", number: "2,952 tok/s, 68.3% MFU at 2,048 tokens" },
+  { stage: "Preference tuning, ORPO", model: "Llama 3.1 8B", status: "runs", number: "1,181 tok/s, 30.2% MFU at 1,024 tokens; loss did not fall in its short test runs" },
+  {
+    stage: "Pretraining from scratch",
+    model: "362M, SmolLM2 shape",
+    status: "works",
+    number: "4,573 tok/s, 7.0% MFU, on one of the chip's two cores; a hand-written training loop recompiled every step",
+  },
+  {
+    stage: "Preference tuning, DPO",
+    model: "Llama 3.1 8B",
+    status: "unresolved",
+    number: "the reference model's pass compiles once run before training, then the run dies copying data to the CPU",
+  },
+  { stage: "Online RL, GRPO and RLVR", model: "Qwen3 1.7B", status: "blocked", number: "the training model class has no generate(), so it cannot write replies" },
 ] as const;
 
-// Held-out loss on byte-identical rows, split seed 20260805.
+// Held-out loss on the same rows on both chips, split seed 20260805.
 export const qualityGate = [
   { chip: "Trainium1", from: 2.1491, to: 1.251 },
   { chip: "Trainium2", from: 2.1481, to: 1.2652 },
@@ -88,17 +101,21 @@ export const specDecode = [
 // graphs, different weights: the fine-tune paid for no new compilation.
 export const startup = [
   { label: "Llama 3.1 8B, first ever boot", seconds: 2372, note: "cold cache" },
-  { label: "Same config, weights from the trn1 fine-tune", seconds: 548, note: "warm cache, 0 new NEFFs" },
+  { label: "Same setup, weights from the Trainium1 fine-tune", seconds: 548, note: "warm cache, nothing recompiled" },
 ];
 
+// REPORT-EXTENSIONS §34.6, with two rows narrowed to what the committed results show. Pretraining
+// trained at 362M and at a 386M variant (pretrain_nt_386m_16h_tp1/_tp2.json), and a 1.7B model failed
+// its compile on memory (pretrain_nt_smollm2_1.7b_tp2.failure.json): about 400M is the largest size
+// that trained, not a measured ceiling. The serving range is the like-for-like 32-stream one.
 export const decision = [
-  ["LoRA or full SFT, supported architecture, static shapes", "strong fit"],
-  ["Preference optimisation without a reference model (ORPO)", "works"],
-  ["Pretraining a small model from scratch", "works to about 400M parameters on one small instance"],
+  ["Fine-tuning a supported model, LoRA or full, at fixed input sizes", "strong fit"],
+  ["Preference tuning without a reference model (ORPO)", "runs; its short tests did not show it learning"],
+  ["Pretraining a small model from scratch", "works at 362M and 386M parameters on one Trainium1; a 1.7B model did not fit its memory"],
   ["Online RL of any kind (GRPO, PPO, RLVR)", "blocked"],
-  ["Cost-optimised 8B serving", "a single GPU was 1.8× to 4.6× cheaper per token here"],
-  ["Serving where capacity or data residency decides", "reasonable, inside the concurrency ceiling"],
-  ["Architecture outside the exporter list", "a wall, not a tuning problem"],
+  ["Serving an 8B model at the lowest cost", "a single GPU was 1.8× to 2.4× cheaper per token at 32 streams"],
+  ["Serving where GPU supply or data residency decides", "reasonable, up to 32 streams"],
+  ["A model type outside the export tool's list", "a wall, not a tuning problem"],
 ] as const;
 
 // 30 minutes at concurrency 8, config A, seven iterations.

@@ -47,28 +47,28 @@ export default function DecodeStall() {
         <Findings
           items={[
             {
-              headline: "Six cores park, and decode nearly stops",
-              line: `With six of eight cores parked, as the hard throttle does at ${pdTrigger.onC} °C, the app's engine at ${app.threads} threads fell from ${app.normal.toFixed(1)} to ${app.paused} tokens a second; with 2 it kept ${Math.round(kept(two))}%.`,
+              headline: "Six cores park, and the reply nearly stops",
+              line: `With six of eight cores parked, as the phone's hard throttle does at ${pdTrigger.onC} °C, the app's engine writing with ${app.threads} threads fell from ${app.normal.toFixed(1)} to ${app.paused} tokens a second; with 2 threads it kept ${Math.round(kept(two))}% of its speed.`,
             },
             {
               headline: "Waiting threads hold the cores the working ones need",
-              line: `Paused, ${Math.round(pdFix.profile.pausedWait)}% of the CPU time sat in the function that holds llama.cpp's spinning wait, against ${Math.round(pdFix.profile.normalWait)}% normally.`,
+              line: `With cores parked, ${Math.round(pdFix.profile.pausedWait)}% of the CPU time was in the function that contains llama.cpp's waiting loop, against ${Math.round(pdFix.profile.normalWait)}% normally.`,
             },
             {
-              headline: "The app's engine now falls back to 2 threads",
-              line: `Through a pause that stays it wrote ${g.pausedOn[0]} to ${g.pausedOn[1]} tokens a second against ${g.pausedOff[0]} to ${g.pausedOff[1]} without the guard, and it never fell back in ${pdFix.sessionTurns} turns of chat.`,
+              headline: "The app's engine now drops to 2 threads when a step stalls",
+              line: `With cores parked by hand, earlier builds of this guard wrote ${g.pausedOn[0]} to ${g.pausedOn[1]} tokens a second against ${g.pausedOff[0]} to ${g.pausedOff[1]} without it, and it never dropped in ${pdFix.sessionTurns} turns of ordinary chat.`,
             },
             {
-              headline: "Changing llama.cpp's wait did not work both ways",
-              line: `Yielding early kept ${range(y.paused10k)} tokens a second in the pause but slowed some normal turns to ${y.normal10kShare[0]}% of stock; yielding late cost nothing measurable but kept only ${range(y.paused1m)}.`,
+              headline: "Making waiting threads give up their core was a trade-off",
+              line: `Giving it up early kept ${range(y.paused10k)} tokens a second with cores parked but cut some normal replies to as little as ${y.normal10kShare[0]}% of their usual speed; giving it up late cost nothing measurable but kept only ${range(y.paused1m)}.`,
             },
             {
               headline: "Our chat sessions never reached the hard throttle",
-              line: `The heaviest, with no pause between turns, peaked ${(pdTrigger.onC - hottest).toFixed(1)} °C short of the trip after ${sessionHeat.find((x) => x.pause === "none")!.minutes} minutes on the Snapdragon.`,
+              line: `The heaviest, with no break between turns, peaked ${(pdTrigger.onC - hottest).toFixed(1)} °C below the ${pdTrigger.onC} °C trip point after ${sessionHeat.find((x) => x.pause === "none")!.minutes} minutes on the Snapdragon.`,
             },
             {
               headline: "Four threads with the guard, not two all the time",
-              line: `Without a pause, 2 threads wrote ${slower(g.noPause2, g.noPause4)}% slower than 4 on the Snapdragon and ${slower(pdFix.poco.two, pdFix.poco.four)}% slower on a MediaTek phone.`,
+              line: `With every core running, 2 threads wrote ${slower(g.noPause2, g.noPause4)}% slower than 4 on the Snapdragon and ${slower(pdFix.poco.two, pdFix.poco.four)}% slower on a MediaTek phone.`,
             },
           ]}
         />
@@ -77,9 +77,9 @@ export default function DecodeStall() {
       <Section id="results" title="The results">
         <Figure
           id="pause"
-          title="Through a pause that stays, the guard keeps the reply going"
-          lede="Tokens written after six cores were parked by hand, 10 seconds into a reply, with the guard and without."
-          note={`Phone D, Qwen3 4B, 4 threads, a ${grouped(1751)}-token prompt, the pause held to the end. The guard fell back to 2 threads ${Math.round(heldFall.at)} s in; the run without it wrote ${unguarded} tokens before its watchdog stopped it.`}
+          title="With six cores parked, the guard keeps the reply going"
+          lede="Tokens written after six cores were parked by hand, 10 seconds into a reply, with an earlier build of the guard and without."
+          note={`Snapdragon test phone D, Qwen3 4B, 4 threads, a ${grouped(1751)}-token prompt, the pause held to the end. The guard fell back to 2 threads ${Math.round(heldFall.at)} s in; the run without it wrote ${unguarded} tokens before its watchdog stopped it.`}
         >
           <TimeLines
             series={[
@@ -92,6 +92,8 @@ export default function DecodeStall() {
             yStep={250}
             unit="Tokens"
             xLabel="Seconds since the pause began"
+            hover="{x} s into the pause"
+            hoverUnit="tokens written"
             summary={`Tokens written through a hard throttle set by hand: with the guard the count climbs to ${heldPause.with.points.at(-1)![1]}; without it, to ${unguarded}.`}
             band={{ from: 0, to: 300, label: "Six cores parked" }}
             marker={{ series: "With the guard", x: heldFall.at, label: "Falls back to 2 threads" }}
@@ -102,7 +104,7 @@ export default function DecodeStall() {
         <Figure
           id="threads"
           title="Every thread past the two cores left costs nearly all the speed"
-          lede="The app's own engine with six cores parked by hand, by decode thread count."
+          lede="How fast the app's own engine writes, normally and with six cores parked by hand, by thread count."
           note="Phone E, Qwen3 4B, a 19-token prompt and a 64-token reply. Medians of four runs in each state, two with 6 threads, whose paused runs a watchdog stopped. The app's heat policy was not in the loop."
         >
           <Aligned
@@ -124,7 +126,7 @@ export default function DecodeStall() {
           id="cause"
           title="Stalled, the CPU time moves into the function that holds the wait"
           lede="llama.cpp's threads wait for each other hundreds of times per token, and a waiting thread keeps checking on its core instead of giving it up, so with more threads than cores the waiters hold the cores the working threads need."
-          note={`A 6-thread decode's CPU time, sampled 1,000 times a second with six cores parked and without: phone E, the benchmark, ${pdFix.profile.normalCores} cores busy on average normally and ${pdFix.profile.pausedCores} paused. The samples were kept by function, so how that function's time splits between the wait and its other work is not known.`}
+          note={`A 6-thread decode's CPU time, sampled 1,000 times a second with six cores parked and without: Snapdragon test phone E, llama.cpp's benchmark tool, ${pdFix.profile.normalCores} cores busy on average normally and ${pdFix.profile.pausedCores} paused. The samples were kept by function, so how that function's time splits between the wait and its other work is not known.`}
         >
           <Stack
             parts={["The function that holds the wait", "Matrix and attention kernels"]}
@@ -151,7 +153,7 @@ export default function DecodeStall() {
           note="Mean of each 30 s. Phone D in the rack, screen on, Qwen3 4B, 4 threads, the guard on, the study's nine conversations with each reply kept in the history. The heaviest was still warming slowly when its conversations ran out."
         >
           <TimeLines
-            series={sessionHeat.map((s) => ({ name: s.pause === "none" ? "No pause" : `${s.pause} pause`, points: s.points }))}
+            series={sessionHeat.map((s) => ({ name: s.pause === "none" ? "No break" : `${s.pause} between turns`, points: s.points }))}
             xMax={42}
             xStep={10}
             yMin={40}
@@ -159,6 +161,8 @@ export default function DecodeStall() {
             yStep={10}
             unit="°C"
             xLabel="Minutes into the session"
+            hover="Minute {x} of the session"
+            hoverUnit="°C"
             summary={`The XO thermistor through three chat sessions: with 30 s between turns it peaked at ${sessionHeat[0].peak} °C, with 5 s at ${sessionHeat[1].peak}, with none at ${sessionHeat[2].peak}; the hard throttle trips at ${pdTrigger.onC}.`}
             rule={{ y: pdTrigger.onC, label: `Hard throttle trips at ${pdTrigger.onC} °C` }}
             stops={[0, 5, 10, 15, 20, 25, 30, 35, 40]}
@@ -169,7 +173,7 @@ export default function DecodeStall() {
         <Figure
           id="cost"
           title="A fixed 2 threads costs more on MediaTek"
-          lede="2 threads against 4 with no pause, at the same realistic length on both phones."
+          lede="2 threads against 4 with every core running, at the same realistic reply length on both phones."
           note={`Medians of two runs each, a ${grouped(1751)}-token prompt and up to ${grouped(1024)} tokens of reply: Snapdragon phone D, and a POCO X8 Pro Max on USB power.`}
         >
           <PairBars
@@ -198,23 +202,23 @@ export default function DecodeStall() {
         <More id="numbers" title="Every number" summary="The guard's runs, the llama.cpp waits, the six natural throttles, every chat session and the thread counts">
           <Table
             label="The guard against six cores parked by hand"
-            head={["The pause", "With the guard", "Without it", "What the guard did"]}
+            head={["Six cores parked", "With the guard", "Without it", "What the guard did"]}
             min="44rem"
             rows={[
               [
-                "Stays to the end",
+                "For the rest of the reply",
                 `${g.pausedOn[0]} to ${g.pausedOn[1]} tok/s`,
                 `${g.pausedOff[0]} to ${g.pausedOff[1]} tok/s`,
                 `Fell back ${g.fellBackHeldS[0]} to ${g.fellBackHeldS[1]} s in; each try at 4 threads cost one stalled step of ${g.tryCostS[0]} to ${g.tryCostS[1]} s`,
               ],
               [
-                "30 seconds, mid-reply",
-                `Decoded in ${g.shortPauseOn[0]} to ${g.shortPauseOn[1]} s`,
+                "For 30 seconds, mid-reply",
+                `Reply written in ${g.shortPauseOn[0]} to ${g.shortPauseOn[1]} s`,
                 `${g.shortPauseOff[0]} to ${g.shortPauseOff[1]} s`,
                 `Fell back ${g.fellBackShortS[0]} to ${g.fellBackShortS[1]} s in; back to 4 threads ${g.returnedAfterS[0]} to ${g.returnedAfterS[1]} s after it ended`,
               ],
               [
-                "None",
+                "Never",
                 `${g.noPause4Guard} tok/s, and 8.90 in a run where it fell back`,
                 `${g.noPause4[0]} and ${g.noPause4[1]} tok/s`,
                 "Nothing in one run. In another, two steps of 3.9 and 4.8 s with no logged pause switch on, and it fell back for the last 10 s",
@@ -222,8 +226,8 @@ export default function DecodeStall() {
             ]}
           />
           <Note>
-            Phone D, Qwen3 4B, a {grouped(1751)}-token prompt, up to {grouped(1024)} tokens; three runs with the guard and three without for the pause that stays, three and two for
-            the 30-second pause. In the latest 30-second run the guard fell back {Math.round(shortFall.at)} s in and was back{" "}
+            Snapdragon test phone D, Qwen3 4B, a {grouped(1751)}-token prompt, up to {grouped(1024)} tokens; three runs with the guard and three without for the pause that stays,
+            three and two for the 30-second pause. In the latest 30-second run the guard fell back {Math.round(shortFall.at)} s in and was back{" "}
             {Math.round(shortBack.at - shortPause.pauseSeconds.with)} s after the pause ended, at its first try.
           </Note>
           <Table
@@ -260,7 +264,7 @@ export default function DecodeStall() {
           </Note>
           <Table
             label="Chat sessions against the throttle"
-            head={["Phone", "Pause", "Turns", "Hottest", "Hard throttle (Snapdragon) or Android status (POCO)", "Decode, tok/s", "First token, s, median (longest)"]}
+            head={["Phone", "Between turns", "Turns", "Hottest", "Hard throttle (Snapdragon) or Android status (POCO)", "Decode, tok/s", "First token, s, median (longest)"]}
             min="52rem"
             rows={pdFix.sessions.map((r) => [r.phone, r.pause, `${r.turns} in ${r.minutes} min`, r.peak, r.hard, r.decode.toFixed(1), r.first])}
           />

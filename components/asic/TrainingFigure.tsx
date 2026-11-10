@@ -4,13 +4,18 @@ import { ladder, objectives, trainingCost } from "@/lib/neuron";
 // sequence lengths, one Trainium1 bar and one Trainium2 bar per length,
 // MFU on hover. Right: what each training objective did on Trainium1.
 const MAX = 9000;
+const speedup = (i: number) => `${(ladder[i].trn2.tok / ladder[i].trn1!.tok).toFixed(1)}×`;
 
 // `last` anchors the hover readout to the bar's right edge, so it stays on a phone's screen.
 function Bar({ chip, tok, mfu, seq, blue, last }: { chip: string; tok: number | null; mfu: number | null; seq: number; blue?: boolean; last?: boolean }) {
   if (tok === null) {
     return (
       <div className="group relative flex h-full w-11 flex-col justify-end sm:w-14">
-        <div className="flex h-10 items-center justify-center rounded border border-dashed border-rule text-center text-[11px] leading-3 text-ink-soft" role="img" aria-label={`${chip}, sequence ${seq}: does not fit in device memory`}>
+        <div
+          className="flex h-10 items-center justify-center rounded border border-dashed border-rule text-center text-[11px] leading-3 text-ink-soft"
+          role="img"
+          aria-label={`${chip}, sequence ${seq}: does not fit in device memory`}
+        >
           does not fit
         </div>
       </div>
@@ -31,7 +36,7 @@ function Bar({ chip, tok, mfu, seq, blue, last }: { chip: string; tok: number | 
           last ? "right-0" : "left-1/2 -translate-x-1/2"
         }`}
       >
-        <span className="font-semibold">{chip}</span>, seq {seq.toLocaleString()}: {tok.toLocaleString()} tok/s, {mfu}% MFU
+        <span className="font-semibold">{chip}</span>, {seq.toLocaleString()} tokens: {tok.toLocaleString()} tok/s, {mfu}% MFU
       </span>
     </div>
   );
@@ -61,7 +66,7 @@ export default function TrainingFigure() {
           <div className="flex justify-between px-4 pt-2 text-xs text-ink-soft">
             {ladder.map((row) => (
               <span key={row.seq} className="w-[5.9rem] text-center sm:w-[7.4rem]">
-                seq {row.seq.toLocaleString()}
+                {row.seq.toLocaleString()} tokens
               </span>
             ))}
           </div>
@@ -90,7 +95,7 @@ export default function TrainingFigure() {
         </table>
       </div>
       <figcaption className="mt-6 text-sm text-ink-soft">
-        Llama 3.1 8B Instruct, LoRA r16, bf16, micro-batch 1, Trainium1 at TP=2 and Trainium2 at TP=4, the working default of each chip. At sequence 2048 the Trainium2 is 1.2x faster and runs at 26.5% MFU: the step is too small to fill a chip with 3.2x the peak. At 4096 it is 2x faster, and 8192 fits only on the Trainium2. Two physical Trainium2 chips ran the study and differed by 2.4%, the same as the seed-to-seed noise floor, so the final loss was bit-identical across chips (1.1489). The Trainium1 fine-tune cost ${trainingCost.trn1.seq2048} per 1M training tokens at 2048 and ${trainingCost.trn1.seq4096} at 4096. The GPU study trained the full 8B in BF16, a different quantity, so no GPU training number is placed beside these.
+        {`Llama 3.1 8B Instruct, LoRA rank 16, BF16, one example per step, the model split across 2 cores on Trainium1 and 4 on Trainium2, each chip's working default. At 2,048 tokens the Trainium2 is only ${speedup(0)} faster, at ${ladder[0].trn2.mfu}% MFU: the step is too small to fill a chip with 3.2× the peak. At 4,096 it is ${speedup(1)} faster. Two physical Trainium2 chips ran the same fine-tune: their speed differed by 2.4%, the same as run-to-run noise, and their final training loss was identical. The Trainium1 fine-tune cost $${trainingCost.trn1.seq2048} per million training tokens at 2,048 and $${trainingCost.trn1.seq4096} at 4,096. The GPU study trained all 8B weights rather than a LoRA add-on, so its numbers are not placed beside these.`}
       </figcaption>
     </figure>
   );

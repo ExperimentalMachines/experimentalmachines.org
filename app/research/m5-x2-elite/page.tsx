@@ -23,27 +23,27 @@ export default function Laptops() {
           items={[
             {
               headline: "The M5 wins every llama.cpp GPU test",
-              line: "With the same llama.cpp release and byte-identical Q4_0 weights, the M5's Metal path runs 2.1× to 3.1× the Adreno X2-90's prefill and 1.4× to 1.9× its decode.",
+              line: "With the same llama.cpp release and identical model files, the M5's GPU ran prefill, reading the prompt, 2.1× to 3.1× as fast as the X2 Elite's GPU, and decode, writing the reply one token (a piece of a word) at a time, 1.4× to 1.9× as fast.",
             },
             {
               headline: "The X2 Elite wins every llama.cpp CPU test",
-              line: "Its 18 Oryon cores beat the M5's 10 on the same llama.cpp CPU build: 1.9× to 3.2× on prefill and 1.1× to 1.4× on decode, so the margins are similar in both directions.",
+              line: "Its 18 Oryon cores beat the M5's 10 on the same llama.cpp CPU build: 1.9× to 3.2× on prefill, but only 1.1× to 1.4× on decode.",
             },
             {
-              headline: "The NPUs nearly tie on fp16",
-              line: "Hexagon does 15.2 TFLOP/s and the Neural Engine 14.1, 8% apart on the same graph and weights. They diverge on int8, where quantise and dequantise nodes cost Hexagon more than the int8 matmul saves at this shape.",
+              headline: "The NPUs nearly tie in 16-bit numbers",
+              line: "On identical matrix maths in 16-bit numbers (fp16), Qualcomm's Hexagon NPU (the processor built for AI work) did 15.2 TFLOP/s (trillions of calculations a second) and Apple's Neural Engine 14.1. In 8-bit numbers (int8) the Neural Engine rose to 15.6 and Hexagon fell to 8.6, as converting to and from 8 bits cost it more than it saved at this size.",
             },
             {
-              headline: "Training on the X2 is a software story",
-              line: "PyTorch on Windows on Arm delivers 0.11 to 0.12 TFLOP/s at any thread count, against 1.25 on the M5's CPU. llama.cpp shows the X2's CPU is the faster one, so the 10× deficit is PyTorch's ARM64 Windows kernels, not the processor.",
+              headline: "Training on the X2 looks held back by software",
+              line: "PyTorch on the X2's Windows on Arm did 0.11 to 0.12 TFLOP/s at any thread count, against 1.25 on the M5's CPU. The X2's CPU is the faster one in llama.cpp and extra threads changed nothing, which points to PyTorch's Windows on Arm build rather than the processor.",
             },
             {
-              headline: "Q4_0's speed is not free",
-              line: "It costs about 17% higher perplexity than Q4_K_M on both machines, in exchange for up to 2.5× CPU prefill. It is the headline format because it is the only one fairly optimised everywhere, not because it is the one to use.",
+              headline: "Q4_0's speed costs some accuracy",
+              line: "Q4_0 and Q4_K_M are quantized formats: ways of storing a model's numbers in fewer bits, smaller and faster at some cost in accuracy. Q4_0 bought up to 2.5× the CPU prefill, but scored about 17% higher perplexity (how surprised a model is by real text; lower is better) on both machines.",
             },
             {
-              headline: "The fanless Air held up",
-              line: "With a desk fan pointed at it, over a 10-minute loop, it held 98.8% of peak prefill, against 99.1% on the cooled X2 board, giving ground only on decode: 89.4% against 98.2%.",
+              headline: "The fanless Air held up, with a desk fan on it",
+              line: "Over a 10-minute loop it kept 98.8% of its peak prefill speed, against 99.1% on the cooled X2 board, and gave ground only on decode: 89.4% against 98.2%.",
             },
           ]}
         />
@@ -73,8 +73,8 @@ export default function Laptops() {
 
         <Figure
           id="npu"
-          title="The NPUs: level on fp16, apart on int8"
-          lede="One model exported to both runtimes, with identical GEMMs and weights."
+          title="The NPUs are level in 16-bit numbers and apart in 8-bit"
+          lede="One model exported to both NPUs' software, with identical matrix maths and weights."
           note="The M5 also runs a language model on its NPU: Anemll gives the Neural Engine 2,616 tok/s prefill and 47 tok/s decode on Llama 3.2 1B. The Hexagon has no publicly installable generative runtime."
         >
           <PairBars
@@ -83,20 +83,21 @@ export default function Laptops() {
             shortA="M5"
             shortB="X2"
             shared
+            // Shown in TFLOP/s, the unit the findings and the table use, so one reading never appears in two units.
             rows={laptopNpuBars.map((r) => ({
               label: r.label,
-              detail: "GFLOP/s",
-              a: { value: r.m5, shown: r.m5.toLocaleString("en-US") },
-              b: { value: r.x2, shown: r.x2.toLocaleString("en-US") },
+              detail: "TFLOP/s",
+              a: { value: r.m5, shown: (r.m5 / 1000).toFixed(1) },
+              b: { value: r.x2, shown: (r.x2 / 1000).toFixed(1) },
             }))}
           />
         </Figure>
 
         <Figure
           id="training"
-          title="Training"
-          lede="PyTorch 2.8.0 and an identical script. The X2's number is PyTorch on Windows on Arm, since llama.cpp shows its CPU is the faster one."
-          note="X2 GPU training is blocked: ggml's OpenCL backend lacks memset_tensor, and the identical binary trains on CPU."
+          title="The M5 trained about 10× faster on its CPU, and the X2's GPU could not train"
+          lede="PyTorch 2.8.0 and an identical script on both; on the X2 it runs on Windows on Arm."
+          note="Nor could the X2's GPU train through ggml, the library under llama.cpp: its OpenCL backend lacks a needed function, memset_tensor, while the same program trains on the CPU."
         >
           <PairBars
             a="Apple M5"
@@ -113,8 +114,8 @@ export default function Laptops() {
 
         <Figure
           id="quant"
-          title="What the usual format costs in speed"
-          lede="Moving Gemma 3 1B from Q4_0 to Q4_K_M. A longer bar is a bigger loss, and the two machines lose in different places."
+          title="Switching to Q4_K_M costs 6% to 60% of the speed"
+          lede="Gemma 3 1B moved from Q4_0, the one format fairly optimised everywhere and so the one these tables use, to Q4_K_M. A longer bar is a bigger loss, and the two machines lose in different places."
         >
           <PairBars
             a="Apple M5"
@@ -132,8 +133,8 @@ export default function Laptops() {
 
         <Figure
           id="sustained"
-          title="Ten minutes under load"
-          lede="The fanless Air, with a desk fan pointed at it, holds prefill as well as the cooled board and gives ground only on decode. The scale starts at 85%."
+          title="Over ten minutes the Air kept its prefill speed and lost some decode"
+          lede="The fanless Air had a desk fan pointed at it; the X2 board is actively cooled. The scale starts at 85%."
           note="Qwen3 8B Q4_0 on the GPU, the same loop on both. Retention is the steady rate as a share of peak."
         >
           <Dots a="Apple M5" b="X2 Elite" from={85} to={100} rows={laptopSustained} />
@@ -166,7 +167,7 @@ export default function Laptops() {
             llama.cpp b10152, the official prebuilt release on each OS, with GGUF files SHA-256 verified identical and the same arguments. Thread sweeps instead of one fixed count,
             so neither core layout is favoured.
           </Row>
-          <Row label="NPU">One PyTorch source model exported to Core ML and to ONNX Runtime&apos;s QNN provider: identical GEMMs, identical weights.</Row>
+          <Row label="NPU">One PyTorch source model exported to Core ML and to ONNX Runtime&apos;s QNN provider: identical matrix multiplications (GEMMs) and weights.</Row>
           <Row label="Training">PyTorch 2.8.0 and an identical script. Adreno has no PyTorch backend, so its missing lane is reported as a capability gap.</Row>
           <Row label="Sustained">The same 10-minute loop on both, to expose the difference between a fanless Air with a desk fan on it and an actively cooled board.</Row>
         </Rows>
@@ -176,8 +177,8 @@ export default function Laptops() {
         <Rows>
           <Row label="18 cores against 10">An actively cooled reference board against a fanless ultrabook is not a per-core or per-watt comparison.</Row>
           <Row label="No efficiency claims">There is no equal-quality power measurement on Windows.</Row>
-          <Row label="The NPU lane">It is a controlled GEMM microbenchmark, not an end-to-end comparison of a language model on each NPU.</Row>
-          <Row label="One board">Retail X2 laptops will perform below this reference board under sustained load.</Row>
+          <Row label="The NPU lane">It is a controlled test of matrix maths, not a comparison of a language model running on each NPU.</Row>
+          <Row label="One board">No retail X2 laptop was tested. With less cooling than this board, one may slow more under sustained load.</Row>
         </Rows>
         <Note>Read the methodology before quoting these numbers.</Note>
       </Section>

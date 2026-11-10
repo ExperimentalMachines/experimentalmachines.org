@@ -8,7 +8,7 @@ export type ChipId = "D9500s" | "8 Elite" | "Tensor G5" | "Exynos 2400";
 export type Shape = "circle" | "square" | "diamond" | "triangle";
 
 export const chips: { id: ChipId; name: string; where: string; color: string; shape: Shape }[] = [
-  { id: "D9500s", name: "Dimensitys", where: "Poco, in hand", color: "#d97706", shape: "circle" },
+  { id: "D9500s", name: "Dimensity 9500s", where: "POCO X8 Pro Max, in hand", color: "#d97706", shape: "circle" },
   { id: "8 Elite", name: "Snapdragon 8 Elite", where: "Galaxy S25 Ultra, Test Lab", color: "#2b44e6", shape: "square" },
   { id: "Tensor G5", name: "Tensor G5", where: "Pixel 10 Pro XL, Test Lab", color: "#0f9f6e", shape: "diamond" },
   { id: "Exynos 2400", name: "Exynos 2400", where: "Galaxy S24+, Test Lab", color: "#c0397a", shape: "triangle" },

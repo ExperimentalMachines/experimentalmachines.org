@@ -29,24 +29,24 @@ export default function OneRtx() {
         <Findings
           items={[
             {
-              headline: "Eight agents fit on one card",
-              line: "vLLM served 8 at once at a 4.9 s median wait per turn, with no errors. At 16 there were still no errors, but the wait reached 16.5 s and each agent got 6.4 tok/s.",
+              headline: "An eight-agent workload fit on one card",
+              line: "With simulated turns of the pi coding agent, vLLM served 8 agents at once with a median wait of 4.9 s before each reply began, and no errors. At 16 there were still no errors, but the wait reached 16.5 s and each agent got 6.4 tok/s (tokens, pieces of words, a second).",
             },
             {
               headline: "vLLM held up best under load",
-              line: "At 16 users it reached 368 tok/s in total with first tokens near 2 s, where the next best reached 141. It queues extra requests instead of failing them.",
+              line: "In a separate test of 16 users each sending a 1k-token prompt, it wrote 368 tok/s in total and began replies in about 2 s, where the next best engine wrote 141. It queues extra requests instead of failing them.",
             },
             {
               headline: "Each other engine hit a different wall",
-              line: "Ollama is the fastest for one request at 102 tok/s, but runs this model one at a time, so first tokens took 49 s at 16 users. SGLang had the shortest median wait up to about 4 agents, then 18.7 s at 8. llama.cpp failed 8 of 54 requests at 8 agents.",
+              line: "Ollama is the fastest for one request at 102 tok/s, but runs this model one at a time, so replies took 49 s to start at 16 users. SGLang had the shortest median wait up to about 4 agents, then 18.7 s at 8. llama.cpp failed 8 of 54 requests at 8 agents.",
             },
             {
               headline: "gpt-oss-20b was far quicker on the same card",
-              line: "With the same size of cache pool, gpt-oss-20b waited 0.26 s per turn at 8 agents where Qwen3.8 waited 4.9 s. The cause is not isolated, since replies and cache hits also differed, and their quality was not compared.",
+              line: "With the same size of KV cache, the memory a model keeps of each conversation so far, gpt-oss-20b waited 0.26 s per turn at 8 agents where Qwen3.8 waited 4.9 s. The cause is not isolated, since replies and cache hits also differed, and their quality was not compared.",
             },
             {
-              headline: "Speculative decoding helps one person chatting and hurts a team",
-              line: "On vLLM it lifted one user's decode from 52.5 to 82.3 tok/s. One agent's session stayed level, 36 s against 37 s, and 8 agents' sessions went from 101 s to 236 s.",
+              headline: "Speculative decoding helped one person chatting and hurt a team",
+              line: "A small draft proposes a few tokens and the big model checks them at once. On vLLM it lifted one user's decode, writing the reply, from 52.5 to 82.3 tok/s, but one agent's session stayed level, 36 s against 37 s, and 8 agents' sessions went from 101 s to 236 s.",
             },
           ]}
         />
@@ -55,9 +55,9 @@ export default function OneRtx() {
       <Section id="results" title="The results">
         <Figure
           id="wait"
-          title="How long an agent waits for each turn"
-          lede="Time to first token per turn, for pi's real system prompt and four tools, over 8 turns. At one agent every engine is close. By eight they are far apart."
-          note="llama.cpp failed 8 of 54 requests at 8 agents: 5 rejected for exceeding the context and 3 cut off mid-stream. Ollama's replies were shorter, so only its waits compare. vLLM fp8 ran on host 1 and vLLM int4 pinned on host 2."
+          title="By eight agents, the recommended vLLM setup waits least"
+          lede="Simulated agents with pi's real system prompt and four tools, 8 turns each; the wait is the time until each reply's first token. At one agent every engine is close."
+          note="p90: 9 in 10 waits were shorter. llama.cpp failed 8 of 54 requests at 8 agents: 5 too long for its context and 3 cut off mid-stream. Ollama's replies were shorter, so only its waits compare. The two vLLM setups keep the KV cache in 8 or 4 bits (fp8, int4), and ran on different hosts."
         >
           <Ranges
             solid="the median"
@@ -78,7 +78,7 @@ export default function OneRtx() {
 
         <Figure
           id="throughput"
-          title="Total output as users are added"
+          title="vLLM's total output keeps rising with users; the others level off"
           lede="A 1k prompt and 256 tokens out. Ollama stays flat at about 78 tok/s because it serves this model one request at a time. SGLang stops rising once its 4 running slots are full."
         >
           <Lines
@@ -93,8 +93,8 @@ export default function OneRtx() {
 
         <Figure
           id="first-token"
-          title="The wait for a first token as users are added"
-          lede="The same runs. vLLM stays near 2 s at 16 users, and the engines that queue climb quickly."
+          title="vLLM starts replies within about 2 s at 16 users; the others climb"
+          lede="The same runs. The engines that hold requests in a queue climb quickly."
         >
           <Lines
             series={lines(2)}
@@ -109,9 +109,9 @@ export default function OneRtx() {
 
         <Figure
           id="capacity"
-          title="What more agents cost on the recommended setup"
-          lede="No errors at any load. Eight is comfortable, twelve is usable and slowing, and sixteen is too slow to use."
-          note="vLLM 0.30 with int4 KV and a pinned 246,094-token pool. Up to 13 requests waited at once under 12 to 16 agents."
+          title="On the recommended setup, the wait more than triples from 8 agents to 16"
+          lede="Simulated agent turns, with no errors at any load: the median wait rose from 4.9 s at 8 agents to 7.4 s at 12 and 16.5 s at 16."
+          note="vLLM 0.30 with int4 KV and a pinned 246,094-token pool. Up to 13 requests waited at once under 12 to 16 agents. Real pi agents, up to 8 at once, passed 34 of 34 runs; they are under Every number."
         >
           <Aligned
             label="Agents at once"
@@ -132,7 +132,7 @@ export default function OneRtx() {
           id="pool"
           title="Among the int4 pools, size showed at twelve agents"
           lede="On this agent workload, the three int4 pools waited the same at 8 agents. At 12, a bigger pool served more from cache and waited less."
-          note="The likely cause was not isolated: a cache miss means re-reading the whole context of about 12k tokens."
+          note="0.95 and 0.97 are the share of GPU memory vLLM was given; pinned sets the pool size directly. A likely reason for the shorter waits, not isolated: each cache miss means re-reading the whole conversation, about 12k tokens."
         >
           <Aligned
             label="vLLM setup"
@@ -152,8 +152,8 @@ export default function OneRtx() {
 
         <Figure
           id="models"
-          title="Two models on the same card"
-          lede="Both on vLLM with the same size of pool. Each row has its own scale. A probable contributor is 3.6B active parameters against 27B, not isolated."
+          title="gpt-oss-20b answered far sooner on the same card"
+          lede="Both on vLLM with the same size of pool, each row on its own scale. A probable reason, not isolated: gpt-oss-20b uses 3.6B of its parameters per token, Qwen3.8 all 27B."
           note="gpt-oss-20b's agent replies stopped naturally at 64 to 74 tokens instead of a forced 150, so compare turn waits, not session times."
         >
           <PairBars
@@ -172,8 +172,8 @@ export default function OneRtx() {
 
         <Figure
           id="mtp"
-          title="Speculative decoding on vLLM"
-          lede="MTP with 2 draft tokens takes memory from the cache pool, 108,814 tokens against 180,558. One person chatting gains, one agent breaks even, and a team loses."
+          title="Speculative decoding speeds one chat and slows a team"
+          lede="vLLM's speculative decoding (MTP), drafting 2 tokens at a time, shrank the cache pool from 180,558 tokens to 108,814."
         >
           <PairBars
             a="Without MTP"

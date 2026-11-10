@@ -3,12 +3,14 @@ import { qualityGate, startup, sustained } from "@/lib/neuron";
 // Three small panels: what compilation cost, whether the fine-tune learned,
 // and whether the server held its throughput.
 const MAX = 3100;
+// The two starting losses are 2.1491 and 2.1481: they agree to two decimals, not three.
+const spread = Math.abs(qualityGate[0].from - qualityGate[1].from);
 
 export default function FactsStrip() {
   return (
     <div className="grid gap-10 border-t border-rule pt-8 sm:grid-cols-3">
       <div>
-        <h3 className="display text-lg">Boot time to first token, inf2</h3>
+        <h3 className="display text-lg">Boot to first token, Inferentia2</h3>
         <div className="mt-4 space-y-4 text-sm">
           {startup.map((s) => (
             <div key={s.label} className="group">
@@ -30,7 +32,9 @@ export default function FactsStrip() {
             </div>
           ))}
         </div>
-        <p className="mt-3 text-xs leading-5 text-ink-soft">Every graph is compiled ahead of time. Same graphs, new weights: nothing recompiled.</p>
+        <p className="mt-3 text-xs leading-5 text-ink-soft">
+          Inferentia2 runs only what was compiled ahead of time. The fine-tune changed the weights, not the compiled graphs, so nothing was recompiled.
+        </p>
       </div>
       <div>
         <h3 className="display text-lg">Held-out loss after the fine-tune</h3>
@@ -47,21 +51,26 @@ export default function FactsStrip() {
             ))}
           </tbody>
         </table>
-        <p className="mt-3 text-xs leading-5 text-ink-soft">Byte-identical held-out rows on both chips. Starting losses agree to three decimals, which is what makes the two runs comparable.</p>
+        <p className="mt-3 text-xs leading-5 text-ink-soft">
+          Loss measures how far off the model&apos;s predictions are, lower being better; held-out means text it never trained on. Both chips were scored on the same examples, and
+          their starting losses differ by only {spread.toFixed(3)}, so the two drops compare directly.
+        </p>
       </div>
       <div>
-        <h3 className="display text-lg">30 minutes of sustained load, inf2</h3>
+        <h3 className="display text-lg">30 minutes of steady load, Inferentia2</h3>
         <dl className="mt-4 grid grid-cols-2 gap-x-4 gap-y-3 text-sm">
-          <dt className="text-ink-soft">Retention vs first iteration</dt>
+          <dt className="text-ink-soft">Speed kept, last round against first</dt>
           <dd className="text-right font-semibold tabular-nums">{sustained.retention}%</dd>
-          <dt className="text-ink-soft">Throughput, first to last</dt>
+          <dt className="text-ink-soft">Speed, first to last</dt>
           <dd className="text-right tabular-nums">
             {sustained.first} to {sustained.last} tok/s
           </dd>
-          <dt className="text-ink-soft">First-token p99 spread</dt>
+          <dt className="text-ink-soft">Spread of the slowest waits for a first token</dt>
           <dd className="text-right tabular-nums">{sustained.ttftSpread}%</dd>
         </dl>
-        <p className="mt-3 text-xs leading-5 text-ink-soft">Concurrency 8, seven iterations. No thermal or stability droop at this load.</p>
+        <p className="mt-3 text-xs leading-5 text-ink-soft">
+          Llama 3.1 8B Instruct as released, at 8 streams, seven rounds. Speed did not sag from heat or instability at this load.
+        </p>
       </div>
     </div>
   );

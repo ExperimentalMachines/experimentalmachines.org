@@ -25,23 +25,23 @@ export default function LocalCopilot() {
           items={[
             {
               headline: "Hosted finished more: 92% against 42%",
-              line: "Qwen3.6 on an RTX 4090 against Copilot Pro+ on Auto was the primary contrast, fixed before October scoring. On 24 paired tasks the gap is −50 points, 95% interval −71 to −29, permutation p = 0.0005.",
+              line: "The main comparison, set before scoring, was Qwen3.6 on an RTX 4090 against Copilot Pro+ on Auto, where GitHub picks the model. On the same 24 tasks the local setup finished 50 percentage points fewer, with a 95% interval of 29 to 71 points (p = 0.0005).",
             },
             {
               headline: "Gemma 4 on the 4090 came closest",
-              line: "It finished 58%. Its interval clears the 10-point margin, but the Holm-adjusted p is 0.108, so no difference is declared. Every other local configuration finished 29% to 42%.",
+              line: "It finished 58% against Pro+ on Auto's 92%; after correcting for making several comparisons, the study did not declare that gap. Every other local configuration finished 29% to 42%.",
             },
             {
               headline: "Fast is not the same as finished",
-              line: "gpt-oss-20b on the 4090 had the shortest median run, 31.7 s against 57.9 s for Pro+ on Auto, and passed 10 of 24. Qwen3.6 on the 4090 had a median of 600 s, the cap: 13 of its 24 runs reached it.",
+              line: "gpt-oss-20b on the 4090 had the shortest median run, 31.7 s against 57.9 s for Pro+ on Auto, and passed 10 of 24. Qwen3.6 on the 4090 had a median of 600 s, the time limit: 13 of its 24 runs reached it.",
             },
             {
-              headline: "The agent moved Qwen3.6 most",
-              line: "With Copilot CLI it often called the CLI's read_agent tool with invented agent IDs until the cap. Exploratory check on the same file and box: 12 of 24 on Copilot CLI, 18 of 24 on pi. Several things change at once between the two.",
+              headline: "Qwen3.6 finished 6 more tasks under a different agent setup",
+              line: "In a separate, exploratory test, Qwen3.6 finished 12 of 24 tasks with Copilot CLI and 18 with pi, a different coding agent; with Copilot CLI it often called a tool with made-up IDs until time ran out. Several setup details changed at once.",
             },
             {
               headline: "Local was not always cheaper per finished task",
-              line: "Qwen3.6 on the rented 4090 cost $0.218 per completed task and Pro+ on Auto $0.169. gpt-oss-20b cost $0.022 and Gemma 4 $0.098. Electricity on the MacBook Air was not measured.",
+              line: "Counting only per-use cost, rented GPU time without idle time and hosted credits without the monthly price, Qwen3.6 on the 4090 cost $0.218 per finished task and Pro+ on Auto $0.169. gpt-oss-20b cost $0.022 and Gemma 4 $0.098.",
             },
           ]}
         />
@@ -50,8 +50,8 @@ export default function LocalCopilot() {
       <Section id="results" title="The results">
         <Figure
           id="scorecard"
-          title="The ten setups the study registered"
-          lede="Hosted setups finished more, in about a minute. Quick did not mean finished: gpt-oss-20b on the 4090 had the shortest median run and finished 10 of 24."
+          title="Hosted Copilot finished 22 to 24 of 24 tasks; local setups 7 to 14"
+          lede="The ten setups the study registered, on the 24 tasks every setup ran; limiting the analysis to those 24 was decided after some results were in. Quick did not mean finished, as gpt-oss-20b on the 4090 shows."
           note="Finished: the task's checks pass on the agent's checkout. Runs are capped at 600 s. Cost: agent time at $0.89 an hour on the rented 4090, idle and loading excluded; credits at $0.01 on hosted plans, leaving out each plan's monthly price. Electricity on the MacBook Air was not measured."
         >
           <Scorecard
@@ -71,25 +71,25 @@ export default function LocalCopilot() {
 
         <Figure
           id="gaps"
-          title="How far each setup sits from Copilot Pro+ on Auto"
+          title="Every local setup finished fewer tasks than Copilot Pro+ on Auto"
           lede="Gap in tasks finished, in percentage points, with its 95% interval. Left of zero finished less than Pro+ on Auto. The shaded band is the study's 10-point margin."
-          note="Declared means the study declares a difference after the Holm correction across the secondary contrasts. Gemma 4 on the RTX 4090 clears the margin but its corrected p is 0.108, so no difference is declared."
+          note="Declared: the study counts the gap as real after correcting for making several comparisons (the Holm correction). Gemma 4 on the RTX 4090 lies past the margin, but its corrected p of 0.108 misses the 0.05 bar, so no difference is declared."
         >
           <Interval a="Hosted Copilot" b="Served locally" from={-80} to={40} band={10} rows={copilotContrasts} />
         </Figure>
 
         <Figure
           id="wait"
-          title="Where the wait goes"
-          lede="Share of each setup's agent time. On the rented 4090, a third or more goes to the network and proxy. On the Air, nearly all of it goes to prefill and decode. Hosted model time is one number."
+          title="On the rented 4090, a third or more of the time went to the network and proxy"
+          lede="Share of each setup's agent time. Prefill is the model reading the prompt and decode is it writing the reply; on the Air nearly all the time went to those two. Hosted model time is one number."
         >
           <Stack parts={["Prefill", "Decode", "Network and proxy", "Tools and CLI"]} unsplit="Model, hosted and not split" rows={copilotWait} />
         </Figure>
 
         <Figure
           id="harness"
-          title="Same models, two agents"
-          lede="Checked after the study on the same GGUF files, llama.cpp build, server flags, tasks and checks, both agents on the same 4090. Tasks finished of 24, with the median run. Exploratory, and outside every contrast."
+          title="Different agent setups moved results by up to 6 tasks, both ways"
+          lede="Checked after the study with the same model files, server, tasks and checks, both agents on one 4090. Tasks finished of 24, with the median run. Exploratory, and outside every contrast."
         >
           <PairBars
             a="Copilot CLI"
@@ -123,7 +123,7 @@ export default function LocalCopilot() {
           <Row label="Local">llama-server from llama.cpp at commit c1d0e7a, on a rented RTX 4090 and on a 24 GB MacBook Air M5.</Row>
           <Row label="Runs">
             754 scored runs: 240 in the ten registered configurations and 514 in exploratory ones. The core rules were committed before October scoring. Later changes are logged in
-            the protocol, and a few came after the outcomes they relate to, including the choice of the 24-task analysis set; they are marked there.
+            the protocol and marked where they came after related results, such as limiting the analysis to the 24 tasks every setup ran.
           </Row>
           <Row label="Statistics">Task-paired bootstrap and permutation for the primary contrast, with the Holm correction on the secondary ones.</Row>
         </Rows>
@@ -133,12 +133,12 @@ export default function LocalCopilot() {
         <Rows>
           <Row label="No buying rule">24 tasks from three repositories chosen by the author support no claim of equivalence, plan ranking or general buying rule.</Row>
           <Row label="Whole configurations">
-            Model file and quantization, runtime, memory pressure, client OS, tools, credit budget and Auto routing all differ. The results compare configurations and do not
-            attribute a gap to hardware alone.
+            Model file and quantization (how many bits store each of the model&apos;s numbers), runtime, memory pressure, client OS, tools, credit budget and Auto routing all
+            differ. The results compare configurations and do not attribute a gap to hardware alone.
           </Row>
           <Row label="One run each">
             The registered analysis is one run per task and configuration, at temperature 0 with no fixed seed, so its interval is across tasks and does not establish
-            repeatability. In the exploratory co-located setup, a second Copilot CLI run of Qwen3.6 moved from 12 to 9 of 24.
+            repeatability. In the exploratory setup with agent and model on one machine, a second Copilot CLI run of Qwen3.6 moved from 12 to 9 of 24.
           </Row>
           <Row label="A rented 4090">
             It was reached over the network. For Qwen3.6, 57% of the summed time went to the network, proxy and HTTP, a median of 284.6 s a run. The study estimates a desk 4090 at
@@ -150,15 +150,15 @@ export default function LocalCopilot() {
           </Row>
           <Row label="The MacBook Air">
             It paged memory to disk in most of its runs, with 1.6 to 10.1 GB of swap in use, and 13 of the 24 Qwen3.6 runs and 23 of the 24 Gemma 4 runs ran on battery. What that
-            changed is not measured. It also ran Qwen3.6 and Gemma 4 at smaller quantisations than the 4090; only gpt-oss-20b is the same file on both.
+            changed is not measured. It also ran Qwen3.6 and Gemma 4 at smaller quantizations than the 4090; only gpt-oss-20b is the same file on both.
           </Row>
           <Row label="One harness">
             Copilot CLI is the only harness in the registered design, so results are model-plus-harness outcomes. One model request at a time; several agents at once are not
             measured.
           </Row>
           <Row label="Isolation">
-            It lowers, and does not rule out, leakage. Hosted runs kept web and GitHub tools, though no fetching command was detected in their traces. Hosted Auto routing cannot be
-            reproduced; the model each run used is in its trace.
+            The sandbox lowers, and does not rule out, the chance that an agent reached outside its copy of the task, for example to the web. Hosted runs kept web and GitHub tools,
+            though no fetching command was detected in their traces. Hosted Auto routing cannot be reproduced; the model each run used is in its trace.
           </Row>
         </Rows>
         <Note>The results document opens with the full list of caveats. Read it before quoting these numbers.</Note>

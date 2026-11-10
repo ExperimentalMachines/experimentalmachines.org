@@ -17,7 +17,9 @@ export const windowLinks = {
 };
 
 // The four conditions the page's picker offers: each model, and the 2.6B twice,
-// under the suite's 640-token reply cap and rerun at 2048.
+// under the suite's 640-token reply cap and rerun at 2048. "640 cap" names the
+// GSM8K and IFEval cap; BFCL prompts carry their own 384 in benchmarks.json, and
+// no BFCL reply in these reports passed 383 tokens.
 export const windowConditions = [
   { model: "LFM2.5-1.2B-Instruct-8da4w", label: "LFM2.5 1.2B" },
   { model: "LFM2.5-2.6B-8da4w", label: "LFM2.5 2.6B, 640 cap" },
@@ -123,7 +125,7 @@ export const windowControl: WindowControl[] = [
   { model: "Qwen3-1.7B-8da4w", window: "2k", phone: "D9500s", identity: "raw 31/90, calls 30/30, content 31/90" },
 ];
 
-// The fixed-prompt speed probe on the Dimensitys: medians with min to max.
+// The fixed-prompt speed probe on the Dimensity 9500s: medians with min to max.
 export type WindowProbe = { file: string; turns: number; prefill: string; decode: string; prefill_ms: number; rss: number };
 
 export const windowProbe: WindowProbe[] = [

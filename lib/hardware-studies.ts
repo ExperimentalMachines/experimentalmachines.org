@@ -29,7 +29,7 @@ export const gpuWinners = [
   ["Dense 70B FP8, single stream", "H200", "1.12×"],
   ["Dense 70B FP8, balanced, concurrency 128", "MI300X", "1.14×"],
   ["Dense 70B FP8, decode-heavy, concurrency 256", "MI300X", "1.08×"],
-  ["Dense 70B BF16 (141 GB weights)", "MI300X", "H200 cannot load it"],
+  ["Dense 70B BF16 (141 GB weights)", "MI300X", "H200 cannot serve it: no room left for the KV cache"],
   ["Training, 8B, BF16", "H200", "1.32× to 1.40×"],
 ];
 
@@ -94,7 +94,7 @@ export const laptopTraining = [
 export const laptopQuality = [
   ["Gemma 3 1B Q4_0", "34.4694 ± 1.30", "34.6233 ± 1.31", "0.45%"],
   ["Gemma 3 1B Q4_K_M", "29.5493 ± 1.08", "29.5508 ± 1.08", "0.005%"],
-  ["Quality cost of Q4_0", "+16.7%", "+17.2%", ""],
+  ["Perplexity added by Q4_0", "+16.7%", "+17.2%", ""],
 ];
 
 const phoneRepo = `${me}/snapdragon-vs-mediatek`;
@@ -109,18 +109,21 @@ export const phoneMatmul = { elite: 479, dimensity: 67 };
 export const phoneTable = [
   ["NPU", "Hexagon HTP V79", "MDLA (NPU 890)"],
   ["NPU runtime access", "QNN 2.48 from Maven Central and public FastRPC, no SDK gate", "NeuroPilot 8.2.26, preinstalled as public system libraries"],
-  ["NPU int8, 8-layer FC (32×2048×2048)", "4,307 GOPS, 0.50 ms", "1,100 to 1,470 GOPS, 1.46 ms"],
-  ["NPU fp16 inference", "1,089 GFLOP/s", "Runs, not quantified"],
-  ["NPU training", "Architecturally impossible", "Architecturally impossible"],
+  ["NPU inference test, 8-bit (int8), 8 layers of 32×2048×2048", "4,307 GOPS, 0.50 ms", "1,100 to 1,470 GOPS, 1.46 ms"],
+  ["NPU inference, 16-bit (fp16)", "1,089 GFLOP/s", "Runs, not quantified"],
+  // The reports found no backward or optimizer operations in QNN or NeuroPilot, and weights fixed when a graph is
+  // compiled. That is the public software; nothing tested the silicon itself, so the row says no more than that.
+  ["NPU training", "No way to train in the public runtime", "No way to train in the public runtime"],
   ["CPU", "2× Oryon at 4.09 GHz and 6× at 2.78 GHz", "1× X925 at 3.73 GHz, 3× X4 and 4× A720"],
   ["Gemma 3 1B Q4, CPU prefill and decode, 8 threads", "171 to 173 and 62 to 64 tok/s", "58 to 74 and 22 to 31 tok/s"],
   ["GPU", "Adreno 830", "Immortalis-G925 MC11"],
   ["Working GPU compute API", "OpenCL (public library; Vulkan broken for quantized inference)", "Vulkan (OpenCL blocked by namespace)"],
   ["Gemma 3 1B Q4, GPU prefill and decode", "717 to 723 and 41.5 to 42.5 tok/s, OpenCL", "About 39 and about 27 tok/s, Vulkan"],
-  ["Matmul, 4096³ f32", "479 GFLOP/s, 6.9× its CPU", "67 GFLOP/s, 1.69× its CPU (coopmat and f32 only)"],
+  ["GPU matrix multiplication, 4096³, 32-bit (f32)", "479 GFLOP/s, 6.9× its CPU", "67 GFLOP/s, 1.69× its CPU (coopmat and f32 only)"],
   ["Transformer-layer training step, GPU and CPU", "403 and 62.5 GFLOP/s, 6.5×, OpenCL", "About 50 and 37 GFLOP/s, 1.1× to 1.4×"],
   ["GPU training (ggml MLP and AdamW)", "Vulkan, no flags, converges identically to CPU", "Vulkan with GGML_VK_DISABLE_COOPMAT=1, converges worse"],
-  ["Best local LLM recipe", "GPU OpenCL prefill and CPU decode", "CPU prefill and GPU Vulkan decode"],
+  // The README picks GPU Vulkan decode on the Dimensity, but its about 27 tok/s sits inside the CPU's 22 to 31.
+  ["Best local LLM recipe", "GPU OpenCL prefill and CPU decode", "CPU prefill; decode level between GPU Vulkan and CPU"],
 ];
 
 const copilotRepo = "https://github.com/ExperimentalMachines/copilot-local-bench";
@@ -206,13 +209,13 @@ export const laptopSustained = [
 
 // snapdragon-vs-mediatek README.md. Each side as [low, high]; one number where the source gives one.
 export const phoneBars: { label: string; unit: string; elite: [number, number]; dimensity: [number, number]; aboutDimensity?: boolean }[] = [
-  { label: "NPU int8, 8-layer FC", unit: "GOPS", elite: [4307, 4307], dimensity: [1100, 1470] },
+  { label: "NPU, AI inference test in 8-bit numbers", unit: "GOPS", elite: [4307, 4307], dimensity: [1100, 1470] },
   { label: "Gemma 3 1B prefill on the CPU", unit: "tok/s", elite: [171, 173], dimensity: [58, 74] },
   { label: "Gemma 3 1B decode on the CPU", unit: "tok/s", elite: [62, 64], dimensity: [22, 31] },
   { label: "Gemma 3 1B prefill on the GPU", unit: "tok/s", elite: [717, 723], dimensity: [39, 39], aboutDimensity: true },
   { label: "Gemma 3 1B decode on the GPU", unit: "tok/s", elite: [41.5, 42.5], dimensity: [27, 27], aboutDimensity: true },
-  { label: "Matmul on the GPU, 4096³ f32", unit: "GFLOP/s", elite: [479, 479], dimensity: [67, 67] },
-  { label: "Transformer-layer training step on the GPU", unit: "GFLOP/s", elite: [403, 403], dimensity: [50, 50], aboutDimensity: true },
+  { label: "GPU, matrix multiplication in 32-bit numbers", unit: "GFLOP/s", elite: [479, 479], dimensity: [67, 67] },
+  { label: "GPU, training step for one model layer", unit: "GFLOP/s", elite: [403, 403], dimensity: [50, 50], aboutDimensity: true },
 ];
 
 // copilot-local-bench RESULTS.md: each contrast against Copilot Pro+ on Auto, in points, with its 95% interval. Declared
@@ -361,7 +364,7 @@ export const rtxPools = [
 export const rtxModels = [
   { label: "Agent turn wait at 8 agents", detail: "Median. Shorter is better", qwen: 4.9, oss: 0.26, unit: "s" },
   { label: "Agent turn wait at 16 agents", detail: "Median. Shorter is better", qwen: 16.5, oss: 0.88, unit: "s" },
-  { label: "Prefill, 16k prompt", detail: "tok/s", qwen: 2199, oss: 13196, unit: "" },
+  { label: "Prefill (reading the prompt), 16k tokens", detail: "tok/s", qwen: 2199, oss: 13196, unit: "" },
   { label: "Decode, 1 user", detail: "tok/s", qwen: 52.5, oss: 197.6, unit: "" },
   { label: "Decode, 16 at once", detail: "Total tok/s", qwen: 357, oss: 1019, unit: "" },
 ];

@@ -18,7 +18,7 @@ const INK = "var(--color-ink)";
 const SOFT = "var(--color-ink-soft)";
 const RULE = "var(--color-rule)";
 
-const ttft = (p: LatencyPoint) => `${p.ttft.toFixed(2)} s (${p.prefill} tok/s)`;
+const ttft = (p: LatencyPoint) => `${p.ttft.toFixed(2)} s (prompt read at ${p.prefill} tok/s)`;
 const tpot = (p: LatencyPoint) => `${p.tpot} ms (${(1000 / p.tpot).toFixed(1)} tok/s)`;
 const log = Math.log10;
 
@@ -121,7 +121,7 @@ function LatencyMap({ m, active, show, hide }: { m: number; active?: number; sho
       viewBox={`0 0 ${W} ${H}`}
       role="img"
       aria-label={`${name}: time to first token against time per output token on five phone chips, in llama.cpp and in ExecuTorch. The table below lists every value.`}
-      className="w-full min-w-[34rem]"
+      className="mx-auto w-full min-w-[34rem] max-w-3xl"
     >
       {XT.map((t) => (
         <g key={t}>
@@ -140,7 +140,7 @@ function LatencyMap({ m, active, show, hide }: { m: number; active?: number; sho
         </g>
       ))}
       <text x={(M.l + W - M.r) / 2} y={H - 8} textAnchor="middle" fontSize={12} fill={SOFT}>
-        Time to first token, seconds (lower and left is faster)
+        Engine time to read the prompt, seconds (lower and left is faster)
       </text>
       <text transform={`translate(16 ${(M.t + H - M.b) / 2}) rotate(-90)`} textAnchor="middle" fontSize={12} fill={SOFT}>
         Time per output token, ms
@@ -165,9 +165,9 @@ function LatencyMap({ m, active, show, hide }: { m: number; active?: number; sho
         const b = et[i];
         // Two points this close share one readout.
         const near = Math.hypot(lx(a.ttft) - lx(b.ttft), ly(a.tpot) - ly(b.tpot)) < 4;
-        const both = [`${c.name}, both runtimes`, `llama.cpp: TTFT ${ttft(a)}, TPOT ${tpot(a)}`, `ExecuTorch: TTFT ${ttft(b)}, TPOT ${tpot(b)}`];
-        const tipA = near ? both : [`${c.name}, llama.cpp`, `TTFT ${ttft(a)}`, `TPOT ${tpot(a)}`];
-        const tipB = near ? both : [`${c.name}, ExecuTorch`, `TTFT ${ttft(b)}`, `TPOT ${tpot(b)}`];
+        const both = [`${c.name}, both runtimes`, `llama.cpp: first token ${ttft(a)}, per token ${tpot(a)}`, `ExecuTorch: first token ${ttft(b)}, per token ${tpot(b)}`];
+        const tipA = near ? both : [`${c.name}, llama.cpp`, `First token ${ttft(a)}`, `Per token ${tpot(a)}`];
+        const tipB = near ? both : [`${c.name}, ExecuTorch`, `First token ${ttft(b)}`, `Per token ${tpot(b)}`];
         return (
           <g key={c.name} opacity={dim(i)}>
             <circle
@@ -249,15 +249,15 @@ function Dumbbells({ m, show, hide }: { m: number; show: Show; hide: () => void 
   const c0 = LEFT;
   const c1 = LEFT + COL_W + COL_GAP;
   const cols = [
-    { x0: c0, scale: SCALE_T, ticks: [0.3, 1, 3, 10], label: "TTFT, s", key: "ttft" as const, f: ttft },
-    { x0: c1, scale: SCALE_P, ticks: [20, 50, 100, 200], label: "TPOT, ms", key: "tpot" as const, f: tpot },
+    { x0: c0, scale: SCALE_T, ticks: [0.3, 1, 3, 10], label: "First token, s", key: "ttft" as const, f: ttft },
+    { x0: c1, scale: SCALE_P, ticks: [20, 50, 100, 200], label: "Per token, ms", key: "tpot" as const, f: tpot },
   ];
   return (
     <svg
       viewBox={`0 0 ${DW} ${DH}`}
       role="img"
       aria-label={`Time to first token and time per output token for all five models on all five chips, in both runtimes, ${models[m].name} highlighted. The table below lists every value.`}
-      className="w-full min-w-[32rem]"
+      className="mx-auto w-full min-w-[32rem] max-w-3xl"
     >
       {cols.map((col) => (
         <g key={col.key}>
@@ -393,11 +393,11 @@ export default function LatencyFigures() {
           </button>
         ))}
       </div>
-      <div className="mt-8 grid items-start gap-6 xl:grid-cols-2">
+      <div className="mt-8 grid items-start gap-6">
         <figure className="min-w-0 rounded-[1.5rem] bg-white p-5 sm:p-6">
           <h3 className="display text-xl">Latency map</h3>
           <p className="mt-1 text-sm leading-6 text-ink-soft">
-            Each line joins one chip&apos;s two runtimes. Lower and left is faster. Both axes are logarithmic.
+            Each line joins one chip&apos;s llama.cpp dot to its ExecuTorch ring: further left is a sooner first token, lower a faster-streaming reply. Both axes are logarithmic.
           </p>
           <div className="mt-3">
             <Key />
@@ -409,7 +409,7 @@ export default function LatencyFigures() {
         <figure className="min-w-0 rounded-[1.5rem] bg-white p-5 sm:p-6">
           <h3 className="display text-xl">All models, all chips</h3>
           <p className="mt-1 text-sm leading-6 text-ink-soft">
-            The same numbers as a grid, both columns on logarithmic scales. The model picked above is banded.
+            The same numbers as a grid, both columns on logarithmic scales; further left is faster in each. The model picked above is banded.
           </p>
           <div className="mt-3">
             <Key />

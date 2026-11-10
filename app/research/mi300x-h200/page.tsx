@@ -28,20 +28,26 @@ export default function Gpus() {
       <Section id="findings" title="What we found">
         <Findings
           items={[
-            { headline: "There is no single winner", line: "The result splits by whether the model plus its KV cache fits in 141 GB." },
             {
-              headline: "The H200 wins from the lower paper specification",
-              line: "The MI300X leads on paper on every axis. Measured, the H200 sustains 1.25× the BF16 GEMM, 1.22× the FP8 GEMM and 1.11× the memory bandwidth. The cause is achieved efficiency.",
+              headline: "There is no single winner",
+              line: "The result splits on whether the model and its KV cache, the memory a model keeps of the conversation so far, fit in the H200's 141 GB.",
+            },
+            {
+              headline: "The H200 measures faster despite a weaker data sheet",
+              line: "The MI300X leads every line of the data sheet. Measured, the H200 did 1.25× the matrix maths in 16-bit numbers (BF16), 1.22× in 8-bit (FP8) and 1.11× the memory bandwidth, because it reaches far more of its listed peak in practice.",
             },
             {
               headline: "Memory turns it around at 70B",
-              line: `Both hold 70 GB of FP8 weights. Weights are a fixed subtraction, so a ${gpuKv.memory}× memory advantage becomes a ${gpuKv.advantage}× KV cache advantage. Beyond roughly 11 concurrent full-length requests the H200 is oversubscribed: requests queue and preempt, throughput falls and time to first token rises.`,
+              line: `On the 70B model both GPUs hold the same 70 GB of FP8 weights, so the MI300X, with ${gpuKv.memory}× the memory, has ${gpuKv.advantage}× the room left for KV cache. Past about 11 full-length requests at once the H200 runs out: requests wait or are paused, total output falls and replies take longer to start.`,
             },
             {
               headline: "The largest model does not run on the H200",
-              line: "Llama 3.3 70B in BF16 is 141 GB of weights. The weights fit on the H200. Allocating KV cache afterwards does not.",
+              line: "Llama 3.3 70B in BF16 is 141 GB of weights. They fit on the H200 but leave no room for the KV cache, so it cannot serve the model.",
             },
-            { headline: "Neither GPU throttles", line: "Over 30 minutes of continuous load, 8B at concurrency 64, the MI300X held 99.2% of its peak and the H200 99.7%." },
+            {
+              headline: "Neither GPU throttles",
+              line: "Over 30 minutes of steady load, the 8B model serving 64 requests at once, the MI300X held 99.2% of its peak and the H200 99.7%.",
+            },
           ]}
         />
       </Section>
@@ -49,8 +55,9 @@ export default function Gpus() {
       <Section id="results" title="The results">
         <Figure
           id="winners"
-          title="Who won what"
-          lede="Neither wins outright. The H200 leads on smaller work and at low load; the MI300X takes over when the 70B model and its cache crowd the H200's memory."
+          title="The H200 wins smaller work; the MI300X wins the 70B under load"
+          lede="The MI300X takes over when the 70B model and its KV cache crowd the H200's memory."
+          note="Concurrency is how many requests run at once. Prefill is reading the prompt; decode is writing the reply, one token (a piece of a word) at a time. A dense model uses all its weights for every token; a mixture-of-experts model uses only some."
         >
           <Duel
             a="MI300X"
@@ -70,7 +77,12 @@ export default function Gpus() {
           />
         </Figure>
 
-        <Figure id="paper" title="On paper, and measured" lede="The MI300X leads every line of the data sheet. Measured, the lead flips to the H200 on all three that were tested.">
+        <Figure
+          id="paper"
+          title="The MI300X leads on paper; the H200 leads when measured"
+          lede="The MI300X leads every line of the data sheet. Measured, the lead flips to the H200 on all three that were tested."
+          note="GEMM is matrix multiplication, the core maths of AI models. HBM is the GPU's own memory. TFLOP/s is trillions of calculations a second."
+        >
           <Duel
             a="MI300X"
             b="H200"
@@ -82,7 +94,8 @@ export default function Gpus() {
           />
         </Figure>
 
-        <Figure id="load" title="Throughput as the load rises" lede="Level at one stream, then the gap opens. Llama 3.1 8B, 1k tokens in and 1k out.">
+        <Figure id="load" title="The H200 pulls ahead as the load rises" lede="Level at one request, then the gap opens to about 1.4×. Llama 3.1 8B, 1k tokens in and 1k out.">
+          {/* about 1.4×: the sweep's ratio is 1.37× to 1.42× from 64 requests up. */}
           <Lines
             series={[
               { name: "MI300X", ys: gpuBalanced.map((r) => Number(r[1])) },
@@ -98,12 +111,12 @@ export default function Gpus() {
 
         <Figure
           id="kv"
-          title="How many long requests fit"
-          lede="Both hold 70 GB of FP8 weights, and what is left is cache. Past its count a GPU queues and preempts."
-          note="From the vLLM server logs on each machine, at identical settings: --max-model-len 16384 and --gpu-memory-utilization 0.90. A production H200 deployment would reduce context length to compensate, at a cost in capability rather than throughput."
+          title="The MI300X fits 20 long requests at once to the H200's 11"
+          lede="Both hold 70 GB of FP8 weights, and the rest is KV cache. Past its count a GPU makes requests wait."
+          note="From the vLLM server logs, at identical settings: --max-model-len 16384 and --gpu-memory-utilization 0.90. An H200 could fit more requests with a smaller context window (how much text, prompt and reply together, each request can hold), which limits every request; that was not measured."
         >
           <Seats
-            caption="Concurrent requests of 16k tokens that the KV cache can hold, on Llama 3.3 70B FP8."
+            caption="Full 16k-token requests the KV cache can hold at once on Llama 3.3 70B FP8, in theory. Only whole requests run."
             rows={[
               { name: "MI300X", count: Number(gpuKv.mi300x.concurrency), shown: `${gpuKv.mi300x.concurrency}, from ${gpuKv.mi300x.gib} GiB of cache`, first: true },
               { name: "H200", count: Number(gpuKv.h200.concurrency), shown: `${gpuKv.h200.concurrency}, from ${gpuKv.h200.gib.toFixed(2)} GiB of cache` },
@@ -113,8 +126,8 @@ export default function Gpus() {
 
         <Figure
           id="tail"
-          title="First-token wait, training and energy"
-          lede="The MI300X's widest measured lead is the wait for a first token on the 70B at concurrency 256. Training and energy go to the H200."
+          title="The MI300X starts the slowest replies far sooner; training and energy go to the H200"
+          lede="The MI300X's widest lead is on the 70B with 256 requests at once, where the H200's KV cache runs out."
         >
           <PairBars
             a="MI300X"
@@ -123,7 +136,7 @@ export default function Gpus() {
             shortB="H200"
             rows={[
               ...gpuTail.map((r) => ({
-                label: `First token at p99, ${r.label}`,
+                label: `Slowest 1% of first-token waits, ${r.label}`,
                 detail: "Llama 3.3 70B FP8, concurrency 256. Shorter is better.",
                 lead: `MI300X ${r.ratio} sooner`,
                 a: { value: r.mi300x, shown: `${r.mi300x.toFixed(1)} s` },
@@ -138,7 +151,7 @@ export default function Gpus() {
               })),
               {
                 label: "Tokens per joule",
-                detail: "8B, 1k in and 1k out, concurrency 256",
+                detail: "8B, 1k in and 1k out, concurrency 256. More is better.",
                 a: { value: gpuEnergy.mi300x, shown: String(gpuEnergy.mi300x) },
                 b: { value: gpuEnergy.h200, shown: String(gpuEnergy.h200) },
               },
@@ -185,8 +198,9 @@ export default function Gpus() {
       <Section id="limits" title="Limits">
         <Rows>
           <Row label="A virtual function">
-            The MI300X is an SR-IOV virtual function, not bare metal. It presents 304 CUs, 192 GB, SPX/NPS1 and the full 750 W limit, and sustains 100% utilization at 750 W, so it
-            behaves as a whole GPU. Virtualization overhead cannot be excluded, and the H200 is not virtualized the same way. This is the largest caveat.
+            The MI300X was reached through virtualization (an SR-IOV virtual function), not bare metal. It presented the whole chip, 304 compute units, 192 GB and the full 750 W
+            limit, and sustained 100% use at 750 W, so it behaves as a whole GPU. Virtualization overhead cannot be excluded, and the H200 is not virtualized the same way. This is
+            the largest caveat.
           </Row>
           <Row label="Different providers">So different host CPUs, RAM, kernels (Ubuntu 26.04 against 24.04) and storage.</Row>
           <Row label="One of each">One sample of each GPU. Unit-to-unit variation is not characterised.</Row>
@@ -194,8 +208,8 @@ export default function Gpus() {
             Holding vLLM and PyTorch constant removes the framework variable but not the compiler, kernel-library and driver variable. That difference is part of what is measured.
           </Row>
           <Row label="FP8 is not bit-identical">
-            Both GPUs load one shared BF16 checkpoint and derive their own native FP8, because they implement different encodings. On 16 fixed prompts, 3 matched exactly at FP8
-            against 10 at BF16, and FP8 diverges 4.7× further on mean logprob.
+            Both GPUs load one shared BF16 checkpoint and derive their own native FP8, because they implement different encodings. On 16 fixed prompts, 3 replies matched exactly at
+            FP8 against 10 at BF16, and at FP8 the two GPUs&apos; average confidence in each token (mean log-probability) differed 4.7× more.
           </Row>
           <Row label="Reduced grids">Concurrency grids are reduced for the large models. Every sweep records the grid it used.</Row>
           <Row label="Training">Throughput is not time to convergence. A stack can be fast per step and converge worse.</Row>
