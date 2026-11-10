@@ -230,9 +230,24 @@ const Row = ({ label, count, text }: { label: string; count?: number; text: stri
 );
 
 export function ThreadChoice({ normal, warm, hot, fallback, retrySeconds }: { normal: number; warm: number; hot: number; fallback: number; retrySeconds: number }) {
+  const who: [string, string][] = [
+    ["The app", "How many threads write the reply"],
+    ["Android", "Which core runs each thread, moment to moment"],
+    ["The phone", "Which cores can run work: normally all 8; in the Snapdragon's hard throttle, only cores 0 and 1"],
+  ];
   return (
     <ChartCard>
-      <ol className="grid gap-8 md:grid-cols-3">
+      <p className="text-sm font-medium">Who decides what</p>
+      <dl className="mt-3 grid gap-3 sm:grid-cols-3">
+        {who.map(([k, v]) => (
+          <div key={k} className="rounded-xl bg-white p-4">
+            <dt className="text-sm font-medium">{k}</dt>
+            <dd className="mt-1 text-sm leading-6 text-ink-soft">{v}</dd>
+          </div>
+        ))}
+      </dl>
+      <p className="mt-8 text-sm font-medium">How the app picks its number of threads</p>
+      <ol className="mt-4 grid gap-8 md:grid-cols-3">
         <Step n={1} title="Before each reply">
           <Row label="Normally" count={normal} text={`${normal} threads`} />
           <p className="text-ink-soft">Half the CPU&apos;s cores, never under 2 or over 6. These phones have 8.</p>
@@ -247,10 +262,19 @@ export function ThreadChoice({ normal, warm, hot, fallback, retrySeconds }: { no
           <p className="text-ink-soft">Every {retrySeconds} s it tries the count from steps 1 and 2 again, and keeps it if that step is close to the 2-thread pace.</p>
         </Step>
       </ol>
-      <p className="mt-6 border-t border-rule pt-4 text-sm leading-6">
-        Why step 3: on the Snapdragon we checked, the list of cores an app may use still showed all eight while six were out of use, so the app cannot tell from it. The guard
-        watches how long each step takes instead.
-      </p>
+      <div className="mt-6 space-y-3 border-t border-rule pt-4 text-sm leading-6">
+        <p>
+          <span className="font-medium">Using only 2 cores</span> means running 2 threads: two threads run on at most two cores at once, so they fit on the two left.
+        </p>
+        <p>
+          <span className="font-medium">Why step 3:</span> on the Snapdragon we checked, the list of cores an app may use still showed all eight while six were out of use, so the
+          app cannot tell from it. The guard watches how long each step takes instead.
+        </p>
+        <p>
+          <span className="font-medium">Why not tie threads to cores:</span> Linux allows it, but OpenWeights does not. It resets the cores it may use to those it had at startup,
+          then lets Android place its threads.
+        </p>
+      </div>
     </ChartCard>
   );
 }

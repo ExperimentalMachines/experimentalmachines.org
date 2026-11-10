@@ -113,6 +113,15 @@ export default function DecodeStall() {
         </Figure>
 
         <Figure
+          id="choice"
+          title="The app picks how many threads; the phone decides which cores are in use"
+          lede="A thread is a worker helping write the reply; a core is a processor that runs it. Who chooses the number of threads, and who chooses where they run."
+          note="From the app's heat policy (ThermalPolicy.kt) and its guard (stall_guard.h); the exact rules are under Every number."
+        >
+          <ThreadChoice normal={pdStall.app.normal} warm={pdStall.app.light} hot={pdStall.app.severe} fallback={2} retrySeconds={30} />
+        </Figure>
+
+        <Figure
           id="pause"
           title="With six cores out of use, the guard keeps the reply going"
           lede="Tokens written after six cores were taken out of use by hand, 10 seconds into a reply, with an earlier build of the guard and without."
@@ -163,7 +172,7 @@ export default function DecodeStall() {
           id="placement"
           title="With six cores out of use, six threads share the two left"
           lede="Where each of six decode threads ran in one 2-second sample, and how much of a core it got, on a Snapdragon phone in its own hard throttles."
-          note={`Snapdragon test phone B, llama.cpp's benchmark tool, Qwen3 4B, 6 threads, each thread's last core and CPU time read every 2 s; whether cores were out of use came from a log read every 5 s, so a sample at the edge may be misfiled. In all ${placed.paused.intervals} samples with the six busy and cores out of use, their last cores numbered ${placed.paused.cores[0]} or ${placed.paused.cores[1]} and a thread got a median ${Math.round(placed.paused.share * 100)}% of a core; in the ${placed.normal.intervals} with no switch logged, ${placed.normal.cores[0]} or ${placed.normal.cores[1]}, about a whole core each. The two samples drawn are examples: the first that spread over six cores, and one well inside a stretch with cores out of use, near the median. Shares over a whole core, from whole-second timestamps, show as 100%.`}
+          note="Snapdragon test phone B, llama.cpp's benchmark tool, 6 threads. Every 2 seconds: the last core each thread ran on and how much of a core it used, capped at 100%. The panels are example moments; every sample is under Every number."
         >
           <ThreadPlacement
             panels={[
@@ -186,7 +195,7 @@ export default function DecodeStall() {
         >
           <div className="space-y-4">
             <WaitLanes
-              caption={`An illustration of one token's work: which thread runs when, and each thread's share, are invented; each panel's split between work, the wait function and other work is the measured profile's below, which cannot separate the wait from that function's other work. Not to one time scale: with six cores out of use, a token took about ${slowdown6} times as long at 6 threads.`}
+              caption={`An illustration, not a recording: the turns are made up, but each panel's split between work and waiting matches the profile below. With only 2 cores left, a token took about ${slowdown6} times as long at 6 threads.`}
               panels={[
                 { title: "Normally", note: "Each thread has a core of its own: it works, waits a moment for the slowest, and moves on.", lanes: lanes.normal },
                 {
@@ -214,15 +223,6 @@ export default function DecodeStall() {
               ]}
             />
           </div>
-        </Figure>
-
-        <Figure
-          id="choice"
-          title={`The app starts at ${pdStall.app.normal} threads and drops to ${pdStall.app.severe} when the phone is hot or a reply stalls`}
-          lede="How OpenWeights picks the number of threads that write each reply, in three steps from its code."
-          note="Steps 1 and 2 are the app's heat policy (ThermalPolicy.kt): warm is Android's light or moderate heat status, hot is severe, very hot is critical or worse. Step 3 is the guard (stall_guard.h): a slow step takes over a quarter of a second and more than 8 times the recent normal step, or more than 2 s over it, and before it has seen enough steps, any step over 1.5 s. A try comes after at least four steps at 2 threads, and keeps the planned count if its step is within 3 times the recent 2-thread step and within 2 s of it."
-        >
-          <ThreadChoice normal={pdStall.app.normal} warm={pdStall.app.light} hot={pdStall.app.severe} fallback={2} retrySeconds={30} />
         </Figure>
 
         <Figure
@@ -278,7 +278,11 @@ export default function DecodeStall() {
           />
         </Figure>
 
-        <More id="numbers" title="Every number" summary="The guard's runs, the llama.cpp waits, the six natural throttles, every chat session and the thread counts">
+        <More
+          id="numbers"
+          title="Every number"
+          summary="The guard's runs, the llama.cpp waits, where the threads ran, the app's rules, the six natural throttles, every chat session and the thread counts"
+        >
           <Table
             label="The guard against six cores taken out of use by hand"
             head={["Six cores out of use", "With the guard", "Without it", "What the guard did"]}
@@ -326,6 +330,18 @@ export default function DecodeStall() {
           />
           <Note>
             The benchmark on the same three turns of Qwen3 4B: the changed waits on phones E and D, stock 2 against 6 threads on phone B. A budget between the two was not tried.
+          </Note>
+          <Note>
+            Where the threads ran (phone B): each thread&apos;s last core and CPU time every 2 s; whether cores were out of use came from a log read every 5 s, so a sample at the
+            edge may be misfiled. In all {placed.paused.intervals} samples with the six busy and cores out of use, their last cores numbered {placed.paused.cores[0]} or{" "}
+            {placed.paused.cores[1]} and a thread got a median {Math.round(placed.paused.share * 100)}% of a core; in the {placed.normal.intervals} with no switch logged,{" "}
+            {placed.normal.cores[0]} or {placed.normal.cores[1]}, about a whole core each. The panels show the first sample that spread over six cores and one near the median well
+            inside a stretch with cores out of use. Shares over a whole core, from whole-second timestamps, show as 100%.
+          </Note>
+          <Note>
+            The app&apos;s rules. Warm is Android&apos;s light or moderate heat status, hot is severe, very hot is critical or worse. A slow step takes over a quarter of a second
+            and more than 8 times the recent normal step, or more than 2 s over it; before the guard has seen enough steps, any step over 1.5 s. A try comes after at least four
+            steps at 2 threads, and keeps the planned count if its step is within 3 times the recent 2-thread step and within 2 s of it.
           </Note>
           <Table
             label="Six natural hard throttles, logged every 2 seconds"
