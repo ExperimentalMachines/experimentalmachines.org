@@ -126,25 +126,25 @@ export default function DecodeStall() {
           id="choice"
           title="The app picks how many threads; the phone decides which cores are in use"
           lede="A thread is a worker helping write the reply; a core is a processor that runs it. The app chooses how many threads, the phone how many cores."
-          note="From the app's heat policy (ThermalPolicy.kt) and its guard (stall_guard.h); the exact rules are under Every number."
+          note="Speeds from the app's own engine on Snapdragon phone E, six cores taken out of use by hand. The rules are from its heat policy (ThermalPolicy.kt) and its guard (stall_guard.h); the exact ones are under Every number."
         >
           <ThreadChoice
             panels={[
               {
                 title: "Normally",
-                caption: `${pdStall.app.normal} threads, each on a core of its own.`,
+                caption: `${pdStall.app.normal} threads, each on a core of its own: ${app.normal.toFixed(1)} tokens a second.`,
                 off: [],
                 threads: [{ core: 2 }, { core: 3 }, { core: 6 }, { core: 7 }],
               },
               {
                 title: "Hard throttle, the usual 4 threads",
-                caption: "Only cores 0 and 1 run work, so two threads wait at a time and the reply nearly stops.",
+                caption: `Only cores 0 and 1 run work, so two threads wait at a time: the reply crawls at ${at(4).paused} tokens a second.`,
                 off: parkedCores,
                 threads: [{ core: 0 }, { core: 1 }, { core: 0, waiting: true }, { core: 1, waiting: true }],
               },
               {
                 title: "Hard throttle, the guard's 2 threads",
-                caption: "Two threads, two cores: each has one again.",
+                caption: `Two threads, two cores, each has one again: ${two.paused} tokens a second, about ${Math.round(two.paused / at(4).paused)} times as fast.`,
                 off: parkedCores,
                 threads: [{ core: 0 }, { core: 1 }],
               },
