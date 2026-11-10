@@ -1,8 +1,9 @@
 import { grouped } from "@/components/openweights/pd-parts";
 import { Aligned, PairBars, Stack, TimeLines } from "@/components/research/Compare";
 import Post, { Figure, Findings, More, Note, postMetadata, Row, Rows, Section, Table } from "@/components/research/Post";
-import { heldPause, sessionHeat, shortPause } from "@/lib/decode-stall-data";
-import { pdFix, pdLinks, pdPhone, pdStall, pdTrigger } from "@/lib/prefill-decode";
+import { PhoneSpecs, ThreadPlacement, WaitLanes } from "@/components/research/ThreadFigures";
+import { heldPause, sessionHeat, shortPause, threadPlacement } from "@/lib/decode-stall-data";
+import { pdFix, pdLinks, pdPhone, pdSpecs, pdStall, pdTrigger } from "@/lib/prefill-decode";
 
 const href = "/research/decode-stall/";
 
@@ -29,6 +30,33 @@ const shortBack = shortPause.with.guard.find((e) => e.event === "back")!;
 const unguarded = heldPause.without.points.at(-1)![1];
 const twoOfSix = Math.round((100 * mid(y.normal2)) / mid(y.normal6));
 const range = (r: number[], d = 1) => `${r[0].toFixed(d)} to ${r[1].toFixed(d)}`;
+const pf = pdFix.profile;
+const placed = threadPlacement;
+const parkedCores = pdSpecs[0].parked!;
+// How many times longer one token took at 6 threads with six cores parked.
+const slowdown6 = Math.round(at(6).normal / at(6).paused);
+// One token's work as lanes, drawn to the profile: normally each of six threads has a core; parked, three take
+// turns on each of the two cores left, each turn split between work and waiting as the profile splits it.
+const lanes = {
+  normal: [0, 1, 2, 3, 4, 5].map((core) => ({
+    core,
+    segs: [
+      { w: pf.normalKernels, kind: "work" as const, label: `T${core + 1}` },
+      { w: pf.normalWait, kind: "wait" as const },
+      { w: 100 - pf.normalKernels - pf.normalWait, kind: "other" as const },
+    ],
+  })),
+  parked: [0, 1].map((core) => ({
+    core,
+    segs: [
+      ...[0, 1, 2].flatMap((k) => [
+        { w: pf.pausedKernels / 3, kind: "work" as const, label: `T${core + 1 + 2 * k}` },
+        { w: pf.pausedWait / 3, kind: "wait" as const },
+      ]),
+      { w: 100 - pf.pausedKernels - pf.pausedWait, kind: "other" as const },
+    ],
+  })),
+};
 
 export default function DecodeStall() {
   return (
@@ -52,7 +80,7 @@ export default function DecodeStall() {
             },
             {
               headline: "Waiting threads hold the cores the working ones need",
-              line: `With cores parked, ${Math.round(pdFix.profile.pausedWait)}% of the CPU time was in the function that contains llama.cpp's waiting loop, against ${Math.round(pdFix.profile.normalWait)}% normally.`,
+              line: `With cores parked, six threads shared the two cores left at a median ${Math.round(placed.paused.share * 100)}% of a core per thread, and ${Math.round(pf.pausedWait)}% of the CPU time was in the function that contains llama.cpp's waiting loop, against ${Math.round(pf.normalWait)}% normally.`,
             },
             {
               headline: "The app's engine now drops to 2 threads when a step stalls",
@@ -75,6 +103,15 @@ export default function DecodeStall() {
       </Section>
 
       <Section id="results" title="The results">
+        <Figure
+          id="phones"
+          title="The Snapdragon's hard throttle leaves two of its eight cores"
+          lede="The two kinds of phone in this study, as read from the phones themselves."
+          note="A core is one of the CPU's eight processors; the app writes the reply with several threads, ideally one per core; a parked core is switched off to shed heat. Core types and top clocks come from each phone's CPU registers and clock limits; the Snapdragon phones are Qualcomm's reference design for the chip."
+        >
+          <PhoneSpecs phones={pdSpecs} />
+        </Figure>
+
         <Figure
           id="pause"
           title="With six cores parked, the guard keeps the reply going"
@@ -123,27 +160,60 @@ export default function DecodeStall() {
         </Figure>
 
         <Figure
-          id="cause"
-          title="Stalled, the CPU time moves into the function that holds the wait"
-          lede="llama.cpp's threads wait for each other hundreds of times per token, and a waiting thread keeps checking on its core instead of giving it up, so with more threads than cores the waiters hold the cores the working threads need."
-          note={`A 6-thread decode's CPU time, sampled 1,000 times a second with six cores parked and without: Snapdragon test phone E, llama.cpp's benchmark tool, ${pdFix.profile.normalCores} cores busy on average normally and ${pdFix.profile.pausedCores} paused. The samples were kept by function, so how that function's time splits between the wait and its other work is not known.`}
+          id="placement"
+          title="With six cores parked, six threads share the two left"
+          lede="Where each of six decode threads ran in one 2-second sample, and how much of a core it got, on a Snapdragon phone in its own hard throttles."
+          note={`Snapdragon test phone B, llama.cpp's benchmark tool, Qwen3 4B, 6 threads, each thread's last core and CPU time read every 2 s, the pause state from a log read every 5 s, so a sample at a pause's edge may be misfiled. In all ${placed.paused.intervals} samples with the six busy during a pause, their last cores numbered ${placed.paused.cores[0]} or ${placed.paused.cores[1]} and a thread got a median ${Math.round(placed.paused.share * 100)}% of a core; in the ${placed.normal.intervals} without one, ${placed.normal.cores[0]} or ${placed.normal.cores[1]}, about a whole core each. The two samples drawn are examples: the first that spread over six cores, and one inside a pause near the median. Shares over a whole core, from whole-second timestamps, show as 100%.`}
         >
-          <Stack
-            parts={["The function that holds the wait", "Matrix and attention kernels"]}
-            unsplit="Everything else"
-            rows={[
+          <ThreadPlacement
+            panels={[
+              { title: "All eight cores running", caption: "Each thread on a core of its own, about a whole core each.", threads: placed.normal.sample.threads, parked: [] },
               {
-                label: "Normal",
-                shares: [pdFix.profile.normalWait, pdFix.profile.normalKernels],
-                unsplit: Math.round((100 - pdFix.profile.normalWait - pdFix.profile.normalKernels) * 10) / 10,
-              },
-              {
-                label: "Six cores parked",
-                shares: [pdFix.profile.pausedWait, pdFix.profile.pausedKernels],
-                unsplit: Math.round((100 - pdFix.profile.pausedWait - pdFix.profile.pausedKernels) * 10) / 10,
+                title: "Six cores parked",
+                caption: `All six on cores 0 and 1, a median ${Math.round(placed.paused.share * 100)}% of a core per thread across every sample.`,
+                threads: placed.paused.sample.threads,
+                parked: parkedCores,
               },
             ]}
           />
+        </Figure>
+
+        <Figure
+          id="cause"
+          title="A finished thread keeps its core while the others wait for one"
+          lede="llama.cpp's threads wait for each other hundreds of times per token, and a waiting thread keeps checking on its core instead of giving it up, so with more threads than cores the waiters hold the cores the working threads need."
+          note={`A 6-thread decode's CPU time, sampled 1,000 times a second with six cores parked and without: Snapdragon test phone E, llama.cpp's benchmark tool, ${pdFix.profile.normalCores} cores busy on average normally and ${pdFix.profile.pausedCores} paused. The samples were kept by function, so how that function's time splits between the wait and its other work is not known.`}
+        >
+          <div className="space-y-4">
+            <WaitLanes
+              caption={`An illustration of one token's work: which thread runs when, and each thread's share, are invented; each panel's split between work, the wait function and other work is the measured profile's below, which cannot separate the wait from that function's other work. Not to one time scale: with six cores parked, a token took about ${slowdown6} times as long at 6 threads.`}
+              panels={[
+                { title: "All eight cores running", note: "Each thread has a core of its own: it works, waits a moment for the slowest, and moves on.", lanes: lanes.normal },
+                {
+                  title: "Six cores parked",
+                  note: "Three threads take turns on each core. One that has finished keeps its core in the wait function, checking in a loop, so the threads with work left wait for a turn.",
+                  lanes: lanes.parked,
+                },
+              ]}
+            />
+            <Stack
+              parts={["The wait function", "Matrix and attention kernels"]}
+              colors={["#d9480f", "#2b44e6"]}
+              unsplit="Everything else"
+              rows={[
+                {
+                  label: "Normal",
+                  shares: [pdFix.profile.normalWait, pdFix.profile.normalKernels],
+                  unsplit: Math.round((100 - pdFix.profile.normalWait - pdFix.profile.normalKernels) * 10) / 10,
+                },
+                {
+                  label: "Six cores parked",
+                  shares: [pdFix.profile.pausedWait, pdFix.profile.pausedKernels],
+                  unsplit: Math.round((100 - pdFix.profile.pausedWait - pdFix.profile.pausedKernels) * 10) / 10,
+                },
+              ]}
+            />
+          </div>
         </Figure>
 
         <Figure
@@ -291,8 +361,12 @@ export default function DecodeStall() {
       <Section id="method" title="How we ran it">
         <Rows>
           <Row label="Phones">
-            {pdPhone.soc} phones B, D and E in Qualcomm Device Cloud&apos;s rack, root shell, AC power, 3 to 10 November 2026. A POCO X8 Pro Max (MediaTek MT6991) on USB power for
-            two sessions and 2 threads against 4.
+            {pdPhone.soc} phones B, D and E, Qualcomm&apos;s reference design, in Qualcomm Device Cloud&apos;s rack, root shell, AC power, 3 to 10 November 2026. A POCO X8 Pro Max
+            (MediaTek Dimensity 9500s) on USB power for two sessions and 2 threads against 4. Their specifications are in{" "}
+            <a href="#phones" className="underline decoration-ink/30 underline-offset-4 hover:decoration-ink">
+              the first figure
+            </a>
+            .
           </Row>
           <Row label="The pause">
             After a cooling gate, the two switches the hard throttle sets were written by hand; each chain first checked that six busy loops then ran only on cores 0 and 1.

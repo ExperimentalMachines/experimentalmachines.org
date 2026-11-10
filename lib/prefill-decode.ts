@@ -31,6 +31,58 @@ export const pdPhone = {
   llamacpp: "b2e5e9b (release b10549)",
 };
 
+// The two kinds of phone, as read from the phones. The Snapdragon units (the report's processor table and
+// its model string "Canoe QRD", docs/research/snapdragon-pd-matrix.md): CPU implementer 0x51 part 0x002,
+// cpu0 to cpu5 up to 3.629 GHz and cpu6 and cpu7 up to 4.608 GHz; Adreno 840 to 1.2 GHz; Hexagon v81; the
+// hard throttle's switches thermal-pause-3C and thermal-pause-C0 (masks 0x3C and 0xC0) park cores 2 to 7.
+// The report's header gives their memory as 23 GB. The POCO, read over adb on 2026-11-10: model 2602BPC18G, MT6991,
+// Android 16, HyperOS 3.0; cpu0 to cpu3 up to 2.40 GHz (part 0xd81, Cortex-A720), cpu4 to cpu6 up to
+// 3.30 GHz (0xd82, Cortex-X4), cpu7 up to 3.73 GHz (0xd85, Cortex-X925); GLES renderer Mali-G925-Immortalis
+// MC11; MemTotal 11,539,412 kB (11.0 GiB of its 12 GB).
+export type PhoneSpec = {
+  name: string;
+  chip: string;
+  used: string;
+  clusters: { cores: number[]; type: string; ghz: number }[];
+  parked?: number[];
+  rows: [string, string][];
+};
+export const pdSpecs: PhoneSpec[] = [
+  {
+    name: "Qualcomm reference phone",
+    chip: "Snapdragon 8 Elite Gen 5 (SM8850)",
+    used: "Phones B, D and E: every pause, the guard and the chat sessions",
+    clusters: [
+      { cores: [0, 1, 2, 3, 4, 5], type: "Oryon", ghz: 3.63 },
+      { cores: [6, 7], type: "Oryon", ghz: 4.61 },
+    ],
+    parked: [2, 3, 4, 5, 6, 7],
+    rows: [
+      ["GPU", "Adreno 840, up to 1.2 GHz"],
+      ["NPU", "Hexagon v81"],
+      ["Memory", "23 GB, as the report records it"],
+      ["Software", "Android 16, root shell"],
+      ["Where", "Qualcomm Device Cloud's rack, on AC power"],
+    ],
+  },
+  {
+    name: "POCO X8 Pro Max",
+    chip: "MediaTek Dimensity 9500s (MT6991)",
+    used: "The 4 against 2 threads test and two chat sessions",
+    clusters: [
+      { cores: [0, 1, 2, 3], type: "Cortex-A720", ghz: 2.4 },
+      { cores: [4, 5, 6], type: "Cortex-X4", ghz: 3.3 },
+      { cores: [7], type: "Cortex-X925", ghz: 3.73 },
+    ],
+    rows: [
+      ["GPU", "Mali-G925-Immortalis MC11"],
+      ["Memory", "11.0 GiB visible to Android"],
+      ["Software", "Android 16, HyperOS 3"],
+      ["Where", "The owner's own phone, on USB power"],
+    ],
+  },
+];
+
 // What the benchmark and the loggers read. The cooling wait (pd_bench.cpp, cool_down and heat) reads
 // the hottest cpu-0-*/cpu-1-*, gpuss-* and nsphvx-*/nsphmx-* zones, the GPU's kgsl thermal_pwrlevel and
 // each CPU policy's scaling_max_freq against cpuinfo_max_freq. The XO thermistor is sys-therm-0, which

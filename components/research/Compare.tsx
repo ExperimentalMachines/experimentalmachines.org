@@ -8,7 +8,7 @@ const seriesB = "#d9480f";
 
 export const ChartCard = ({ children }: { children: React.ReactNode }) => <div className="rounded-[1.5rem] bg-bench p-5 sm:p-6">{children}</div>;
 
-const Swatch = ({ color }: { color: string }) => <span aria-hidden className="inline-block h-2.5 w-2.5 shrink-0 rounded-sm" style={{ backgroundColor: color }} />;
+export const Swatch = ({ color }: { color: string }) => <span aria-hidden className="inline-block h-2.5 w-2.5 shrink-0 rounded-sm" style={{ backgroundColor: color }} />;
 
 function Key({ a, b }: { a: string; b: string }) {
   return (
@@ -727,14 +727,25 @@ export function Interval({
 // Where a run's time goes, each setup filling the same width.
 const stackColors = ["#6741d9", "#008f7a", "#e0a100", "#d6336c"];
 
-export function Stack({ parts, rows, unsplit }: { parts: string[]; rows: { label: string; shares: (number | null)[]; unsplit?: number }[]; unsplit: string }) {
+// `colors` lets a post match the parts to a figure beside them; by default they take the stack palette in order.
+export function Stack({
+  parts,
+  rows,
+  unsplit,
+  colors = stackColors,
+}: {
+  parts: string[];
+  rows: { label: string; shares: (number | null)[]; unsplit?: number }[];
+  unsplit: string;
+  colors?: string[];
+}) {
   const lower = (x: string) => x.charAt(0).toLowerCase() + x.slice(1);
   // Each row's pieces in drawing order, with where each one's middle falls along the bar, in percent.
   const segments = (r: { shares: (number | null)[]; unsplit?: number }) => {
     const total = r.shares.reduce<number>((sum, x) => sum + (x ?? 0), r.unsplit ?? 0);
     const pieces = [
       ...(r.unsplit ? [{ name: unsplit, value: r.unsplit, color: "#868e96" }] : []),
-      ...parts.flatMap((p, i) => (r.shares[i] === null ? [] : [{ name: p, value: r.shares[i] as number, color: stackColors[i] }])),
+      ...parts.flatMap((p, i) => (r.shares[i] === null ? [] : [{ name: p, value: r.shares[i] as number, color: colors[i] }])),
     ];
     let start = 0;
     return pieces.map((g) => {
@@ -748,7 +759,7 @@ export function Stack({ parts, rows, unsplit }: { parts: string[]; rows: { label
       <p className="flex flex-wrap gap-x-5 gap-y-1 text-sm">
         {parts.map((p, i) => (
           <span key={p} className="inline-flex items-center gap-2">
-            <Swatch color={stackColors[i]} />
+            <Swatch color={colors[i]} />
             {p}
           </span>
         ))}

@@ -16,6 +16,88 @@ export const shortPause = {
   without: { label: "r34-9-W4-0", points: [[-9,13],[-7,14.5],[-5,13.5],[-3,13],[-1,12.5],[1,4.5],[3,0],[5,0],[7,0.5],[9,0],[11,0],[13,0.5],[15,0],[17,0],[19,0.5],[21,0],[23,0],[25,0.5],[27,0],[29,0],[31,8],[33,14],[35,14],[37,12.5],[39,14.5],[41,14.5],[43,13.5],[45,13.5],[47,13.5],[49,13.5],[51,13.5],[53,13.5],[55,13.5],[57,13],[59,13],[61,11.5],[63,11],[65,10],[67,9.5],[69,9.5],[71,9.5],[73,9.5],[75,9.5],[77,9],[79,9.5],[81,9],[83,9.5],[85,9],[87,9],[89,9]] as [number, number][] },
 };
 
+// Where the six decode threads ran in r19 on phone B, in 2 s intervals with all six busy: how many intervals,
+// how many distinct cores they used, each thread's median share of a core, the cores used in all, and one
+// interval drawn in full.
+export const threadPlacement = {
+  "normal": {
+    "intervals": 5,
+    "cores": [
+      5,
+      6
+    ],
+    "share": 1,
+    "coresUsed": 5.07,
+    "sample": {
+      "at": 1794156256,
+      "threads": [
+        {
+          "core": 1,
+          "share": 1
+        },
+        {
+          "core": 2,
+          "share": 1
+        },
+        {
+          "core": 3,
+          "share": 1
+        },
+        {
+          "core": 4,
+          "share": 1
+        },
+        {
+          "core": 6,
+          "share": 1
+        },
+        {
+          "core": 7,
+          "share": 1
+        }
+      ]
+    }
+  },
+  "paused": {
+    "intervals": 212,
+    "cores": [
+      2,
+      3
+    ],
+    "share": 0.23,
+    "coresUsed": 1.49,
+    "sample": {
+      "at": 1794155925,
+      "threads": [
+        {
+          "core": 0,
+          "share": 0.23
+        },
+        {
+          "core": 0,
+          "share": 0.23
+        },
+        {
+          "core": 1,
+          "share": 0.32
+        },
+        {
+          "core": 1,
+          "share": 0.32
+        },
+        {
+          "core": 1,
+          "share": 0.23
+        },
+        {
+          "core": 1,
+          "share": 0.22
+        }
+      ]
+    }
+  }
+};
+
 // Chat sessions on phone D: the XO thermistor's mean over each 30 s, minutes from the session's start.
 export const sessionHeat: { label: string; pause: string; minutes: number; peak: number; points: [number, number][] }[] = [
   {
