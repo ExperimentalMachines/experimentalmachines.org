@@ -131,30 +131,30 @@ export default function DecodeStall() {
           <ThreadChoice
             panels={[
               {
-                title: "Normally",
+                title: "Writing, normally",
                 caption: `${pdStall.app.normal} threads, each on a core of its own: ${app.normal.toFixed(1)} tokens a second.`,
                 off: [],
                 threads: [{ core: 2 }, { core: 3 }, { core: 6 }, { core: 7 }],
               },
               {
-                title: "Hard throttle, the usual 4 threads",
+                title: "Writing, hard throttle, the usual 4",
                 caption: `Only cores 0 and 1 run work, so two threads wait at a time: the reply crawls at ${at(4).paused} tokens a second.`,
                 off: parkedCores,
                 threads: [{ core: 0 }, { core: 1 }, { core: 0, waiting: true }, { core: 1, waiting: true }],
               },
               {
-                title: "Hard throttle, the guard's 2 threads",
+                title: "Writing, hard throttle, the guard's 2",
                 caption: `Two threads, two cores, each has one again: ${two.paused} tokens a second, about ${Math.round(two.paused / at(4).paused)} times as fast.`,
                 off: parkedCores,
                 threads: [{ core: 0 }, { core: 1 }],
               },
             ]}
             rules={[
-              { when: "Before each reply", text: `${pdStall.app.normal} threads, half the cores` },
-              { when: "Android says warm", text: `${pdStall.app.light} threads` },
-              { when: "Android says hot", text: `${pdStall.app.severe} threads` },
-              { when: "Android says very hot", text: "does not start the reply" },
-              { when: "A reply stalls", text: "2 threads, trying its count again every 30 s" },
+              { when: "Before each reply", write: `${pdStall.app.normal}, half the cores`, read: "6 on the Snapdragon, 8 on the POCO" },
+              { when: "Android says warm", write: `${pdStall.app.light}`, read: `${pdStall.app.normal}` },
+              { when: "Android says hot", write: `${pdStall.app.severe}`, read: `${pdStall.app.severe}` },
+              { when: "Android says very hot", write: "does not start the reply", read: "does not read the prompt" },
+              { when: "A reply stalls", write: "2, trying the usual count after 30 s or more", read: "2 until a try works" },
             ]}
             notes={[
               [
@@ -194,23 +194,41 @@ export default function DecodeStall() {
 
         <Figure
           id="threads"
-          title="Every thread past the two cores left costs nearly all the speed"
-          lede="How fast the app's own engine writes normally and with six cores taken out of use by hand, for each number of threads."
-          note="Phone E, Qwen3 4B, a 19-token prompt and a 64-token reply. Medians of four runs in each state, two with 6 threads, whose runs with cores out of use a watchdog stopped. The app's heat policy was not in the loop."
+          title="Every thread past the two cores left costs nearly all the speed, writing and reading"
+          lede="How fast the app's own engine writes the reply (decode) and reads the prompt (prefill), normally and with six cores taken out of use by hand, for each number of threads."
+          note="Phone E, Qwen3 4B, a 19-token prompt and a 64-token reply, both jobs at the same thread count. Medians of four runs in each state, two with 6 threads; with cores out of use those two were stopped by a watchdog before the engine reported its reading speed. The app's heat policy was not in the loop."
         >
-          <Aligned
-            label="Threads"
-            head={["Normally", "Only 2 cores left", "Speed kept"]}
-            rows={pdFix.byThreads.map((r) => ({
-              label: r.threads === app.threads ? `${r.threads} threads, the app's usual` : `${r.threads} threads`,
-              on: r.threads === 2,
-              cells: [
-                { value: r.normal, shown: `${r.normal.toFixed(1)} tok/s` },
-                { value: r.paused, shown: `${rate(r.paused)} tok/s` },
-                { value: kept(r), shown: share(kept(r)) },
-              ],
-            }))}
-          />
+          <div className="space-y-4">
+            <p className="text-sm font-medium">Writing the reply (decode)</p>
+            <Aligned
+              label="Threads"
+              head={["Normally", "Only 2 cores left", "Speed kept"]}
+              rows={pdFix.byThreads.map((r) => ({
+                label: r.threads === app.threads ? `${r.threads} threads, the app's usual` : `${r.threads} threads`,
+                on: r.threads === 2,
+                cells: [
+                  { value: r.normal, shown: `${r.normal.toFixed(1)} tok/s` },
+                  { value: r.paused, shown: `${rate(r.paused)} tok/s` },
+                  { value: kept(r), shown: share(kept(r)) },
+                ],
+              }))}
+            />
+            <p className="pt-2 text-sm font-medium">Reading the prompt (prefill)</p>
+            <Aligned
+              label="Threads"
+              head={["Normally", "Only 2 cores left", "Speed kept"]}
+              missing="not recorded"
+              rows={pdFix.promptByThreads.map((r) => ({
+                label: `${r.threads} threads`,
+                on: r.threads === 2,
+                cells: [
+                  { value: r.normal, shown: `${r.normal.toFixed(1)} tok/s` },
+                  r.paused === null ? null : { value: r.paused, shown: `${r.paused} tok/s` },
+                  r.paused === null ? null : { value: (100 * r.paused) / r.normal, shown: share((100 * r.paused) / r.normal) },
+                ],
+              }))}
+            />
+          </div>
         </Figure>
 
         <Figure
@@ -235,7 +253,7 @@ export default function DecodeStall() {
         <Figure
           id="cause"
           title="A finished thread keeps its core while the others wait for one"
-          lede="A token is hundreds of small operations; after each one, every thread waits at a checkpoint for the rest, and a waiting thread keeps checking on its core instead of giving it up."
+          lede="A token is hundreds of small operations, whether written or read; after each one, every thread waits at a checkpoint for the rest, and a waiting thread keeps checking on its core instead of giving it up."
           note={`A 6-thread decode's CPU time, sampled 1,000 times a second with six cores out of use and normally: Snapdragon test phone E, llama.cpp's benchmark tool, ${pdFix.profile.normalCores} cores busy on average normally and ${pdFix.profile.pausedCores} with six out of use. The samples were kept by function, so how that function's time splits between the wait and its other work is not known.`}
         >
           <div className="space-y-4">
@@ -266,7 +284,7 @@ export default function DecodeStall() {
                   detail: "If no new work arrives, they check for a short while, then sleep. A new thread count only picks how many of the set work.",
                 },
               ]}
-              footnote={`Reading the prompt slowed sharply too: with 4 threads and only 2 cores left, set by hand, it ran at ${pdFix.promptPaused[0]} tokens a second against ${pdFix.promptPaused[1]} with 2 threads (phone E). This post measures writing.`}
+              footnote="Writing the reply (decode) and reading the prompt (prefill) both work this way, and both slow down with more threads than cores: the thread-count figure above shows each."
             />
             <WaitLanes
               caption={`An illustration, not a recording, and which thread runs where is made up: three of a token's operations normally, one with only 2 cores left. Each panel's split between work and waiting follows the profile below, which counts time by function. With only 2 cores left, a token took about ${slowdown6} times as long at 6 threads.`}
@@ -422,7 +440,7 @@ export default function DecodeStall() {
             The app&apos;s rules. Before each reply, half the cores, never under 2 or over 6. Warm is Android&apos;s light or moderate heat status, hot is severe, very hot is
             critical or worse. A slow step takes over a quarter of a second and more than 8 times the recent normal step, or more than 2 s over it; before the guard has seen enough
             steps, any step over 1.5 s. A try comes after at least four steps at 2 threads, and keeps the planned count if its step is within 3 times the recent 2-thread step and
-            within 2 s of it.
+            within 2 s of it. A fallback carries over to later replies until a try works, which restores both counts.
           </Note>
           <Table
             label="Six natural hard throttles, logged every 2 seconds"

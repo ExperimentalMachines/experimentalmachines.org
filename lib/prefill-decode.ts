@@ -209,8 +209,16 @@ export const pdFix = {
   // r28: simpleperf (cpu-clock, 1 kHz) over a 6-thread decode with the pause set by hand and without.
   // The share of samples in ggml_graph_compute_thread, which holds the inlined barrier wait, and in the
   // matrix and attention kernels; cores busy on average.
-  // r27, from the report's guard section: prompt reading with the pause set by hand, 4 threads against 2, tok/s.
-  promptPaused: [2.8, 27.7],
+  // r27: the same runs' prompt reading (the 19-token prompt), tok/s, medians of the engine's own summary over
+  // four runs (two with 6 threads), from `analyze_app.py chain27.log logcat-r27.txt trig-r22.txt`. The paused
+  // 6-thread runs were stopped by the watchdog before the engine printed its summary, so they have none. The
+  // test reads and writes with the same count.
+  promptByThreads: [
+    { threads: 2, normal: 70.1, paused: 23.4 },
+    { threads: 3, normal: 81.6, paused: 6.65 },
+    { threads: 4, normal: 89.25, paused: 4.05 },
+    { threads: 6, normal: 125.8, paused: null },
+  ] as { threads: number; normal: number; paused: number | null }[],
   profile: { pausedWait: 69.6, normalWait: 8.6, pausedKernels: 29, normalKernels: 78, pausedCores: 1.83, normalCores: 3.46 },
   // r29 and r31: llama.cpp's barrier made to call sched_yield after a spin budget. Decode in tok/s on the
   // same three turns (Qwen3 4B, UltraChat-200k-2): the pause set by hand with 6 or 4 threads after

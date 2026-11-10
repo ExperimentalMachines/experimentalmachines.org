@@ -869,7 +869,17 @@ export function Ranges({
 export type AlignedCell = { value: number; low?: number; shown: string } | null;
 
 // One row per setting with several measures beside it, each column on its own scale.
-export function Aligned({ head, rows, label }: { head: string[]; label: string; rows: { label: string; on?: boolean; cells: AlignedCell[] }[] }) {
+export function Aligned({
+  head,
+  rows,
+  label,
+  missing = "not run",
+}: {
+  head: string[];
+  label: string;
+  rows: { label: string; on?: boolean; cells: AlignedCell[] }[];
+  missing?: string;
+}) {
   const tops = head.map((_, c) => Math.max(...rows.map((r) => r.cells[c]?.value ?? 0)));
   const cols = { gridTemplateColumns: `minmax(8rem, 11rem) repeat(${head.length}, minmax(0, 1fr))` };
   return (
@@ -905,7 +915,7 @@ export function Aligned({ head, rows, label }: { head: string[]; label: string; 
                       <span className="whitespace-nowrap">{cell.shown}</span>
                     </span>
                   ) : (
-                    <span className="flex h-5 items-center text-xs text-ink-soft">not run</span>
+                    <span className="flex h-5 items-center text-xs text-ink-soft">{missing}</span>
                   )}
                 </div>
               ))}

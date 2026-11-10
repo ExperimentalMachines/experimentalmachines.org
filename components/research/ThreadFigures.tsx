@@ -347,7 +347,7 @@ function MapPanel({ p, id }: { p: Placement; id: string }) {
 
 // Who decides what, shown rather than told: three states side by side, then how the app picks its count and
 // the two reasons behind its design.
-export function ThreadChoice({ panels, rules, notes }: { panels: Placement[]; rules: { when: string; text: string }[]; notes: [string, string][] }) {
+export function ThreadChoice({ panels, rules, notes }: { panels: Placement[]; rules: { when: string; write: string; read: string }[]; notes: [string, string][] }) {
   return (
     <ChartCard>
       <p className="flex flex-wrap gap-x-6 gap-y-1.5 text-sm">
@@ -383,14 +383,26 @@ export function ThreadChoice({ panels, rules, notes }: { panels: Placement[]; ru
       <div className="mt-6 grid gap-6 border-t border-rule pt-5 md:grid-cols-2">
         <div>
           <p className="text-sm font-medium">How many threads the app picks</p>
-          <dl className="mt-3 space-y-2 text-sm">
-            {rules.map((r) => (
-              <div key={r.when} className="grid grid-cols-[8.5rem_minmax(0,1fr)] items-center gap-3 sm:grid-cols-[11rem_minmax(0,1fr)]">
-                <dt className="text-ink-soft">{r.when}</dt>
-                <dd>{r.text}</dd>
-              </div>
-            ))}
-          </dl>
+          <table className="mt-3 w-full text-sm">
+            <thead>
+              <tr className="text-left text-xs text-ink-soft">
+                <th className="pb-2 pr-3 font-normal" />
+                <th className="pb-2 pr-3 font-normal">Writing the reply (decode)</th>
+                <th className="pb-2 font-normal">Reading the prompt (prefill)</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rules.map((r) => (
+                <tr key={r.when} className="border-t border-rule/70 align-top">
+                  <th scope="row" className="py-2 pr-3 text-left font-normal text-ink-soft">
+                    {r.when}
+                  </th>
+                  <td className="py-2 pr-3">{r.write}</td>
+                  <td className="py-2">{r.read}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
         <div className="space-y-3 text-sm leading-6">
           {notes.map(([k, v]) => (
