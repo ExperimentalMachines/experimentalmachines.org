@@ -1,7 +1,7 @@
 import { grouped } from "@/components/openweights/pd-parts";
 import { Aligned, PairBars, Stack, TimeLines } from "@/components/research/Compare";
 import Post, { Figure, Findings, More, Note, postMetadata, Row, Rows, Section, Table } from "@/components/research/Post";
-import { PhoneSpecs, ThreadChoice, ThreadPlacement, WaitLanes } from "@/components/research/ThreadFigures";
+import { PhoneSpecs, ThreadChoice, ThreadLife, ThreadPlacement, WaitLanes } from "@/components/research/ThreadFigures";
 import { heldPause, sessionHeat, shortPause, threadPlacement } from "@/lib/decode-stall-data";
 import { pdFix, pdLinks, pdPhone, pdSpecs, pdStall, pdTrigger } from "@/lib/prefill-decode";
 
@@ -35,27 +35,37 @@ const placed = threadPlacement;
 const parkedCores = pdSpecs[0].parked!;
 // How many times longer one token took at 6 threads with six cores parked.
 const slowdown6 = Math.round(at(6).normal / at(6).paused);
-// One token's work as lanes, drawn to the profile: normally each of six threads has a core; parked, three take
-// turns on each of the two cores left, each turn split between work and waiting as the profile splits it.
+// A few of a token's operations as lanes, drawn to the profile. Normally each of six threads has a core and the
+// threads finish their slices at slightly different times, so all but the slowest wait at the checkpoint; the
+// offsets sum to zero, so the shares stay the profile's. With six cores out of use, three threads take turns on
+// each of the two cores left within one operation, each turn split between work and waiting as the profile is.
+const spread = [-4, 2, -1, 8, -2, -3];
 const lanes = {
-  normal: [0, 1, 2, 3, 4, 5].map((core) => ({
-    core,
-    segs: [
-      { w: pf.normalKernels, kind: "work" as const, label: `T${core + 1}` },
-      { w: pf.normalWait, kind: "wait" as const },
-      { w: 100 - pf.normalKernels - pf.normalWait, kind: "other" as const },
-    ],
+  normal: [0, 1, 2].map((k) => ({
+    label: `Operation ${k + 1}`,
+    w: 1,
+    lanes: [0, 1, 2, 3, 4, 5].map((core) => {
+      const d = spread[(core + 2 * k) % 6];
+      return [
+        { w: pf.normalKernels + d, kind: "work" as const, label: `T${core + 1}` },
+        { w: 100 - pf.normalKernels - pf.normalWait, kind: "other" as const },
+        { w: pf.normalWait - d, kind: "wait" as const },
+      ];
+    }),
   })),
-  parked: [0, 1].map((core) => ({
-    core,
-    segs: [
-      ...[0, 1, 2].flatMap((k) => [
-        { w: pf.pausedKernels / 3, kind: "work" as const, label: `T${core + 1 + 2 * k}` },
-        { w: pf.pausedWait / 3, kind: "wait" as const },
+  parked: [
+    {
+      label: "One operation",
+      w: 1,
+      lanes: [0, 1].map((core) => [
+        ...[0, 1, 2].flatMap((k) => [
+          { w: pf.pausedKernels / 3, kind: "work" as const, label: `T${core + 1 + 2 * k}` },
+          { w: pf.pausedWait / 3, kind: "wait" as const },
+        ]),
+        { w: 100 - pf.pausedKernels - pf.pausedWait, kind: "other" as const },
       ]),
-      { w: 100 - pf.pausedKernels - pf.pausedWait, kind: "other" as const },
-    ],
-  })),
+    },
+  ],
 };
 
 export default function DecodeStall() {
@@ -190,18 +200,39 @@ export default function DecodeStall() {
         <Figure
           id="cause"
           title="A finished thread keeps its core while the others wait for one"
-          lede="llama.cpp's threads wait for each other hundreds of times per token, and a waiting thread keeps checking on its core instead of giving it up, so with more threads than cores the waiters hold the cores the working threads need."
+          lede="A token is hundreds of small operations; after each one, every thread waits at a checkpoint for the rest, and a waiting thread keeps checking on its core instead of giving it up."
           note={`A 6-thread decode's CPU time, sampled 1,000 times a second with six cores out of use and normally: Snapdragon test phone E, llama.cpp's benchmark tool, ${pdFix.profile.normalCores} cores busy on average normally and ${pdFix.profile.pausedCores} with six out of use. The samples were kept by function, so how that function's time splits between the wait and its other work is not known.`}
         >
           <div className="space-y-4">
+            <ThreadLife
+              steps={[
+                [
+                  "The model loads",
+                  "The app normally makes one set of worker threads and keeps it: as many as the larger of its two counts, for reading the prompt and writing the reply.",
+                ],
+                [
+                  "Each token",
+                  `Writing a token, or reading a chunk of the prompt, is a long list of small operations: one token of Llama 3.2 3B lists ${pdStall.graphNodes}, some skipped or combined.`,
+                ],
+                ["Each operation", "Most are split into one slice per thread. A thread that is done waits at a checkpoint until all are, then all start the next."],
+                ["Between tokens", "If no new work arrives, the threads check for a short while, then sleep. A new thread count only picks how many of the set work."],
+              ]}
+              footnote={`Reading the prompt slowed sharply too: with 4 threads and only 2 cores left, set by hand, it ran at ${pdFix.promptPaused[0]} tokens a second against ${pdFix.promptPaused[1]} with 2 threads (phone E). This post measures writing.`}
+            />
             <WaitLanes
-              caption={`An illustration, not a recording: the turns are made up, but each panel's split between work and waiting matches the profile below. With only 2 cores left, a token took about ${slowdown6} times as long at 6 threads.`}
+              caption={`An illustration, not a recording, and which thread runs where is made up: three of a token's operations normally, one with only 2 cores left. Each panel's split between work and waiting follows the profile below, which counts time by function. With only 2 cores left, a token took about ${slowdown6} times as long at 6 threads.`}
               panels={[
-                { title: "Normally", note: "Each thread has a core of its own: it works, waits a moment for the slowest, and moves on.", lanes: lanes.normal },
+                {
+                  title: "Normally",
+                  note: "Each thread has a core of its own. It does its slice, waits a moment at the checkpoint for the slowest, and all start the next operation.",
+                  cores: [0, 1, 2, 3, 4, 5],
+                  ops: lanes.normal,
+                },
                 {
                   title: "Six cores out of use",
-                  note: "Three threads take turns on each core. One that has finished keeps its core in the wait function, checking in a loop, so the threads with work left wait for a turn.",
-                  lanes: lanes.parked,
+                  note: "Here three threads share each core. One that has done its slice can keep its core while it waits at the checkpoint, so threads with work left wait for a turn. This repeats at every operation.",
+                  cores: [0, 1],
+                  ops: lanes.parked,
                 },
               ]}
             />

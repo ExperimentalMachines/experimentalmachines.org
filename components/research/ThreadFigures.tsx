@@ -154,38 +154,69 @@ export function ThreadPlacement({ panels }: { panels: { title: string; caption: 
 }
 
 type Seg = { w: number; kind: "work" | "wait" | "other"; label?: string };
+export type Op = { label: string; w: number; lanes: Seg[][] };
 
-// An illustration of one token's work, drawn to the profile's shares: each lane is a core, and each piece is a
-// thread working (cobalt, labelled) or waiting while it holds the core (hatched orange). The order of turns
-// is invented; the split between working and waiting is the measured one.
-export function WaitLanes({ panels, caption }: { panels: { title: string; note: string; lanes: { core: number; segs: Seg[] }[] }[]; caption: string }) {
+// An illustration of a few of a token's operations, drawn to the profile's shares: each lane is a core and each
+// piece a thread working (cobalt, labelled) or waiting while it holds the core (hatched orange). The dark bar
+// after each operation is the checkpoint every thread waits at before the next one starts. Which thread runs
+// when is invented; the split between working and waiting is the measured one.
+export function WaitLanes({ panels, caption }: { panels: { title: string; note: string; cores: number[]; ops: Op[] }[]; caption: string }) {
   const style = (k: Seg["kind"]) => (k === "work" ? { backgroundColor: RUNS, color: "#ffffff" } : k === "wait" ? hatch(WAITS) : { backgroundColor: OTHER });
+  const grow = (op: Op) => ({ flexGrow: op.w, flexBasis: 0 });
   return (
     <ChartCard>
-      <Key
-        items={[
-          { color: RUNS, label: "A thread working" },
-          { color: WAITS, label: "A thread in the wait function, still holding its core", hatched: true },
-          { color: OTHER, label: "Other work" },
-        ]}
-      />
+      <p className="flex flex-wrap gap-x-5 gap-y-1 text-sm">
+        <span className="inline-flex items-center gap-2">
+          <Swatch color={RUNS} />A thread doing its slice
+        </span>
+        <span className="inline-flex items-center gap-2">
+          <Swatch color={WAITS} hatched />
+          Waiting at the checkpoint, still holding its core
+        </span>
+        <span className="inline-flex items-center gap-2">
+          <Swatch color={OTHER} />
+          Other work
+        </span>
+        <span className="inline-flex items-center gap-2">
+          <span aria-hidden className="inline-block h-3.5 w-[3px] rounded-full bg-ink" />
+          Checkpoint
+        </span>
+      </p>
       <p className="mt-2 text-xs leading-5 text-ink-soft">{caption}</p>
       <div className="mt-5 grid gap-8 md:grid-cols-2">
         {panels.map((p) => (
           <div key={p.title}>
             <p className="text-sm font-medium">{p.title}</p>
             <div className="mt-3 space-y-1.5" role="img" aria-label={`${p.title}. ${p.note}`}>
-              {p.lanes.map((l) => (
-                <div key={l.core} className="flex items-center gap-2">
-                  <span className="w-12 shrink-0 text-xs text-ink-soft">Core {l.core}</span>
-                  <div className="flex h-7 min-w-0 flex-1 gap-[2px]">
-                    {l.segs.map((s, i) => (
-                      <span
-                        key={i}
-                        className="flex min-w-0 items-center justify-center overflow-hidden rounded-[4px] text-xs font-medium first:rounded-l-md last:rounded-r-md"
-                        style={{ width: `${s.w}%`, ...style(s.kind) }}
-                      >
-                        {s.label}
+              <div className="flex items-end gap-2">
+                <span className="w-12 shrink-0" />
+                <div className="flex min-w-0 flex-1">
+                  {p.ops.map((op) => (
+                    <span key={op.label} className="flex min-w-0 items-center" style={grow(op)}>
+                      <span className="min-w-0 flex-1 truncate text-center text-[11px] text-ink-soft">{op.label}</span>
+                      <span className="w-[9px] shrink-0" />
+                    </span>
+                  ))}
+                </div>
+              </div>
+              {p.cores.map((core, li) => (
+                <div key={core} className="flex items-center gap-2">
+                  <span className="w-12 shrink-0 text-xs text-ink-soft">Core {core}</span>
+                  <div className="flex h-7 min-w-0 flex-1">
+                    {p.ops.map((op) => (
+                      <span key={op.label} className="flex h-full min-w-0 items-stretch" style={grow(op)}>
+                        <span className="flex min-w-0 flex-1 gap-[2px]">
+                          {op.lanes[li].map((s, i) => (
+                            <span
+                              key={i}
+                              className="flex min-w-0 items-center justify-center overflow-hidden rounded-[4px] text-xs font-medium"
+                              style={{ width: `${s.w}%`, ...style(s.kind) }}
+                            >
+                              {s.label}
+                            </span>
+                          ))}
+                        </span>
+                        <span aria-hidden className="mx-[3px] w-[3px] shrink-0 rounded-full bg-ink" />
                       </span>
                     ))}
                   </div>
@@ -196,6 +227,26 @@ export function WaitLanes({ panels, caption }: { panels: { title: string; note: 
           </div>
         ))}
       </div>
+    </ChartCard>
+  );
+}
+
+// The life of the app's threads, a real sequence, so the steps are numbered.
+export function ThreadLife({ steps, footnote }: { steps: [string, string][]; footnote: string }) {
+  return (
+    <ChartCard>
+      <ol className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+        {steps.map(([title, line], i) => (
+          <li key={title} className="min-w-0">
+            <p className="flex items-center gap-2 text-sm font-medium">
+              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-ink text-xs text-white">{i + 1}</span>
+              {title}
+            </p>
+            <p className="mt-2 text-sm leading-6 text-ink-soft">{line}</p>
+          </li>
+        ))}
+      </ol>
+      <p className="mt-5 border-t border-rule pt-4 text-sm leading-6">{footnote}</p>
     </ChartCard>
   );
 }

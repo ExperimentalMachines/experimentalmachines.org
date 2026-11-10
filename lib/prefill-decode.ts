@@ -209,6 +209,8 @@ export const pdFix = {
   // r28: simpleperf (cpu-clock, 1 kHz) over a 6-thread decode with the pause set by hand and without.
   // The share of samples in ggml_graph_compute_thread, which holds the inlined barrier wait, and in the
   // matrix and attention kernels; cores busy on average.
+  // r27, from the report's guard section: prompt reading with the pause set by hand, 4 threads against 2, tok/s.
+  promptPaused: [2.8, 27.7],
   profile: { pausedWait: 69.6, normalWait: 8.6, pausedKernels: 29, normalKernels: 78, pausedCores: 1.83, normalCores: 3.46 },
   // r29 and r31: llama.cpp's barrier made to call sched_yield after a spin budget. Decode in tok/s on the
   // same three turns (Qwen3 4B, UltraChat-200k-2): the pause set by hand with 6 or 4 threads after
