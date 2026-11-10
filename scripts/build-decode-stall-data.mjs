@@ -479,7 +479,23 @@ function schedTrace(label, fromMs, windowMs) {
     return { cpu, engine: round(engine / span, 3), other: round((all - engine - idle) / span, 3), idle: round(idle / span, 3), events: ev.filter((x) => x.cpu === cpu).length };
   });
   const stretches = { count: engineStretches.length, medianMs: round(median(engineStretches) * 1000, 3) };
-  return { label, spanMs: round(span * 1000, 0), switches: ev.length, stretches, fromMs, windowMs, shares, cores, segs };
+  // How an engine thread left its core: still runnable (R, R+: the scheduler took it) or blocked (S, D: the thread
+  // gave it up), and how often the kernel woke one. A thread that waited by sleeping would leave blocked and be woken.
+  const lines = file(`trace-${label}.txt`).split("\n");
+  const leftBy = {};
+  for (const l of lines) {
+    const m = l.match(/sched_switch: prev_comm=.* prev_pid=(\d+) .*prev_state=(\S+) ==>/);
+    if (m && num[m[1]]) leftBy[m[2]] = (leftBy[m[2]] ?? 0) + 1;
+  }
+  const taken = Object.entries(leftBy)
+    .filter(([st]) => st.startsWith("R"))
+    .reduce((n, [, c]) => n + c, 0);
+  const left = { taken, gaveUp: Object.values(leftBy).reduce((n, c) => n + c, 0) - taken };
+  const woken = lines.filter((l) => {
+    const m = l.match(/sched_wakeup: comm=.* pid=(\d+) /);
+    return m && num[m[1]];
+  }).length;
+  return { label, spanMs: round(span * 1000, 0), switches: ev.length, stretches, left, woken, fromMs, windowMs, shares, cores, segs };
 }
 const traces = { normal: schedTrace("r49-T-N6", 1000, 10), paused: schedTrace("r49-T-P6", 1000, 10) };
 
@@ -565,6 +581,8 @@ export const schedTraces = ${JSON.stringify(traces)} as Record<"normal" | "pause
   spanMs: number;
   switches: number;
   stretches: { count: number; medianMs: number };
+  left: { taken: number; gaveUp: number };
+  woken: number;
   fromMs: number;
   windowMs: number;
   shares: { thread: number; share: number; cpus: number[] }[];

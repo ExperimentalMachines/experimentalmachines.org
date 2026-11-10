@@ -1,7 +1,7 @@
 import { grouped } from "@/components/openweights/pd-parts";
 import { Aligned, PairBars, Stack, TimeLines } from "@/components/research/Compare";
 import Post, { Figure, Findings, More, Note, postMetadata, Row, Rows, Section, Table } from "@/components/research/Post";
-import { PhoneSpecs, SchedTrace, ThreadChoice, ThreadLife, WaitLanes } from "@/components/research/ThreadFigures";
+import { PhoneSpecs, SchedTrace, ThreadChoice, ThreadLife } from "@/components/research/ThreadFigures";
 import { benchmarkHeat, forcedTrip, heldPause, longSession, schedTraces, sessionHeat, shortPause, threadMatrix, threadPlacement } from "@/lib/decode-stall-data";
 import { pdFix, pdLinks, pdPhone, pdSpecs, pdStall, pdTrigger } from "@/lib/prefill-decode";
 
@@ -60,39 +60,6 @@ const coreLine = (c: { cpu: number; shares: number[] }) => `${c.shares.length} o
 const parkedCores = pdSpecs[0].parked!;
 // How many times longer one token took at 6 threads with six cores parked.
 const slowdown6 = Math.round(at(6).normal / at(6).paused);
-// A few of a token's operations as lanes, drawn to the profile. Normally each of six threads has a core and the
-// threads finish their slices at slightly different times, so all but the slowest wait at the checkpoint; the
-// offsets sum to zero, so the shares stay the profile's. With six cores out of use, three threads take turns on
-// each of the two cores left within one operation, each turn split between work and waiting as the profile is.
-const spread = [-4, 2, -1, 8, -2, -3];
-const lanes = {
-  normal: [0, 1, 2].map((k) => ({
-    label: `Operation ${k + 1}`,
-    w: 1,
-    lanes: [0, 1, 2, 3, 4, 5].map((core) => {
-      const d = spread[(core + 2 * k) % 6];
-      return [
-        { w: pf.normalKernels + d, kind: "work" as const, label: `T${core + 1}` },
-        { w: 100 - pf.normalKernels - pf.normalWait, kind: "other" as const },
-        { w: pf.normalWait - d, kind: "wait" as const },
-      ];
-    }),
-  })),
-  parked: [
-    {
-      label: "One operation",
-      w: 1,
-      lanes: [0, 1].map((core) => [
-        ...[0, 1, 2].flatMap((k) => [
-          { w: pf.pausedKernels / 3, kind: "work" as const, label: `T${core + 1 + 2 * k}` },
-          { w: pf.pausedWait / 3, kind: "wait" as const },
-        ]),
-        { w: 100 - pf.pausedKernels - pf.pausedWait, kind: "other" as const },
-      ]),
-    },
-  ],
-};
-
 export default function DecodeStall() {
   return (
     <Post
@@ -115,7 +82,7 @@ export default function DecodeStall() {
             },
             {
               headline: "Waiting threads hold the cores the working ones need",
-              line: `With six cores out of use, the engine's six threads all ran on cores 0 and 1, ${coreLine(pausedCores[0])} and ${coreLine(pausedCores[1])}, and in a profile ${Math.round(pf.pausedWait)}% of the CPU time was in the function that contains llama.cpp's waiting loop, against ${Math.round(pf.normalWait)}% normally.`,
+              line: `With six cores out of use, the engine's six threads all ran on cores 0 and 1 and none left a core to sleep: switched out ${grouped(tr.paused.left.taken)} times in 2 s, they were still runnable every time. In a profile, ${Math.round(pf.pausedWait)}% of the CPU time was in the function that contains llama.cpp's waiting loop, against ${Math.round(pf.normalWait)}% normally.`,
             },
             {
               headline: "The app's engine now drops to 2 threads when a step stalls",
@@ -247,7 +214,7 @@ export default function DecodeStall() {
           id="placement"
           title="With six cores out of use, six threads share the two left"
           lede={`Which thread each core ran, recorded by the phone's kernel over ${tr.paused.windowMs} ms of the app's own engine writing a reply with 6 threads, normally and with six cores taken out of use by hand.`}
-          note={`Snapdragon phone A, Qwen3 4B. The kernel's scheduler events (sched_switch) for 2 s of decode in each state; the lanes show ${tr.paused.windowMs} ms from ${tr.paused.fromMs} ms into each recording, every stretch at its true width, and the shares are over the whole 2 s. Grey is any other task: here mostly the lab's screen streaming, the graphics driver and USB.`}
+          note={`Snapdragon phone A, Qwen3 4B. The kernel's scheduler events (sched_switch) for 2 s of decode in each state; the lanes show ${tr.paused.windowMs} ms from ${tr.paused.fromMs} ms into each recording, every stretch at its true width, and the shares are over the whole 2 s. Grey is any other task: here mostly the lab's screen streaming, the graphics driver and USB. Each switch records whether the thread it took off could still run: a thread that waited by sleeping would leave blocked and need waking, and in both recordings no engine thread did either (${tr.paused.left.gaveUp + tr.normal.left.gaveUp} blocked, ${tr.paused.woken + tr.normal.woken} woken). A thread that gave its core up by yielding would also leave runnable, which the trace cannot tell apart.`}
         >
           <SchedTrace
             panels={[
@@ -259,7 +226,7 @@ export default function DecodeStall() {
               },
               {
                 title: "Six cores out of use",
-                caption: `All six on cores 0 and 1: ${coreLine(pausedCores[0])}, ${coreLine(pausedCores[1])}. The trace holds ${grouped(tr.paused.stretches.count)} stretches of an engine thread in 2 s, against ${grouped(tr.normal.stretches.count)} normally.`,
+                caption: `All six on cores 0 and 1: ${coreLine(pausedCores[0])}, ${coreLine(pausedCores[1])}. In 2 s an engine thread was switched out ${grouped(tr.paused.left.taken)} times, against ${grouped(tr.normal.left.taken)} normally, still runnable every time: none left its core to sleep.`,
                 parked: parkedCores,
                 ...tr.paused,
               },
@@ -270,7 +237,7 @@ export default function DecodeStall() {
         <Figure
           id="cause"
           title="A finished thread keeps its core while the others wait for one"
-          lede="A token is hundreds of small operations, whether written or read; between them, every thread waits at a checkpoint for the rest, and a waiting thread keeps checking on its core instead of giving it up."
+          lede={`A token is hundreds of small operations, whether written or read; between them, every thread waits at a checkpoint for the rest. The recording above shows no thread leaving its core to sleep, and in a profile most of the sampled CPU time with two cores left was in the function that contains that wait. At 6 threads a token took about ${slowdown6} times as long.`}
           note={`A 6-thread decode's CPU time, sampled 1,000 times a second with six cores out of use and normally: Snapdragon test phone E, llama.cpp's benchmark tool, ${pdFix.profile.normalCores} cores busy on average normally and ${pdFix.profile.pausedCores} with six out of use. The samples were kept by function, so how that function's time splits between the wait and its other work is not known.`}
         >
           <div className="space-y-4">
@@ -296,32 +263,16 @@ export default function DecodeStall() {
                 },
                 {
                   when: "Between tokens",
-                  gist: "Idle threads sleep",
+                  gist: "With no work, they check, then sleep",
                   picture: "sleep",
-                  detail: "If no new work arrives, they check for a short while, then sleep. A new thread count only picks how many of the set work.",
+                  detail:
+                    "In llama.cpp's code, a thread with no new work checks for a short while, then sleeps. In the normal recording, about 45 tokens long, no engine thread left its core to sleep or was woken. A new thread count only picks how many of the set work.",
                 },
               ]}
               footnote="Writing the reply (decode) and reading the prompt (prefill) both work this way, and both slow down with more threads than cores: the thread-count figure above shows each."
             />
-            <WaitLanes
-              caption={`An illustration, not a recording, and which thread runs where is made up: three of a token's operations normally, one with only 2 cores left. Each panel's split between work and time in the wait function follows the profile below. With only 2 cores left, a token took about ${slowdown6} times as long at 6 threads.`}
-              panels={[
-                {
-                  title: "Normally",
-                  note: "Each thread has a core of its own. It does its slice, waits a moment at the checkpoint for the slowest, and all start the next operation.",
-                  cores: [0, 1, 2, 3, 4, 5],
-                  ops: lanes.normal,
-                },
-                {
-                  title: "Six cores out of use",
-                  note: "Here three threads share each core. One that has done its slice can keep its core while it waits at the checkpoint, so threads with work left wait for a turn. This repeats at operation after operation.",
-                  cores: [0, 1],
-                  ops: lanes.parked,
-                },
-              ]}
-            />
             <Stack
-              parts={["The wait function", "Matrix and attention kernels"]}
+              parts={["The function holding the wait", "Matrix and attention kernels"]}
               colors={["#d9480f", "#2b44e6"]}
               unsplit="Everything else"
               rows={[
@@ -506,8 +457,10 @@ export default function DecodeStall() {
             The scheduler traces (phone A, 2 s each): normally the six engine threads ran in {grouped(tr.normal.stretches.count)} stretches with a median of{" "}
             {tr.normal.stretches.medianMs} ms; with six cores out of use, in {grouped(tr.paused.stretches.count)} with a median of {tr.paused.stretches.medianMs} ms. Then cores 0
             and 1 ran engine threads {pct(tr.paused.cores[0].engine)}% and {pct(tr.paused.cores[1].engine)}% of the time and other tasks {pct(tr.paused.cores[0].other)}% and{" "}
-            {pct(tr.paused.cores[1].other)}%, and cores 2 to 7 logged {tr.paused.cores.slice(2).every((c) => c.events === 0) ? "no switch at all" : "a few switches"}. An earlier
-            run on phone B, with llama.cpp&apos;s own benchmark and the phone&apos;s own throttles, sampled every 2 s, put the six on cores 0 and 1 at a median{" "}
+            {pct(tr.paused.cores[1].other)}%, and cores 2 to 7 logged {tr.paused.cores.slice(2).every((c) => c.events === 0) ? "no switch at all" : "a few switches"}. An engine
+            thread was switched out {grouped(tr.normal.left.taken)} times normally and {grouped(tr.paused.left.taken)} times with six cores out of use, still runnable every time;
+            it left blocked {tr.normal.left.gaveUp + tr.paused.left.gaveUp} times and was woken {tr.normal.woken + tr.paused.woken} times. An earlier run on phone B, with
+            llama.cpp&apos;s own benchmark and the phone&apos;s own throttles, sampled every 2 s, put the six on cores 0 and 1 at a median{" "}
             {Math.round(threadPlacement.paused.share * 100)}% of a core each.
           </Note>
           <Note>
