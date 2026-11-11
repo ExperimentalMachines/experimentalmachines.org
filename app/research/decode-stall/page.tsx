@@ -2,7 +2,21 @@ import { grouped } from "@/components/openweights/pd-parts";
 import { Aligned, PairBars, Stack, TimeLines } from "@/components/research/Compare";
 import Post, { Figure, Findings, More, Note, postMetadata, Row, Rows, Section, Table } from "@/components/research/Post";
 import { PhoneSpecs, SchedTrace, ThreadChoice, ThreadLife } from "@/components/research/ThreadFigures";
-import { benchmarkHeat, earlyTry, forcedTrip, heldPause, longSession, schedTraces, sessionHeat, shortPause, threadMatrix, threadPlacement } from "@/lib/decode-stall-data";
+import {
+  benchmarkHeat,
+  earlyTry,
+  forcedTrip,
+  heldPause,
+  longSession,
+  realHeat,
+  realLateHold,
+  realLength,
+  schedTraces,
+  sessionHeat,
+  shortPause,
+  threadMatrix,
+  threadPlacement,
+} from "@/lib/decode-stall-data";
 import { pdFix, pdLinks, pdPhone, pdSpecs, pdStall, pdTrigger } from "@/lib/prefill-decode";
 
 const href = "/research/decode-stall/";
@@ -67,6 +81,29 @@ const span = (xs: number[]) => (Math.min(...xs) === Math.max(...xs) ? `${Math.mi
 const quiet = earlyTry.find((r) => r.arm === "N")!;
 // How many times longer one token took at 6 threads with six cores parked.
 const slowdown6 = Math.round(at(6).normal / at(6).paused);
+// r52 on phone F: each thread count on the 1,751-token prompt with up to 400 tokens of reply. Writing is one or two
+// pairs per count (a run with the cores taken out of use against one without, between the same token counts);
+// reading is the whole prompt, every run.
+const medOf = (xs: number[]) => {
+  const s = [...xs].sort((a, b) => a - b);
+  const m = s.length >> 1;
+  return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2;
+};
+const real = realLength.map((r) => ({
+  threads: r.threads,
+  writeNormal: medOf(r.decode.map((d) => d.normal)),
+  writePaused: medOf(r.decode.map((d) => d.paused)),
+  writeKept: r.decode.map((d) => (100 * d.paused) / d.normal).sort((a, b) => a - b),
+  readNormal: medOf(r.promptS.normal),
+  readPaused: medOf(r.promptS.paused),
+  pairs: r.decode,
+  r,
+}));
+const rl = (n: number) => real.find((r) => r.threads === n)!;
+const keptShown = (xs: number[]) => xs.map(share).join(", ");
+const secsRange = (xs: number[]) => `${Math.round(Math.min(...xs))} to ${Math.round(Math.max(...xs))}`;
+const late = realLateHold[0];
+const lastTokens = realLength.filter((r) => r.threads >= 3).flatMap((r) => r.lastGenerated);
 export default function DecodeStall() {
   return (
     <Post
@@ -86,6 +123,10 @@ export default function DecodeStall() {
             {
               headline: "When six cores go out of use, the reply nearly stops",
               line: `With six of the eight cores out of use, as the phone does on its own at ${pdTrigger.onC} °C, the app's engine writing with ${app.threads} threads fell from ${app.normal.toFixed(1)} to ${rate(app.paused)} tokens a second (a token is a small piece of text); with 2 threads it kept ${Math.round(kept(two))}% of its speed.`,
+            },
+            {
+              headline: "At a realistic length, in a pause set by hand, writing still nearly stopped and reading slowed less",
+              line: `On a ${grouped(1751)}-token prompt with up to 400 tokens of reply, with six cores out of use 4 threads wrote at ${rl(4).writeKept.map(share).join(" and ")} of their speed and 2 threads at ${rl(2).writeKept.map(share).join(" and ")}; reading the whole prompt took ${secsRange(real.map((r) => r.readPaused))} s at every thread count, against ${secsRange(real.map((r) => r.readNormal))} s normally, on a phone kept cooler in the paused runs.`,
             },
             {
               headline: "Waiting threads hold the cores the working ones need",
@@ -222,7 +263,7 @@ export default function DecodeStall() {
 
         <Figure
           id="threads"
-          title="Every thread past the two cores left costs nearly all the speed, writing and reading"
+          title="On a 19-token prompt, every thread past the two cores left costs nearly all the speed, writing and reading"
           lede="How fast the app's own engine writes the reply (decode) and reads the prompt (prefill), normally and with six cores taken out of use by hand, for each number of threads."
           note={`Snapdragon phone A, Qwen3 4B, a 19-token prompt and up to 32 tokens of reply, both jobs at the same thread count, the guard off. Medians of three runs in each state, run in a shuffled order, each after a cooling gate. A run its 300 s watchdog stopped counts up to its last progress line; with cores out of use a run counts only if, in every sample taken once a second, the switches read on and each busy thread was last seen on core 0 or 1; where threads ran between samples is not known.${leftOut ? ` ${leftOut} paused run${leftOut > 1 ? "s" : ""} where that did not hold ${leftOut > 1 ? "are" : "is"} left out.` : ""} The two speed columns share a scale. The app's heat policy was not in the loop.`}
         >
@@ -242,6 +283,46 @@ export default function DecodeStall() {
               missing="not measured"
               scales={[0, 0, 1]}
               rows={threadMatrix.map((r) => matrixRow(r.threads, r.prefill, (x) => (x < 10 ? x.toFixed(2) : x.toFixed(1))))}
+            />
+          </div>
+        </Figure>
+
+        <Figure
+          id="length"
+          title="In a pause set by hand at a realistic length, writing stalled past two threads; reading slowed less"
+          lede={`The same test on a ${grouped(1751)}-token prompt with up to 400 tokens of reply, about a typical reply in the conversations this study replayed: how fast the app's own engine writes, and how long it takes to read the whole prompt, normally and with six cores taken out of use by hand.`}
+          note={`Snapdragon phone F, Qwen3 4B, the guard off, each run after a cooling gate. Writing: ${real.reduce((n, r) => n + r.pairs.length, 0)} pairs, two at 1 to 3 threads and one at 4, 6 and 8, each a run with the cores taken out of use just after the reply began against one without, between the same token counts; at 3 threads and more the paused runs stopped at 300 s, having last reported ${Math.min(...lastTokens)} to ${Math.max(...lastTokens)} tokens, including those written before the pause, so their speed is over an early part of the reply. Reading: the whole prompt, ${Math.min(...real.map((r) => r.r.promptS.normal.length))} to ${Math.max(...real.map((r) => r.r.promptS.normal.length))} runs normally and ${Math.min(...real.map((r) => r.r.promptS.paused.length))} or ${Math.max(...real.map((r) => r.r.promptS.paused.length))} with the cores out of use from the start, medians. The runs with no pause warmed the board to ${realHeat.normal.xoMax[0]} to ${realHeat.normal.xoMax[1]} °C and had a CPU limit lowered by Android in ${100 - realHeat.normal.atMax[1]}% to ${100 - realHeat.normal.atMax[0]}% of their samples; the paused prompt runs stayed at ${realHeat.paused.xoMax[1]} °C or below with both limits at their maximum in every sample, so reading compares runs in different heat. A paused run counts only if its samples, about one a second, cover the pause with no gap over 5 s, all read the switches on and all show each busy thread last on core 0 or 1; a sampled check cannot show where a thread ran between samples. One run where samples showed two threads on cores 6 and 7 until about ${late.untilS} s after the switches read on is left out of writing.`}
+        >
+          <div className="space-y-4">
+            <p className="text-sm font-medium">Writing the reply (decode)</p>
+            <Aligned
+              label="Threads"
+              head={["Normally", "Only 2 cores left", "Speed kept"]}
+              scales={[0, 0, 1]}
+              rows={real.map((r) => ({
+                label: r.threads === app.threads ? `${r.threads} threads, the app's usual` : `${r.threads} thread${r.threads > 1 ? "s" : ""}`,
+                on: r.threads === 2,
+                cells: [
+                  { value: r.writeNormal, shown: `${r.writeNormal.toFixed(1)} tok/s` },
+                  { value: r.writePaused, shown: `${rate(r.writePaused)} tok/s` },
+                  { value: medOf(r.writeKept), shown: keptShown(r.writeKept) },
+                ],
+              }))}
+            />
+            <p className="pt-2 text-sm font-medium">Reading the whole prompt (prefill), with the time it took</p>
+            <Aligned
+              label="Threads"
+              head={["Normally", "Only 2 cores left", "Speed kept"]}
+              scales={[0, 0, 1]}
+              rows={real.map((r) => ({
+                label: `${r.threads} thread${r.threads > 1 ? "s" : ""}`,
+                on: r.threads === 2,
+                cells: [
+                  { value: 1751 / r.readNormal, shown: `${(1751 / r.readNormal).toFixed(1)} tok/s, ${Math.round(r.readNormal)} s` },
+                  { value: 1751 / r.readPaused, shown: `${(1751 / r.readPaused).toFixed(1)} tok/s, ${Math.round(r.readPaused)} s` },
+                  { value: (100 * r.readNormal) / r.readPaused, shown: share((100 * r.readNormal) / r.readPaused) },
+                ],
+              }))}
             />
           </div>
         </Figure>
@@ -305,7 +386,7 @@ export default function DecodeStall() {
                     "In llama.cpp's code, a thread with no new work checks for a short while, then sleeps. In the normal recording, about 45 tokens long, no engine thread left its core to sleep or was woken. A new thread count only picks how many of the set work.",
                 },
               ]}
-              footnote="Writing the reply (decode) and reading the prompt (prefill) both work this way, and both slow down with more threads than cores: the thread-count figure above shows each."
+              footnote="Writing the reply (decode) and reading the prompt (prefill) both work this way. On the 19-token prompt both lost most of their speed with more than two threads and six cores out of use; on the long prompt reading kept far more of its speed than writing. The two thread-count figures above show each."
             />
             <Stack
               parts={["The function holding the wait", "Matrix and attention kernels"]}
@@ -568,6 +649,29 @@ export default function DecodeStall() {
               ["MediaTek", `${pdFix.poco.four.join(", ")}; ${pdFix.poco.two.join(", ")}`, `${pdFix.poco.firstToken4S.join(" to ")}; ${pdFix.poco.firstToken2S.join(" to ")}`],
             ]}
           />
+          <Table
+            label="Each thread count at a realistic length"
+            head={["Threads", "Reading the prompt, normally", "With six cores out of use", "Writing, normally", "With six cores out of use", "Tokens compared"]}
+            min="52rem"
+            rows={real.map((r) => [
+              `${r.threads}`,
+              r.r.promptS.normal.map((x) => `${x} s`).join(", "),
+              r.r.promptS.paused.map((x) => `${x} s`).join(", "),
+              r.pairs.map((d) => `${d.normal}`).join(", ") + " tok/s",
+              r.pairs.map((d) => `${d.paused}`).join(", ") + " tok/s",
+              r.pairs.map((d) => `${d.from} to ${d.to}${d.crossRound ? "*" : ""}`).join(", "),
+            ])}
+          />
+          <Note>
+            Snapdragon phone F, a {grouped(1751)}-token prompt and up to 400 tokens; the table lists the measurements counted. Reading is the engine&apos;s time to read the whole
+            prompt; normally means runs with no cores out of use and runs where they went out of use only after reading. Writing pairs a run with the cores out of use from just
+            after the reply began with one without, between the same token counts; the paused window starts at its first progress line at least 1 s after the switches were written.
+            The logs keep counts, not the tokens, so that the two replies matched is not shown. * against the first round&apos;s normal run, which the second round did not reach.
+            In the run left out, two threads were seen on cores 6 and 7 for about {late.untilS} s after the switches read on, while it wrote tokens {late.early.from} to{" "}
+            {late.early.to} at {late.early.rate} tok/s; measured after that, it wrote {late.after!.paused} tok/s against {late.after!.normal}, as the first round&apos;s 4-thread
+            run did. In the runs with no pause both CPU limits were at their maximum in {realHeat.normal.atMax[0]}% to {realHeat.normal.atMax[1]}% of samples; in the paused prompt
+            runs, in all of them.
+          </Note>
           <Note>
             The thread count also changes the text: 6 threads against 2 changed {pdFix.agreement.changed} of {pdFix.agreement.of} replies, while the same count gave identical
             replies on two phones.
@@ -578,7 +682,7 @@ export default function DecodeStall() {
       <Section id="method" title="How we ran it">
         <Rows>
           <Row label="Phones">
-            {pdPhone.soc} phones A, B, C, D and E, Qualcomm&apos;s reference design, in Qualcomm Device Cloud&apos;s rack, root shell, AC power, 3 to 10 November 2026. A POCO X8
+            {pdPhone.soc} phones A, B, C, D, E and F, Qualcomm&apos;s reference design, in Qualcomm Device Cloud&apos;s rack, root shell, AC power, 3 to 11 November 2026. A POCO X8
             Pro Max (MediaTek Dimensity 9500s) on USB power for two sessions and 2 threads against 4. Their specifications are in{" "}
             <a href="#phones" className="underline decoration-ink/30 underline-offset-4 hover:decoration-ink">
               the first figure
@@ -587,13 +691,13 @@ export default function DecodeStall() {
           </Row>
           <Row label="Cores out of use">
             The phone does it on its own at 78 °C. For the tests we flipped the same two switches by hand after letting the phone cool, as root on the rack phones, which an app
-            cannot do, and checked that work then ran only on cores 0 and 1. Twice, on phone A, we heated it with busy loops and memory-copy loops until the switches came on by
-            themselves.
+            cannot do, and checked in samples about a second apart that work then ran only on cores 0 and 1; samples cannot rule out work on other cores between them. Twice, on
+            phone A, we heated it with busy loops and memory-copy loops until the switches came on by themselves.
           </Row>
           <Row label="Runtime">
             llama.cpp&apos;s benchmark, built from {pdPhone.llamacpp}, on B and C for the natural-heat runs, on B for the first runs by hand, and on E and D for the profile and the
-            llama.cpp change. The app&apos;s own engine, on llama.cpp v0.8.0 (8642541b), every decode step timed, on A for the thread counts and the scheduler traces, on D for the
-            guard and the sessions, and on A for the longest sessions and the forced throttle.
+            llama.cpp change. The app&apos;s own engine, on llama.cpp v0.8.0 (8642541b), every decode step timed, on A for the thread counts and the scheduler traces, on F for the
+            thread counts at a realistic length, on D for the guard and the sessions, and on A for the longest sessions and the forced throttle.
           </Row>
           <Row label="Model">Qwen3 4B in Q4_0 for every run set up for this post; the six logged throttles came from the matrix, on Qwen3 1.7B and 4B.</Row>
           <Row label="The guard">
@@ -616,9 +720,10 @@ export default function DecodeStall() {
             probably did not; those runs are left out.
           </Row>
           <Row label="What the guard misses">
-            Cores going out of use while the prompt is being read: in the forced throttle 19 tokens took {secs(ft.on.promptMs)} s with the guard on. And twice it fell back on steps
-            of about 4 s with none of the logged switches on, once when the logger read three of the phone&apos;s eleven switches of this kind and once when it read all eleven; the
-            cause is not known.
+            Cores going out of use while the prompt is being read: in the forced throttle 19 tokens took {secs(ft.on.promptMs)} s with the guard on, and with the cores out of use
+            by hand and the guard off the {grouped(1751)}-token prompt took {Math.round(rl(4).readPaused)} s at 4 threads against {Math.round(rl(2).readPaused)} at 2, one run each;
+            what the guard would change there was not measured. And twice it fell back on steps of about 4 s with none of the logged switches on, once when the logger read three of
+            the phone&apos;s eleven switches of this kind and once when it read all eleven; the cause is not known.
           </Row>
           <Row label="The sessions">
             Rack phones and a phone on a desk, not in a hand or a pocket. The longest, {Math.round(longSession.minutes)} minutes with no break on phone A, came within{" "}
