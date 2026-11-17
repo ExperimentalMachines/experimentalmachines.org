@@ -136,11 +136,11 @@ export type Member = {
 
 export const team: Member[] = [
   { name: "Alpha Romer Coma", role: "Co-Founder", linkedin: "https://www.linkedin.com/in/alpharomercoma/", photo: "/people/alpha-romer-coma.jpg" },
-  { name: "John Andrew Balbarosa", role: "Co-Founder", linkedin: "https://www.linkedin.com/in/jbalbarosa/" },
+  { name: "John Andrew Balbarosa", role: "Co-Founder", linkedin: "https://www.linkedin.com/in/jbalbarosa/", photo: "/people/john-andrew-balbarosa.jpg" },
   { name: "Arjhine Ty", role: "Co-Founder", linkedin: "https://www.linkedin.com/in/arjhinety/", photo: "/people/arjhine-ty.jpg" },
-  { name: "Xynil Jhed Lacap", role: "Co-Founder", linkedin: "https://www.linkedin.com/in/xy-lacap-76ba9029a/" },
-  { name: "JC Diamante", role: "Core Contributor", linkedin: "https://www.linkedin.com/in/jcdiamante/" },
-  { name: "Jules Gregory Agustin", role: "Core Contributor", linkedin: "https://www.linkedin.com/in/jules-gregory-agustin-694884284/" },
+  { name: "Xynil Jhed Lacap", role: "Co-Founder", linkedin: "https://www.linkedin.com/in/xy-lacap-76ba9029a/", photo: "/people/xynil-jhed-lacap.jpg" },
+  { name: "JC Diamante", role: "Core Contributor", linkedin: "https://www.linkedin.com/in/jcdiamante/", photo: "/people/jc-diamante.jpg" },
+  { name: "Jules Gregory Agustin", role: "Core Contributor", linkedin: "https://www.linkedin.com/in/jules-gregory-agustin-694884284/", photo: "/people/jules-gregory-agustin.jpg" },
 ];
 
 // Work with us: a door for what the visitor has, each ending at proof rather than a description of a service.
