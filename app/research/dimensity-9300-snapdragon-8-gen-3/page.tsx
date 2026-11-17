@@ -4,7 +4,7 @@ import { DEVICE, DuoLabel } from "@/components/openweights/duo";
 import DuoViews from "@/components/openweights/DuoViews";
 import Switches from "@/components/openweights/Switches";
 import { Scroll, grouped, slower, th, thNum } from "@/components/openweights/pd-parts";
-import { Aligned } from "@/components/research/Compare";
+import { Aligned, Swatch } from "@/components/research/Compare";
 import Post, { Figure, Findings, More, postMetadata, Row, Rows, Section, Table } from "@/components/research/Post";
 import { PhoneSpecs } from "@/components/research/ThreadFigures";
 import {
@@ -96,6 +96,19 @@ const leads = both.map(({ full, t }) => {
 });
 const mtkWins = leads.filter((x) => x.mtk);
 const sdWins = leads.filter((x) => x.sd);
+// Where each device's fastest pairing spent its time. The reply is the decoding after the first token;
+// the prompt is the rest of each turn: reading the new tokens, the first token and any handoff.
+const split = (m: MtkModel) => {
+  const r = fastest(m);
+  const c = r.cell;
+  return { pair: name(r), prompt: c.seconds * (1 - c.decodeShare), reply: c.seconds * c.decodeShare, share: 100 * c.decodeShare };
+};
+const splits = both.map(({ full, t }, i) => ({ m: full, mtk: split(t), sd: split(full), lead: leads[i] }));
+const replyShare = (d: "mtk" | "sd") => splits.map((x) => x[d].share);
+const promptShare = (d: "mtk" | "sd") => splits.map((x) => 100 - x[d].share);
+const perTurn = (k: "newTokens" | "replyTokens") => both.flatMap(({ full, t }) => [t[k] / t.turns, full[k] / full.turns]);
+const turnNew = both.length > 0 ? range(perTurn("newTokens"), 0) : "";
+const turnReply = both.length > 0 ? range(perTurn("replyTokens"), 0) : "";
 // A fastest pairing whose every reply began with an end-of-generation token (a chat would have stopped).
 const forced = both.flatMap(({ full, t }) => [
   ...(fastest(t).cell.eogFirst === t.turns ? [{ m: t, d: "mtk" as const }] : []),
@@ -418,6 +431,114 @@ function FastestCards() {
   );
 }
 
+// Where the time went. The two colours are the prefill and decode of the local Copilot post's time split,
+// checked as a pair against the card (dataviz validator: CVD ΔE 21, contrast over 3:1); every value is also
+// written beside its colour, so no reading depends on colour alone.
+const PROMPT = "#6741d9";
+const REPLY = "#008f7a";
+
+// One device's share of time across the models: the reply as the headline, the prompt beneath it.
+function ShareTile({ d }: { d: "mtk" | "sd" }) {
+  return (
+    <div className="rounded-[1.5rem] bg-bench p-5 sm:p-6">
+      <p className="text-sm font-medium">{DEVICE[d]}</p>
+      <p className="display mt-3 text-4xl font-medium tabular-nums tracking-[-0.03em] sm:text-5xl">{range(replyShare(d), 0)}%</p>
+      <div className="mt-3 space-y-1 text-sm">
+        <p className="flex items-center gap-2">
+          <Swatch color={REPLY} />
+          of each model&apos;s time went to the reply
+        </p>
+        <p className="flex items-center gap-2 text-ink-soft">
+          <Swatch color={PROMPT} />
+          the prompt took {range(promptShare(d), 0)}%
+        </p>
+      </div>
+    </div>
+  );
+}
+
+// One device's cell in a model's row: its pairing and total, a bar on the row's scale, then each part's
+// seconds and share. The device that finished the model's turns first is marked. The device is named by its
+// column from md up, where the cell keeps the name for screen readers only; on a phone, where the columns stack, it shows.
+function SplitCell({ d, x, max, first }: { d: "mtk" | "sd"; x: ReturnType<typeof split>; max: number; first: boolean }) {
+  const total = x.prompt + x.reply;
+  const parts = [
+    { name: "Prompt", value: x.prompt, share: 100 - x.share, color: PROMPT },
+    { name: "Reply", value: x.reply, share: x.share, color: REPLY },
+  ];
+  return (
+    <div>
+      <div className="flex items-end justify-between gap-3">
+        <p className="min-w-0 text-xs leading-5 text-ink-soft">
+          <span className="block text-sm text-ink md:sr-only">{DEVICE[d]}</span>
+          {x.pair}
+        </p>
+        <p className={`shrink-0 text-right text-base font-medium tabular-nums ${first ? "text-blue-deep" : ""}`}>
+          {first && <span className="mr-2 rounded-full bg-blue-deep px-2 py-0.5 align-middle text-[11px] font-medium text-white">first</span>}
+          {grouped(total)} s
+        </p>
+      </div>
+      <div className="mt-2 flex h-5 gap-0.5" style={{ width: `${(total / max) * 100}%` }}>
+        {parts.map((g, k) => (
+          // Focusable so a tap on a phone shows the same box a mouse does. A part of a few seconds keeps
+          // two pixels, so it stays visible beside a reply a hundred times longer.
+          <span key={g.name} tabIndex={-1} className="group relative h-full outline-none" style={{ width: `${(g.value / total) * 100}%`, minWidth: 2 }}>
+            <span
+              aria-hidden
+              className={`absolute inset-0 origin-center transition-transform group-hover:scale-y-125 group-focus:scale-y-125 ${k === 0 ? "rounded-l-md" : "rounded-r-md"}`}
+              style={{ backgroundColor: g.color }}
+            />
+            <span
+              role="tooltip"
+              className="pointer-events-none absolute bottom-full left-0 z-10 mb-2 whitespace-nowrap rounded-md border border-rule bg-white px-2.5 py-1 text-xs text-ink opacity-0 shadow-sm transition-opacity group-hover:opacity-100 group-focus:opacity-100"
+            >
+              {g.name} <span className="font-medium tabular-nums">{grouped(g.value)} s</span>
+            </span>
+          </span>
+        ))}
+      </div>
+      <p className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs tabular-nums">
+        {parts.map((g) => (
+          <span key={g.name} className="inline-flex items-center gap-1.5">
+            <Swatch color={g.color} />
+            {g.name} {grouped(g.value)} s<span className="font-medium">· {pct(g.share)}</span>
+          </span>
+        ))}
+      </p>
+    </div>
+  );
+}
+
+// The Dimensity always on the left and the Snapdragon on the right, each column headed by its share tile;
+// one row per model, both bars on that row's scale so their lengths compare across the row.
+const splitCols = "md:grid-cols-[10rem_minmax(0,1fr)_minmax(0,1fr)]";
+
+function SplitFigure() {
+  return (
+    <div>
+      <div className={`grid gap-x-8 gap-y-4 ${splitCols}`}>
+        <span aria-hidden className="hidden md:block" />
+        <ShareTile d="mtk" />
+        <ShareTile d="sd" />
+      </div>
+      <ul className="mt-4">
+        {splits.map(({ m, mtk, sd, lead }) => {
+          const max = Math.max(mtk.prompt + mtk.reply, sd.prompt + sd.reply);
+          return (
+            <li key={short(m)} className={`grid gap-x-8 gap-y-4 border-t border-rule py-5 ${splitCols}`}>
+              <p className="text-sm font-medium md:pt-1">
+                <DuoLabel m={m} />
+              </p>
+              <SplitCell d="mtk" x={mtk} max={max} first={lead.mtk} />
+              <SplitCell d="sd" x={sd} max={max} first={lead.sd} />
+            </li>
+          );
+        })}
+      </ul>
+    </div>
+  );
+}
+
 // The first-token check, one row per model, both devices side by side.
 function TokenTable() {
   const rows = byModel.filter((x) => x.sides.some(({ h }) => h.npuFirstToken));
@@ -726,6 +847,7 @@ export default function DimensitySnapdragon() {
                         {MTK}: {mtkWins.length} of {leads.length} model rows, by up to {pct(Math.max(0, ...mtkWins.map((x) => x.pct)))}.
                         {sdWins.length > 0 && ` ${SD}: ${andList(sdWins.map((x) => `${x.model}, by ${pct(x.pct)}`))}.`}
                         {leads.length > mtkWins.length + sdWins.length && ` Ties: ${leads.length - mtkWins.length - sdWins.length}.`}
+                        {` Replies took ${range([...replyShare("mtk"), ...replyShare("sd")], 0)}% of the fastest pairings' time.`}
                       </>
                     ),
                   },
@@ -811,6 +933,19 @@ export default function DimensitySnapdragon() {
               forced.length > 0 && "Stop token first: every reply began with a stop token, so a chat would have ended there. The bench kept writing.",
               "One kept timed run per pairing; gaps of a few percent may come from run order or the unit.",
               "Core mix, runtimes, heat and memory all differ, so this cannot say why one device was faster.",
+            ]}
+          />
+        </Figure>
+
+        <Figure id="split" title="Where the time went" lede="Each device's fastest pairing from the table above, split into reading the prompt and writing the reply.">
+          <SplitFigure />
+          <Bullets
+            items={[
+              "Prompt: reading the turn's new tokens, the first token and any handoff. Reply: the decoding after the first token.",
+              both.length > 0 && `Each turn read ${turnNew} new prompt tokens on average and wrote ${turnReply} reply tokens.`,
+              "In each row both bars share one scale, the longer total filling its column; across rows, compare the seconds.",
+              "First: the device whose fastest pairing finished the model's turns in less time.",
+              "Turns that read more prompt per reply token would shift these totals; this run did not measure that.",
             ]}
           />
         </Figure>
