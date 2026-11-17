@@ -135,9 +135,9 @@ export type Member = {
 };
 
 export const team: Member[] = [
-  { name: "Alpha Romer Coma", role: "Co-Founder", linkedin: "https://www.linkedin.com/in/alpharomercoma/" },
+  { name: "Alpha Romer Coma", role: "Co-Founder", linkedin: "https://www.linkedin.com/in/alpharomercoma/", photo: "/people/alpha-romer-coma.jpg" },
   { name: "John Andrew Balbarosa", role: "Co-Founder", linkedin: "https://www.linkedin.com/in/jbalbarosa/" },
-  { name: "Arjhine Ty", role: "Co-Founder", linkedin: "https://www.linkedin.com/in/arjhinety/" },
+  { name: "Arjhine Ty", role: "Co-Founder", linkedin: "https://www.linkedin.com/in/arjhinety/", photo: "/people/arjhine-ty.jpg" },
   { name: "Xynil Jhed Lacap", role: "Co-Founder", linkedin: "https://www.linkedin.com/in/xy-lacap-76ba9029a/" },
   { name: "JC Diamante", role: "Core Contributor", linkedin: "https://www.linkedin.com/in/jcdiamante/" },
   { name: "Jules Gregory Agustin", role: "Core Contributor", linkedin: "https://www.linkedin.com/in/jules-gregory-agustin-694884284/" },

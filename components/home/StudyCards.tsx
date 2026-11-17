@@ -1,3 +1,4 @@
+import Authors from "@/components/home/Authors";
 import Go from "@/components/home/Go";
 import { cardLink } from "@/components/home/ui";
 import type { Study, Viz } from "@/lib/studies";
@@ -134,7 +135,8 @@ export function StudyCard({ s, wide }: { s: Study; wide?: boolean }) {
       <div className="overflow-hidden">
         <Cover s={s} />
       </div>
-      <div className={`p-5 sm:p-6 ${wide ? "lg:self-center" : ""}`}>
+      {/* The text fills the card's height, so the authors sit on one line along a row of cards. */}
+      <div className={`flex flex-1 flex-col p-5 sm:p-6 ${wide ? "lg:self-center" : ""}`}>
         <Meta s={s} />
         <p className="display mt-2 text-xl leading-snug">
           <Go href={s.href} className={`${cardLink} underline-offset-4 after:rounded-[1.25rem]`}>
@@ -143,6 +145,11 @@ export function StudyCard({ s, wide }: { s: Study; wide?: boolean }) {
         </p>
         <p className="mt-2 text-sm leading-6 text-ink-soft">{s.line}</p>
         {s.speakers && <p className="mt-3 text-sm font-medium leading-6">{s.speakers.join(" and ")}</p>}
+        {s.authors && (
+          <div className="mt-auto pt-4">
+            <Authors names={s.authors} />
+          </div>
+        )}
       </div>
     </li>
   );
@@ -194,6 +201,11 @@ export function StudyFeature({ s, label }: { s: Study; label?: string }) {
           </Go>
         </h3>
         <p className="mt-4 max-w-xl leading-7 text-ink-soft">{s.line}</p>
+        {s.authors && (
+          <div className="mt-5">
+            <Authors names={s.authors} />
+          </div>
+        )}
         <span aria-hidden className="mt-6 inline-flex self-start rounded-full bg-ink px-5 py-2.5 text-sm font-medium text-white group-hover:bg-blue-deep">
           Read the study
         </span>

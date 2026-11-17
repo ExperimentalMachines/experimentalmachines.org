@@ -34,6 +34,8 @@ export type Study = {
   meta?: string;
   speakers?: string[];
   fullTitle?: string;
+  // Who wrote a research post, by their name in the team list, so a card and its page show the same people.
+  authors?: string[];
 };
 
 // Prefill and decode: which pairing won, one model's nine cells drawn as its matrix.
@@ -109,6 +111,7 @@ const agentsOk = rtxCapacity.find((r) => r.agents === 8)!;
 export const studies: Study[] = [
   {
     href: "/research/dimensity-9300-snapdragon-8-gen-3/",
+    authors: ["Alpha Romer Coma"],
     title: "Prefill and decode on Dimensity 9300+ and Snapdragon 8 Gen 3",
     date: "15 to 17 November 2026",
     project: "OpenWeights",
@@ -125,6 +128,7 @@ export const studies: Study[] = [
   },
   {
     href: "/research/decode-stall/",
+    authors: ["Alpha Romer Coma"],
     title: "Why CPU decode stalls when a phone throttles",
     date: "3 to 11 November 2026",
     project: "OpenWeights",
@@ -138,6 +142,7 @@ export const studies: Study[] = [
   },
   {
     href: "/research/prefill-decode/",
+    authors: ["Alpha Romer Coma"],
     title: "Prefill and decode on CPU, GPU and NPU",
     date: "2 to 10 November 2026",
     project: "OpenWeights",
@@ -152,6 +157,7 @@ export const studies: Study[] = [
   },
   {
     href: "/research/local-copilot/",
+    authors: ["Alpha Romer Coma"],
     title: "When is local Copilot worth it?",
     date: "October 2026",
     project: "GGUF",
@@ -165,6 +171,7 @@ export const studies: Study[] = [
   },
   {
     href: "/research/one-rtx-4090/",
+    authors: ["Alpha Romer Coma"],
     title: "How many coding agents can one RTX 4090 serve?",
     date: "23 and 24 September 2026",
     project: "Hardware",
@@ -175,6 +182,7 @@ export const studies: Study[] = [
   },
   {
     href: "/research/a100-quantization/",
+    authors: ["Arjhine Ty"],
     title: "A 2B model in ten GGUF formats on one A100",
     date: "12 September 2026",
     project: "GGUF",
@@ -185,6 +193,7 @@ export const studies: Study[] = [
   },
   {
     href: "/research/window/",
+    authors: ["Alpha Romer Coma"],
     title: "Does the exported window matter?",
     date: "7 September 2026",
     project: "OpenWeights",
@@ -195,6 +204,7 @@ export const studies: Study[] = [
   },
   {
     href: "/research/reruns/",
+    authors: ["Alpha Romer Coma"],
     title: "A 640-token reply cap was cutting off the LFM2.5 2.6B",
     date: "7 September 2026",
     project: "OpenWeights",
@@ -205,6 +215,7 @@ export const studies: Study[] = [
   },
   {
     href: "/research/latency/",
+    authors: ["Alpha Romer Coma"],
     title: "Five chips, two runtimes",
     date: "3 and 4 September 2026",
     project: "OpenWeights",
@@ -215,6 +226,7 @@ export const studies: Study[] = [
   },
   {
     href: "/research/trainium-inferentia/",
+    authors: ["Alpha Romer Coma"],
     title: "Llama 3.1 8B on AWS Trainium and Inferentia",
     date: "July and August 2026",
     project: "ASICs",
@@ -228,6 +240,7 @@ export const studies: Study[] = [
   },
   {
     href: "/research/mi300x-h200/",
+    authors: ["Alpha Romer Coma"],
     title: "MI300X against H200",
     date: "July 2026",
     project: "Hardware",
@@ -244,6 +257,7 @@ export const studies: Study[] = [
   },
   {
     href: "/research/m5-x2-elite/",
+    authors: ["Alpha Romer Coma"],
     title: "Apple M5 against Snapdragon X2 Elite",
     date: "27 July 2026",
     project: "Hardware",
@@ -260,6 +274,7 @@ export const studies: Study[] = [
   },
   {
     href: "/research/8-elite-dimensity/",
+    authors: ["Alpha Romer Coma"],
     title: "Snapdragon 8 Elite against Dimensity 9500s",
     date: "13 and 27 July 2026",
     project: "Hardware",

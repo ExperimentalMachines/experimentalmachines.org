@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Fragment } from "react";
 import { Action, Actions, PrimaryAction } from "@/components/home/Actions";
+import Authors from "@/components/home/Authors";
 import Go from "@/components/home/Go";
 import { Banner, StudyGrid } from "@/components/home/StudyCards";
 import { link } from "@/components/home/ui";
@@ -66,9 +67,21 @@ export default function Post({
         <div className="mt-4">
           <Banner s={s} />
         </div>
-        <p className="mt-8 text-sm text-ink-soft">{s.meta ?? `${s.project}, ${s.date}`}</p>
-        <h1 className="display mt-2 max-w-4xl text-balance text-4xl font-medium leading-[1.05] tracking-[-0.03em] sm:text-5xl">{sentence(s.fullTitle ?? s.title)}</h1>
-        <p className={`mt-4 ${measure} text-xl leading-8 text-ink-soft`}>{s.line}</p>
+        {/* The authors sit in the space the title and summary leave on the right, so the header grows no taller on
+            a wide screen; on a narrow one they fall under the summary, where a byline is read anyway. */}
+        <div className={`mt-8 ${s.authors ? "lg:grid lg:grid-cols-[minmax(0,1fr)_16rem] lg:items-end lg:gap-12" : ""}`}>
+          <div>
+            <p className="text-sm text-ink-soft">{s.meta ?? `${s.project}, ${s.date}`}</p>
+            <h1 className="display mt-2 max-w-4xl text-balance text-4xl font-medium leading-[1.05] tracking-[-0.03em] sm:text-5xl">{sentence(s.fullTitle ?? s.title)}</h1>
+            <p className={`mt-4 ${measure} text-xl leading-8 text-ink-soft`}>{s.line}</p>
+          </div>
+          {s.authors && (
+            <div className="mt-6 lg:mt-0 lg:border-l lg:border-rule lg:pl-6">
+              <p className="mb-3 text-sm text-ink-soft">Written by</p>
+              <Authors names={s.authors} size="lg" linked />
+            </div>
+          )}
+        </div>
         {primary && (
           <Actions className="mt-6">
             <PrimaryAction href={primary.href} className="bg-blue text-white hover:bg-blue-deep">
