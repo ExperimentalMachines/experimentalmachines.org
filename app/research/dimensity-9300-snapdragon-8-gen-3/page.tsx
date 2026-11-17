@@ -4,6 +4,7 @@ import { DEVICE, DuoLabel } from "@/components/openweights/duo";
 import DuoViews from "@/components/openweights/DuoViews";
 import Switches from "@/components/openweights/Switches";
 import { Scroll, grouped, slower, th, thNum } from "@/components/openweights/pd-parts";
+import { Aligned } from "@/components/research/Compare";
 import Post, { Figure, Findings, More, postMetadata, Row, Rows, Section, Table } from "@/components/research/Post";
 import { PhoneSpecs } from "@/components/research/ThreadFigures";
 import {
@@ -293,17 +294,9 @@ const groupsOf = (d: "mtk" | "sd") =>
   (d === "sd" ? sdSpec : mtkSpec).clusters.map((c) => `${c.type.replace("Cortex-", "")} (${c.cores.length > 2 ? `${c.cores[0]} to ${c.cores.at(-1)}` : c.cores.join(", ")})`);
 // Whether a probe began with every core group's limit at its top clock (all cool probes did so far).
 const atTop = (p: MtkProbe, d: "mtk" | "sd") => p.ceilingsGhz.every((g, i) => Math.abs(g - ((d === "sd" ? sdSpec : mtkSpec).clusters[i]?.ghz ?? 0)) < 0.01);
-// One probe pair, cool → heated, in one of four readings. Rates carry a short bar on one scale per view:
-// the fill is the heated rate, the tick the cool one, so a gain reads longer than no change.
+// One probe pair, cool → heated, for the clock-limit and longest-step readings; the two rates are KeptRows.
 type ProbeView = "decode" | "prefill" | "limits" | "step";
 const rateOf = (p: MtkProbe, view: ProbeView) => (view === "decode" ? p.decodeTokS : p.prefillTokS);
-const probeScale = (view: ProbeView) =>
-  Math.max(
-    1,
-    ...probes.flatMap((u) =>
-      (["6", "2"] as const).flatMap((t) => (u.probes[`cool${t}`] && u.probes[`hot${t}`] ? [rateOf(u.probes[`hot${t}`], view) / rateOf(u.probes[`cool${t}`], view)] : [])),
-    ),
-  );
 function ProbeCell({ c, h, view, d }: { c?: MtkProbe; h?: MtkProbe; view: ProbeView; d: "mtk" | "sd" }) {
   if (!c || !h) return <span className="text-ink-soft">not run</span>;
   if (view === "limits")
@@ -329,32 +322,44 @@ function ProbeCell({ c, h, view, d }: { c?: MtkProbe; h?: MtkProbe; view: ProbeV
         {grouped(c.longestStepMs)} → {grouped(h.longestStepMs)} ms
       </span>
     );
-  const a = rateOf(c, view);
-  const b = rateOf(h, view);
-  const f = b / a;
-  const scale = probeScale(view);
-  const change = Math.round(100 * (f - 1));
+  return null;
+}
+
+// The probe runs in reading order: one device's runs together, shortest heating first, so a column compares
+// the chips down the page (the owner found the mixed order hard to read). A row names its run in words.
+const probeRuns = [...probes].sort((a, b) => (a.device === b.device ? (a.heatMinutes ?? 0) - (b.heatMinutes ?? 0) : a.device === "mtk" ? -1 : 1));
+// Non-breaking spaces keep "154 min, moderate" on one line, so a narrow label breaks after the device name.
+const runLabel = (u: (typeof probes)[number]) => `${DEVICE[u.device]}, ${u.heatMinutes === null ? "?" : Math.round(u.heatMinutes)}\u00a0min,\u00a0${STATUS[u.maxStatus]}`;
+// One thread count's rates as the decode-stall post shows a pause: cool, heated and the speed kept.
+function KeptRows({ view, t }: { view: "decode" | "prefill"; t: "6" | "2" }) {
   const show = (x: number) => (view === "decode" ? x.toFixed(1) : grouped(Math.round(x)));
   return (
-    <span className="inline-flex items-center gap-2 whitespace-nowrap">
-      <span>
-        {show(a)} → {show(b)}{" "}
-        <span className="text-ink-soft">
-          ({change < 0 ? "−" : "+"}
-          {Math.abs(change)}%)
-        </span>
-      </span>
-      <span aria-hidden className="relative inline-block h-2 w-14 rounded-full bg-ink/5">
-        <span className="absolute inset-y-0 left-0 rounded-full" style={{ width: `${(100 * f) / scale}%`, backgroundColor: f < 1 ? CPU_FASTER : "var(--color-blue)" }} />
-        <span className="absolute -inset-y-0.5 w-px bg-ink" style={{ left: `${100 / scale}%` }} />
-      </span>
-    </span>
+    <Aligned
+      label="Device, heating, hottest"
+      head={["Cool", "Heated", "Speed kept"]}
+      scales={[0, 0, 1]}
+      rows={probeRuns.map((u) => {
+        const c = u.probes[`cool${t}`];
+        const h = u.probes[`hot${t}`];
+        return {
+          label: runLabel(u),
+          cells:
+            c && h
+              ? [
+                  { value: rateOf(c, view), shown: `${show(rateOf(c, view))} tok/s` },
+                  { value: rateOf(h, view), shown: `${show(rateOf(h, view))} tok/s` },
+                  { value: (100 * rateOf(h, view)) / rateOf(c, view), shown: pct((100 * rateOf(h, view)) / rateOf(c, view)) },
+                ]
+              : [null, null, null],
+        };
+      })}
+    />
   );
 }
 
 const probeLegend: Record<ProbeView, string[]> = {
-  decode: ["Numbers: tokens per second over the three turns. Bar: heated ÷ cool; the tick marks 1×."],
-  prefill: ["Numbers: tokens per second over the three turns. Bar: heated ÷ cool; the tick marks 1×."],
+  decode: ["Cool and heated: tokens per second over the three turns, on one scale. Speed kept: heated ÷ cool."],
+  prefill: ["Cool and heated: tokens per second over the three turns, on one scale. Speed kept: heated ÷ cool."],
   limits: [
     "Heat status and AP temperature as the first turn began, cool → heated; then each core group's CPU limit, heated.",
     ...(probes.every((u) => (["cool6", "cool2"] as const).every((k) => !u.probes[k] || atTop(u.probes[k], u.device)))
@@ -522,7 +527,9 @@ function PairTable({ x, view }: { x: ByModel; view: keyof typeof views }) {
       </p>
       <p className="mb-3 text-sm text-ink-soft">Units: {x.sides.map(({ d, m }) => `${DEVICE[d]} ${m.unit}`).join("; ")}.</p>
       <Scroll label={`${x.key}: every pairing`}>
-        <table className="w-full text-sm tabular-nums [&_td]:whitespace-nowrap" style={{ minWidth: `${9 + 6 * cols.length * x.sides.length}rem` }}>
+        {/* As wide as its columns, not the page: stretched to full width, five columns spread so far that
+            each number sat a long way from its pairing (the owner found it too spaced out). */}
+        <table className="w-auto text-sm tabular-nums [&_td]:whitespace-nowrap" style={{ minWidth: `${9 + 6 * cols.length * x.sides.length}rem` }}>
           <thead>
             <tr>
               <th rowSpan={2} className={`${th} align-bottom`}>
@@ -893,7 +900,7 @@ export default function DimensitySnapdragon() {
         <Figure
           id="throttle"
           title="Heated on purpose"
-          lede="The same three Gemma 3 1B turns on the CPU, cool, then right after heating the device with busy loops. Each cell is cool → heated."
+          lede="How much speed each device kept once heated on purpose: the same three Gemma 3 1B turns on the CPU, run cool, then again right after busy loops heated the device."
         >
           <Switches
             axes={[
@@ -911,27 +918,34 @@ export default function DimensitySnapdragon() {
               (["decode", "prefill", "limits", "step"] as const).map((v) => [
                 v,
                 <div key={v}>
-                  <Table
-                    key={v}
-                    label={`Heated on purpose: ${v}`}
-                    head={["Device", "Initial heating", "Peak status", "6 threads", "2 threads"]}
-                    min={v === "limits" ? "52rem" : "40rem"}
-                    rows={probes.map((u) => [
-                      <span key="d" className="block whitespace-nowrap">
-                        {DEVICE[u.device]}
-                        <span className="block text-xs text-ink-soft">unit {u.unit}</span>
-                      </span>,
-                      <span key="h" className="block whitespace-nowrap">
-                        {u.heatMinutes === null ? "?" : Math.round(u.heatMinutes)} min
-                        {u.long && <span className="block text-xs text-ink-soft">no matrix before</span>}
-                      </span>,
-                      <span key="p" className="whitespace-nowrap">
-                        {u.maxStatus} {STATUS[u.maxStatus]}
-                      </span>,
-                      <ProbeCell key="6" c={u.probes.cool6} h={u.probes.hot6} view={v} d={u.device} />,
-                      <ProbeCell key="2" c={u.probes.cool2} h={u.probes.hot2} view={v} d={u.device} />,
-                    ])}
-                  />
+                  {v === "decode" || v === "prefill" ? (
+                    <div className="space-y-4">
+                      <p className="text-sm font-medium">6 threads</p>
+                      <KeptRows view={v} t="6" />
+                      <p className="pt-2 text-sm font-medium">2 threads</p>
+                      <KeptRows view={v} t="2" />
+                    </div>
+                  ) : (
+                    <Table
+                      key={v}
+                      label={`Heated on purpose: ${v}`}
+                      head={["Device", "Heated for", "Hottest", "6 threads", "2 threads"]}
+                      min={v === "limits" ? "52rem" : "40rem"}
+                      rows={probeRuns.map((u) => [
+                        <span key="d" className="whitespace-nowrap">
+                          {DEVICE[u.device]}
+                        </span>,
+                        <span key="h" className="whitespace-nowrap">
+                          {u.heatMinutes === null ? "?" : Math.round(u.heatMinutes)} min
+                        </span>,
+                        <span key="p" className="whitespace-nowrap">
+                          {STATUS[u.maxStatus]}
+                        </span>,
+                        <ProbeCell key="6" c={u.probes.cool6} h={u.probes.hot6} view={v} d={u.device} />,
+                        <ProbeCell key="2" c={u.probes.cool2} h={u.probes.hot2} view={v} d={u.device} />,
+                      ])}
+                    />
+                  )}
                   <Bullets items={probeLegend[v]} />
                 </div>,
               ]),
@@ -939,11 +953,13 @@ export default function DimensitySnapdragon() {
           />
           <Bullets
             items={[
+              "Hottest: Android's heat status at its highest during the run (none, light, moderate, severe, critical).",
+              `The ${andList(probeRuns.filter((u) => u.long && u.heatMinutes !== null).map((u) => Math.round(u.heatMinutes!)).sort((x, y) => x - y).map(String))}-minute runs started from an idle device; the others right after that model's matrix.`,
               `The 2-thread probe came after the 6-thread one and another ${range(known(probes.map((u) => u.heat2Minutes)), 0)} minutes of heating.`,
               ...unitSplit,
               ...leftOut.map(
                 (u) =>
-                  `A ${Math.round(u.heatMinutes!)}-minute ${DEVICE[u.device]} run on unit ${u.unit}, no matrix before, reached ${STATUS[u.maxStatus]}; the table keeps each device's longest run.`,
+                  `A ${Math.round(u.heatMinutes!)}-minute ${DEVICE[u.device]} run on unit ${u.unit}, started from idle, reached ${STATUS[u.maxStatus]}; the table keeps each device's longest run.`,
               ),
               softOnly && "Every run lowered its CPU clock limits, and all eight cores read online.",
               noStall && "No decode step took over half a second.",
