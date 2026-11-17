@@ -87,7 +87,7 @@ export const sdSpec: PhoneSpec = {
 };
 
 export const mtkRun = {
-  dates: "15 and 16 November 2026",
+  dates: "15 to 17 November 2026",
   llamacpp: "b2e5e9b (release b10549)",
   executorch: "v1.6.0",
   // The NPU exports' window: a 4,096-token export took 6.5 GB of kernel memory and, with the GPU's copy

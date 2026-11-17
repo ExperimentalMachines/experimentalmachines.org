@@ -37,7 +37,10 @@ const SD_DIR = "tools/snapdragon/results/2026-11-16-s24";
 // a llama.cpp copy of the model do not fit in the tablet's memory together (NOTES.md, session 8), so
 // those models ran only the five pairings without a handoff (fits: 5); the other four are null.
 const models = [
-  { file: "Llama-3.2-1B-Instruct-Q4_0", name: "Llama 3.2 1B", quant: "Q4_0", npu: "A16W8", files: ["s4/results-s4.jsonl"], unit: "4bff7833", session: "4" },
+  // Session 15 (2026-11-17), not session 4: session 4's NPU runtime rotated keys without Llama 3's position
+  // scaling, so its NPU replies drifted past a few hundred tokens; session 15 reran all nine pairings on a
+  // runtime that applies it (NOTES.md, "the two loose ends").
+  { file: "Llama-3.2-1B-Instruct-Q4_0", name: "Llama 3.2 1B", quant: "Q4_0", npu: "A16W8", files: ["s15/results-s15.jsonl"], unit: "d429dc0d", session: "15" },
   { file: "Qwen3-0.6B-Q4_0", name: "Qwen3 0.6B", quant: "Q4_0", npu: "A16W8", files: ["s5/results-s5.jsonl", "s5/results-s5b.jsonl"], unit: "d6761b43", session: "5" },
   { file: "google_gemma-3-1b-it-Q4_0", name: "Gemma 3 1B", quant: "Q4_0", npu: "A16W8", files: ["s6/results-s6.jsonl"], unit: "317808dd", session: "6" },
   { file: "LFM2.5-1.2B-Instruct-QAD-Q4_0", name: "LFM2.5 1.2B", quant: "Q4_0, hybrid", npu: "A16W8", files: ["s7/results-s7.jsonl"], unit: "d6761b43", session: "7" },

@@ -110,7 +110,7 @@ export const studies: Study[] = [
   {
     href: "/research/dimensity-9300-snapdragon-8-gen-3/",
     title: "Prefill and decode on Dimensity 9300+ and Snapdragon 8 Gen 3",
-    date: "15 and 16 November 2026",
+    date: "15 to 17 November 2026",
     project: "OpenWeights",
     line: "Two flagship chips of one generation, with the same models, turns and cooling gate: which processor, CPU, GPU or the NPU (the chip built for AI), should read the prompt (prefill) and which should write the reply (decode).",
     hook: sdNpu.length ? `${mid(sdNpu).toFixed(1)}× against ${mid(mtkNpu).toFixed(1)}×` : `${mid(mtkNpu).toFixed(1)}×`,

@@ -802,7 +802,7 @@ export default function DimensitySnapdragon() {
               "Under each: how much longer CPU only took, unless CPU only was the fastest.",
               sdModels.some((m) => m.fits < 9) && `${andList(sdModels.filter((m) => m.fits < 9).map(short))}: the ${SD} ran only the pairings the tablet ran.`,
               forced.length > 0 && "Stop token first: every reply began with a stop token, so a chat would have ended there. The bench kept writing.",
-              "One timed run per pairing; gaps of a few percent may come from run order or the unit.",
+              "One kept timed run per pairing; gaps of a few percent may come from run order or the unit.",
               "Core mix, runtimes, heat and memory all differ, so this cannot say why one device was faster.",
             ]}
           />
@@ -970,8 +970,8 @@ export default function DimensitySnapdragon() {
               "Distinct first tokens: how many different first tokens those replies began with.",
               `The ${MTK}'s NPU reads its own export, not the GGUF, so its first token can differ.`,
               <>
-                Every Qwen3 reply after the {MTK}&apos;s NPU read the prompt began with <code>&lt;|file_sep|&gt;</code>, an end-of-text token, where CPU only began with{" "}
-                <code>&lt;think&gt;</code>. The cause is untested.
+                Every Qwen3 reply after the {MTK}&apos;s NPU read the prompt began with <code>&lt;|file_sep|&gt;</code>, a file-separator token that llama.cpp treats as end-of-generation, where CPU only began with{" "}
+                <code>&lt;think&gt;</code>. Calibrating the export on nine prompts instead of two did not change it on any of 23 turns; the cause is still unknown.
               </>,
               "Agreement with CPU only is not a measure of answer quality.",
             ]}
@@ -1095,9 +1095,9 @@ export default function DimensitySnapdragon() {
             <Bullets
               small={false}
               items={[
-                "One timed run per pairing.",
+                `One kept timed run per pairing; for ${MTK} Llama 3.2 1B, the second run.`,
                 2 * sdGate.out > sdGate.of && 2 * mtkGate.out < mtkGate.of && `Starting heat differed: most ${SD} pairings started warm, few ${MTK} pairings did.`,
-                `${MTK} Llama 3.2 1B: its NPU runtime ignored the model's position scaling; times stand, replies may differ.`,
+                `${MTK} Llama 3.2 1B ran a second time, once its NPU runtime applied the model's position scaling; the first run's NPU replies drifted past a few hundred tokens.`,
               ]}
             />
           </Row>
