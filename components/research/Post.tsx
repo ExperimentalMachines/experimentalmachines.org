@@ -155,12 +155,15 @@ export function Figure({
   title,
   lede,
   note,
+  centerNote = false,
   children,
 }: {
   id?: string;
   title: string;
   lede?: React.ReactNode;
   note?: React.ReactNode;
+  // Centres the note on a wide screen, under a figure that is centred itself (the one-phone spec card).
+  centerNote?: boolean;
   children: React.ReactNode;
 }) {
   return (
@@ -168,7 +171,7 @@ export function Figure({
       <h3 className="display text-2xl leading-snug">{title}</h3>
       {lede && <p className={`mt-2 ${measure} ${body}`}>{lede}</p>}
       <div className="mt-6">{children}</div>
-      {note && <Note>{note}</Note>}
+      {note && (centerNote ? <p className={`mt-4 ${measure} text-sm leading-6 text-ink-soft md:mx-auto md:text-center`}>{note}</p> : <Note>{note}</Note>)}
     </div>
   );
 }
@@ -221,19 +224,7 @@ export function More({
 }
 
 // A plain table: a header row, then rows whose first cell names the row. `right` lists the columns of numbers.
-export function Table({
-  label,
-  head,
-  rows,
-  min = "36rem",
-  right = [],
-}: {
-  label: string;
-  head: string[];
-  rows: React.ReactNode[][];
-  min?: string;
-  right?: number[];
-}) {
+export function Table({ label, head, rows, min = "36rem", right = [] }: { label: string; head: string[]; rows: React.ReactNode[][]; min?: string; right?: number[] }) {
   const align = (i: number) => (right.includes(i) ? "text-right" : "text-left");
   return (
     <Scroll label={label}>

@@ -180,9 +180,16 @@ export default function PrefillDecode() {
       <Section id="results" title="The results">
         <Figure
           id="phone"
+          centerNote
           title="Five phones of one kind: Qualcomm's reference design for the Snapdragon 8 Elite Gen 5"
           lede="The phone every pairing ran on, as read from the phones themselves."
-          note="Core types and top clocks from the phones' CPU registers and clock limits; the memory is the report's reading."
+          note={
+            <>
+              Core types and top clocks from the phones&apos; CPU registers and clock limits.
+              <br />
+              The memory is the report&apos;s reading.
+            </>
+          }
         >
           <PhoneSpecs phones={[{ ...pdSpecs[0], used: "Phones A to E: every run in this post" }]} throttle={false} />
         </Figure>

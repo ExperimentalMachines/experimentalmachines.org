@@ -10,6 +10,7 @@ import { latencyModels } from "@/lib/openweights-latency";
 import { rerunsCaps } from "@/lib/openweights-reruns";
 import { windowCells } from "@/lib/openweights-window";
 import { pdFix, pdModels, pdStall, ranked } from "@/lib/prefill-decode";
+import { mtkModels, rateRatio, sdModels, sdShared, sdTwins } from "@/lib/prefill-decode-mtk";
 
 export type Viz =
   | { kind: "grid"; cols: number; cells: { level: number; on?: boolean }[] }
@@ -40,6 +41,23 @@ const qwen = pdModels.find((m) => m.name === "Qwen3 1.7B" && m.quant === "Q8_0")
 const qwenRank = ranked(qwen);
 const [fastest, slowest] = [qwenRank[0].cell.seconds, qwenRank.at(-1)!.cell.seconds];
 const npuWins = pdModels.filter((m) => ranked(m)[0].prefill === "NPU").length;
+
+// Prefill and decode, Dimensity 9300+ against Snapdragon 8 Gen 3: each NPU's prompt rate against its own CPU's,
+// over the models both devices ran, on the same turns (the S24's rows and the tablet's rebuilt on its turns).
+// Only models with an NPU figure on both devices, the S24 on the pairings the tablet ran (sdShared), so
+// both medians cover the same models and work (Codex fairness review, final round).
+const shared = sdModels.flatMap((_, i) => {
+  const s = sdShared[i];
+  const t = sdTwins[i];
+  return s && t && rateRatio(s.prefill, 2, 0) !== null && rateRatio(t.prefill, 2, 0) !== null ? [{ s, t }] : [];
+});
+const sdNpu = shared.flatMap(({ s }) => rateRatio(s.prefill, 2, 0) ?? []);
+// The median of each device's ratios across the shared models, the same statistic for both.
+const mid = (xs: number[]) => {
+  const v = [...xs].sort((a, b) => a - b);
+  return v.length % 2 ? v[(v.length - 1) / 2] : (v[v.length / 2 - 1] + v[v.length / 2]) / 2;
+};
+const mtkNpu = shared.length ? shared.flatMap(({ t }) => rateRatio(t.prefill, 2, 0) ?? []) : mtkModels.flatMap((m) => rateRatio(m.prefill, 2, 0) ?? []);
 
 // Decode stall: the app's engine in a hard throttle, by decode threads, with the count that keeps running lit.
 const appThreads = pdFix.byThreads.find((r) => r.threads === pdStall.app.normal)!;
@@ -89,6 +107,22 @@ const thousands = (x: number) => Math.round(x).toLocaleString("en-US");
 const agentsOk = rtxCapacity.find((r) => r.agents === 8)!;
 
 export const studies: Study[] = [
+  {
+    href: "/research/dimensity-9300-snapdragon-8-gen-3/",
+    title: "Prefill and decode on Dimensity 9300+ and Snapdragon 8 Gen 3",
+    date: "15 and 16 November 2026",
+    project: "OpenWeights",
+    line: "Two flagship chips of one generation, with the same models, turns and cooling gate: which processor, CPU, GPU or the NPU (the chip built for AI), should read the prompt (prefill) and which should write the reply (decode).",
+    hook: sdNpu.length ? `${mid(sdNpu).toFixed(1)}× against ${mid(mtkNpu).toFixed(1)}×` : `${mid(mtkNpu).toFixed(1)}×`,
+    hookLabel: "how fast each NPU read prompts against its own CPU, Snapdragon then MediaTek, on the same turns (median across models)",
+    viz: {
+      kind: "bars",
+      rows: [
+        ...(sdNpu.length ? [{ label: "Snapdragon", value: mid(sdNpu), shown: `${mid(sdNpu).toFixed(1)}×`, on: true }] : []),
+        { label: "Dimensity", value: mid(mtkNpu), shown: `${mid(mtkNpu).toFixed(1)}×` },
+      ],
+    },
+  },
   {
     href: "/research/decode-stall/",
     title: "Why CPU decode stalls when a phone throttles",

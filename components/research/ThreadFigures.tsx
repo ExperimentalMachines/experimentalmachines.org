@@ -107,9 +107,12 @@ export function PhoneSpecs({ phones, throttle = true }: { phones: PhoneSpec[]; t
           </div>
         );
         return (
-          <ChartCard key={p.name}>
+          // One phone's card ends where its specs end on a wide screen, centred, so it holds no empty band on the right.
+          <ChartCard key={p.name} className={single ? "md:mx-auto md:w-fit" : ""}>
             {single ? (
-              <div className="grid gap-6 md:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)] md:items-center">
+              // The two halves sit side by side at their own widths, top-aligned: stretched across the
+              // whole card they drifted apart and floated (the owner found it too spaced out).
+              <div className="grid gap-5 md:grid-cols-[auto_minmax(0,30rem)] md:items-start md:justify-start md:gap-x-12">
                 {cpu}
                 {rows}
               </div>

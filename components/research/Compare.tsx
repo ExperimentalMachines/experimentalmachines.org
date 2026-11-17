@@ -6,7 +6,10 @@
 const seriesA = "#2b44e6";
 const seriesB = "#d9480f";
 
-export const ChartCard = ({ children }: { children: React.ReactNode }) => <div className="rounded-[1.5rem] bg-bench p-5 sm:p-6">{children}</div>;
+// className adds to the card, as the single-phone spec card's fit-to-content width does.
+export const ChartCard = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => (
+  <div className={`rounded-[1.5rem] bg-bench p-5 sm:p-6 ${className}`}>{children}</div>
+);
 
 export const Swatch = ({ color }: { color: string }) => <span aria-hidden className="inline-block h-2.5 w-2.5 shrink-0 rounded-sm" style={{ backgroundColor: color }} />;
 
