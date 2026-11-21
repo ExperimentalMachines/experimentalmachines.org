@@ -1,3 +1,4 @@
+import { PhaseExplainer, type PhaseExample } from "@/components/research/PhaseExplainer";
 import Go from "@/components/home/Go";
 import { link } from "@/components/home/ui";
 import { DEVICE, DuoLabel } from "@/components/openweights/duo";
@@ -760,6 +761,21 @@ function HeatCards({ x }: { x: ByModel }) {
   );
 }
 
+// The explainer's measured example: the smallest model on the S24's CPU for both phases, from this post's own data.
+const phaseModel = sdModels[0];
+const phaseCell = phaseModel?.cells[0]?.[0];
+const phaseExample: PhaseExample | null =
+  phaseModel && phaseCell
+    ? {
+        where: `${phaseModel.name} ${phaseModel.quant} on the ${SD}'s CPU`,
+        prefillTokS: phaseCell.prefillTokS,
+        decodeTokS: phaseCell.decodeTokS,
+        promptTokens: phaseModel.newTokens / phaseModel.turns,
+        replyTokens: phaseModel.replyTokens / phaseModel.turns,
+        decodeShare: phaseCell.decodeShare,
+      }
+    : null;
+
 export default function DimensitySnapdragon() {
   const stallPost = (
     <Go href="/research/decode-stall/" className={link}>
@@ -780,6 +796,14 @@ export default function DimensitySnapdragon() {
       sourcesNote="Every table and chart is generated from the raw results in the OpenWeights repository, both devices' through the same script and the same checks."
       related={["/research/prefill-decode/", "/research/decode-stall/", "/research/8-elite-dimensity/"]}
     >
+      {phaseExample && (
+        <Section id="phases" title="Reading the prompt, writing the reply">
+          <Figure id="explainer" title="Prefill and decode" lede="Every reply has two phases, and they load the phone in different ways.">
+            <PhaseExplainer example={phaseExample} pairing />
+          </Figure>
+        </Section>
+      )}
+
       <Section id="findings" title="What we found">
         <Findings
           items={
