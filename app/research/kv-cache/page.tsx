@@ -1,3 +1,4 @@
+import { KvExplainer } from "@/components/research/KvExplainer";
 import Go from "@/components/home/Go";
 import { link } from "@/components/home/ui";
 import { Bars, LoadRows, Shift, Tally, VerdictGrid } from "@/components/research/KvFigures";
@@ -104,6 +105,12 @@ export default function KvCache() {
         </>
       }
     >
+      <Section id="cache" title="What the KV cache is">
+        <Figure id="explainer" title="The cache in three pictures" lede="A model's running memory of the conversation, and the reason its size matters on a phone.">
+          <KvExplainer />
+        </Figure>
+      </Section>
+
       <Section id="findings" title="What we found">
         <Findings items={findings} />
       </Section>
