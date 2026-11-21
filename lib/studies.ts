@@ -11,6 +11,7 @@ import { rerunsCaps } from "@/lib/openweights-reruns";
 import { windowCells } from "@/lib/openweights-window";
 import { pdFix, pdModels, pdStall, ranked } from "@/lib/prefill-decode";
 import { mtkModels, rateRatio, sdModels, sdShared, sdTwins } from "@/lib/prefill-decode-mtk";
+import { coverBars, coverTop } from "@/lib/kv-cache";
 
 export type Viz =
   | { kind: "grid"; cols: number; cells: { level: number; on?: boolean }[] }
@@ -109,6 +110,20 @@ const thousands = (x: number) => Math.round(x).toLocaleString("en-US");
 const agentsOk = rtxCapacity.find((r) => r.agents === 8)!;
 
 export const studies: Study[] = [
+  {
+    href: "/research/kv-cache/",
+    authors: ["Alpha Romer Coma"],
+    title: "Shrinking the KV cache on a phone",
+    date: "20 and 21 November 2026",
+    project: "OpenWeights",
+    line: "A model keeps a running memory of the conversation, the KV cache, and reads all of it to write each new token. Stored in 8 bits instead of 32 on a phone's CPU, or 16 on its GPU: how much faster and smaller it gets, and what it does to the answers. Four models, 2k to 32k windows.",
+    hook: `${coverTop.x.toFixed(1)}×`,
+    hookLabel: `faster writing 7.9k tokens into a text: ${coverTop.model} on a phone's CPU with an 8-bit cache instead of 32-bit`,
+    viz: {
+      kind: "bars",
+      rows: coverBars.map((b) => ({ label: b.model, value: b.x, shown: `${b.x.toFixed(1)}×`, on: b === coverTop })),
+    },
+  },
   {
     href: "/research/dimensity-9300-snapdragon-8-gen-3/",
     authors: ["Alpha Romer Coma"],
