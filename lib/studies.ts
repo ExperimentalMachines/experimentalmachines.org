@@ -12,6 +12,7 @@ import { windowCells } from "@/lib/openweights-window";
 import { pdFix, pdModels, pdStall, ranked } from "@/lib/prefill-decode";
 import { mtkModels, rateRatio, sdModels, sdShared, sdTwins } from "@/lib/prefill-decode-mtk";
 import { coverBars, coverTop } from "@/lib/kv-cache";
+import { change, models as quantModels, sizes } from "@/lib/quant";
 
 export type Viz =
   | { kind: "grid"; cols: number; cells: { level: number; on?: boolean }[] }
@@ -110,6 +111,24 @@ const thousands = (x: number) => Math.round(x).toLocaleString("en-US");
 const agentsOk = rtxCapacity.find((r) => r.agents === 8)!;
 
 export const studies: Study[] = [
+  {
+    href: "/research/rtn-gptq-awq/",
+    authors: ["Alpha Romer Coma"],
+    title: "Rounding a model to 4 bits: RTN, GPTQ and AWQ",
+    date: "19 to 22 November 2026",
+    project: "OpenWeights",
+    line: "Every ExecuPack file stores a model's weights in 4 bits. The same three models and file format, four ways to choose those 4-bit values: plain rounding (RTN), GPTQ, AWQ, and AWQ followed by GPTQ. Which keeps a model closest to the original?",
+    // How much closer AWQ kept each model to the original than GPTQ did, reading long text (KL divergence, pooled).
+    hook: sizes(quantModels.flatMap((m) => (change(m, "awq", "books") ? [change(m, "awq", "books")![0]] : []))),
+    hookLabel: "closer to the original model with AWQ than with GPTQ, reading long text",
+    viz: {
+      kind: "bars",
+      rows: quantModels.map((m) => {
+        const c = change(m, "awq", "books")?.[0] ?? 0;
+        return { label: m.name, value: Math.abs(c), shown: `${Math.round(100 * Math.abs(c))}% closer`, on: c < 0 };
+      }),
+    },
+  },
   {
     href: "/research/kv-cache/",
     authors: ["Alpha Romer Coma"],

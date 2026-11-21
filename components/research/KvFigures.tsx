@@ -5,9 +5,9 @@
 
 import { ChartCard } from "@/components/research/Compare";
 
-const from = "#868e96";
-const to = "#2b44e6";
-const worse = "#c2410c";
+export const from = "#868e96";
+export const to = "#2b44e6";
+export const worse = "#c2410c";
 
 // The change is set on a tint of what it means: blue where the smaller cache helps, orange where it hurts, grey where it
 // barely moves. The tint carries the reading at a glance; the sign and the word carry it without colour.
@@ -206,7 +206,7 @@ export type BarRow = { label: string; value: number; shown: string; detail?: str
 // bar's end and what it comes from under it. Panels sit two across from md up and stack on a phone, so no panel is
 // squeezed into a table column. All bars share one scale up to `max`; a value past it fills the bar and is broken at
 // its end.
-export function Bars({ caption, groups, max }: { caption?: string; groups: { label: string; detail?: string; rows: BarRow[] }[]; max: number }) {
+export function Bars({ caption, groups, max, labelWidth = "3.25rem" }: { caption?: string; groups: { label: string; detail?: string; rows: BarRow[] }[]; max: number; labelWidth?: string }) {
   const fill = { good: to, bad: worse, neutral: from, mark: "#3d4460" } as const;
   return (
     <ChartCard>
@@ -223,7 +223,7 @@ export function Bars({ caption, groups, max }: { caption?: string; groups: { lab
                 const tone = r.tone ?? "good";
                 const over = r.value > max;
                 return (
-                  <li key={r.label} className="grid grid-cols-[3.25rem_minmax(0,1fr)] items-center gap-x-3">
+                  <li key={r.label} className="grid items-center gap-x-3" style={{ gridTemplateColumns: `${labelWidth} minmax(0, 1fr)` }}>
                     <span className="text-xs leading-5 text-ink-soft">{r.label}</span>
                     <div className="flex min-w-0 items-center gap-2">
                       <span
